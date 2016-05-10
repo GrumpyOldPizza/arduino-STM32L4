@@ -1,0 +1,6 @@
+dfu.name=STM32 BOOTLOADER
+dfu.communication=USB
+dfu.protocol=dfu
+dfu.program.protocol=
+dfu.program.tool=stm32l4_upload
+dfu.program.extra_params=

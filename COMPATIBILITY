@@ -1,0 +1,39 @@
+Ringbuffer.h
+
+	SERIAL_BUFFER_SIZE is 256 instead of 64 to account for the CDCSerial class requirements
+
+
+hooks.h
+hooks.c
+
+	sysTickHook(), svcHook() and pendSVHook() are not implemented as they are part of libstm32l4_dragonfly.a
+
+
+Uart.h
+
+	availableForWrite() has been added as UART output is buffered
+	write(buffer, size) has been added as UART output is buffered (more efficient to write a numbers if bytes)
+
+
+CDC.h
+
+	based upon HardwareSerial
+
+
+Reset.h
+
+	tickReset() not available; code aequivalent implemented in libstm32l4_dragonfly.a
+
+
+wiring_analog.h
+
+	analogReference() not available do to hardware
+
+wiring_digital.c
+
+	digitalWrite() is documented pre 1.0.1 to set the pullup on a INPUT pin; this is not supported.
+
+WInterrupts.c
+	
+	LOW & HIGH are ignored ... pointless ...
+

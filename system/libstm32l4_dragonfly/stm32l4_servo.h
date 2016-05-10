@@ -1,0 +1,102 @@
+/*
+ * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal with the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ *  1. Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimers.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimers in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of Thomas Roell, nor the names of its contributors
+ *     may be used to endorse or promote products derived from this Software
+ *     without specific prior written permission.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * WITH THE SOFTWARE.
+ */
+
+#if !defined(_STM32L4_SERVO_H)
+#define _STM32L4_SERVO_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "stm32l4xx.h"
+
+#include "stm32l4_timer.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define SERVO_EVENT_UPDATE                       0x40000000
+#define SERVO_EVENT_SYNC                         0x80000000
+
+typedef void (*stm32l4_servo_callback_t)(void *context, uint32_t events);
+
+#define SERVO_STATE_NONE                         0
+#define SERVO_STATE_INIT                         1
+#define SERVO_STATE_BUSY                         2
+#define SERVO_STATE_READY                        3
+#define SERVO_STATE_ACTIVE                       4
+
+#define SERVO_SLOT_COUNT                         12
+
+typedef struct _stm32l4_servo_table_t {
+    uint16_t                    period;
+    uint16_t                    sync;
+    uint32_t                    entries;
+    struct {
+	uint16_t                  pin;
+	uint16_t                  width;
+    }                           slot[SERVO_SLOT_COUNT];
+} stm32l4_servo_table_t;
+
+typedef struct _stm32l4_servo_schedule_t {
+    uint16_t                    period;
+    uint16_t                    offset;
+    uint32_t                    entries;
+    struct {
+	GPIO_TypeDef              *GPIO;
+	uint16_t                  mask;
+	uint16_t                  offset;
+    }                           slot[SERVO_SLOT_COUNT];
+} stm32l4_servo_schedule_t;
+
+typedef struct _stm32l4_servo_t {
+    volatile uint8_t                  state;
+    uint8_t                           index;
+    uint16_t                          prescaler;
+    uint16_t                          period;
+    stm32l4_timer_t                   timer;
+    stm32l4_servo_callback_t          callback;
+    void                              *context;
+    volatile uint32_t                 events;
+    volatile stm32l4_servo_schedule_t *active;
+    volatile stm32l4_servo_schedule_t *pending;
+    stm32l4_servo_schedule_t          schedule[2];
+} stm32l4_servo_t;
+
+extern bool     stm32l4_servo_create(stm32l4_servo_t *servo, unsigned int instance, unsigned int priority);
+extern bool     stm32l4_servo_destroy(stm32l4_servo_t *servo);
+extern bool     stm32l4_servo_enable(stm32l4_servo_t *servo, const stm32l4_servo_table_t *table, stm32l4_servo_callback_t callback, void *context, uint32_t events);
+extern bool     stm32l4_servo_disable(stm32l4_servo_t *servo);
+extern bool     stm32l4_servo_configure(stm32l4_servo_t *servo, const stm32l4_servo_table_t *table);
+extern bool     stm32l4_servo_notify(stm32l4_servo_t *servo, stm32l4_servo_callback_t callback, void *context, uint32_t events);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _STM32L4_SERVO_H */

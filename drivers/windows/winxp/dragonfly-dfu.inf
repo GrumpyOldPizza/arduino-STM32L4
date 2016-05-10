@@ -1,0 +1,78 @@
+; dragonfly-dfu.inf
+
+[Strings]
+DeviceName = "STM32 BOOTLOADER"
+DisplayName = "STM32 BOOTLOADER"
+VendorName = "STMicroelectronics"
+SourceName = "STM32 BOOTLOADER Install Disk"
+DeviceID = "VID_0483&PID_DF11"
+DeviceGUID = "{87ea7467-5022-4a66-a3fb-5c8447a929bd}"
+
+[Version]
+Signature = "$Windows NT$"
+Class = "Universal Serial Bus devices"
+ClassGuid = {88bae032-5a81-49f0-bc3d-a4ff138216d6}
+Provider = %VendorName%
+DriverVer = 05/10/2016, 6.1.7600.16385
+DriverPackageDisplayName = %DisplayName%
+
+[ClassInstall32]
+Addreg = WinUSBDeviceClassReg
+
+[WinUSBDeviceClassReg]
+HKR,,,0,"Universal Serial Bus devices"
+HKR,,Icon,,-20
+
+[Manufacturer]
+%VendorName% = Standard,NTx86
+
+[Standard.NTx86]
+%DeviceName% = USB_Install, USB\%DeviceID%
+
+[USB_Install]
+Include = winusb.inf
+Needs = WINUSB.NT
+
+[USB_Install.Services]
+Include = winusb.inf
+AddService = WinUSB,0x00000002,WinUSB_ServiceInstall
+
+[WinUSB_ServiceInstall]
+DisplayName = "WinUSB"
+ServiceType = 1
+StartType = 3
+ErrorControl = 1
+ServiceBinary = %12%\WinUSB.sys
+
+[USB_Install.Wdf]
+KmdfService = WINUSB, WinUsb_Install
+
+[WinUSB_Install]
+KmdfLibraryVersion = 1.9
+
+[USB_Install.HW]
+AddReg = AddDeviceInterfaceGUID
+
+[AddDeviceInterfaceGUID]
+HKR,,DeviceInterfaceGUIDs,0x10000,%DeviceGUID%
+
+[USB_Install.CoInstallers]
+AddReg = CoInstallers_AddReg
+CopyFiles = CoInstallers_CopyFiles
+
+[CoInstallers_AddReg]
+HKR,,CoInstallers32,0x00010000,"WdfCoInstaller01009.dll,WdfCoInstaller","WinUSBCoInstaller2.dll"
+
+[CoInstallers_CopyFiles]
+WinUSBCoInstaller2.dll
+WdfCoInstaller01009.dll
+
+[DestinationDirs]
+CoInstallers_CopyFiles = 11
+
+[SourceDisksNames]
+1 = %SourceName%
+
+[SourceDisksFiles.x86]
+WinUSBCoInstaller2.dll  = 1,x86
+WdfCoInstaller01009.dll = 1,x86
