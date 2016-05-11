@@ -84,7 +84,6 @@ class CDC : public HardwareSerial
     volatile uint16_t _tx_write;
     volatile uint16_t _tx_read;
     uint16_t _tx_count;
-    volatile uint32_t _tx_sequence;
 
     void (*_completionCallback)(void);
     void (*_receiveCallback)(int);

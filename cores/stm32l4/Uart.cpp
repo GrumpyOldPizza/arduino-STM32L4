@@ -194,7 +194,7 @@ void Uart::flush( void )
 
 size_t Uart::write( const uint8_t data )
 {
-  unsigned int tx_read, tx_write, tx_sequence;
+  unsigned int tx_read, tx_write;
 
   if (_uart->state < UART_STATE_READY)
     return 0;
@@ -224,10 +224,10 @@ size_t Uart::write( const uint8_t data )
       }
 
       if (armv7m_core_priority() <= STM32L4_UART_IRQ_PRIORITY) {
-	tx_sequence = _tx_sequence;
+	tx_read = _tx_read;
 	do {
 	  stm32l4_uart_poll(_uart);
-	} while (tx_sequence == _tx_sequence);
+	} while (tx_read == _tx_read);
       } else {
 	armv7m_core_yield();
       }
@@ -269,7 +269,7 @@ size_t Uart::write( const uint8_t data )
 
 size_t Uart::write(const uint8_t *buffer, size_t size)
 {
-  unsigned int tx_read, tx_write, tx_count, tx_sequence;
+  unsigned int tx_read, tx_write, tx_count;
   size_t count;
 
   if (_uart->state < UART_STATE_READY)
@@ -302,10 +302,10 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
       }
 
       if (armv7m_core_priority() <= STM32L4_UART_IRQ_PRIORITY) {
-	tx_sequence = _tx_sequence;
+	tx_read = _tx_read;
 	do {
 	  stm32l4_uart_poll(_uart);
-	} while (tx_sequence == _tx_sequence);
+	} while (tx_read == _tx_read);
       } else {
 	armv7m_core_yield();
       }
@@ -440,7 +440,6 @@ void Uart::EventCallback( uint32_t events )
 
     _tx_read = (_tx_read + _tx_count) & UART_TX_BUFFER_MASK;
     _tx_count = 0;
-    _tx_sequence++;
 
     callback = _completionCallback;
     _completionCallback = NULL;

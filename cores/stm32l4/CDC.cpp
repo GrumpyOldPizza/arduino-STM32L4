@@ -200,7 +200,7 @@ void CDC::flush( void )
 
 size_t CDC::write( const uint8_t data )
 {
-  unsigned int tx_read, tx_write, tx_sequence;
+  unsigned int tx_read, tx_write;
 
   if ((_usbd_cdc->state < USBD_CDC_STATE_READY) || !(stm32l4_usbd_cdc_info.lineState & 2))
     return 0;
@@ -230,10 +230,10 @@ size_t CDC::write( const uint8_t data )
       }
 
       if (armv7m_core_priority() <= STM32L4_USB_IRQ_PRIORITY) {
-	tx_sequence = _tx_sequence;
+	tx_read = _tx_read;
 	do {
 	  stm32l4_usbd_cdc_poll(_usbd_cdc);
-	} while (tx_sequence == _tx_sequence);
+	} while (tx_read == _tx_read);
       } else {
 	armv7m_core_yield();
       }
@@ -275,7 +275,7 @@ size_t CDC::write( const uint8_t data )
 
 size_t CDC::write(const uint8_t *buffer, size_t size)
 {
-  unsigned int tx_read, tx_write, tx_count, tx_sequence;
+  unsigned int tx_read, tx_write, tx_count;
   size_t count;
 
   if ((_usbd_cdc->state < USBD_CDC_STATE_READY) || !(stm32l4_usbd_cdc_info.lineState & 2))
@@ -308,10 +308,10 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
       }
 
       if (armv7m_core_priority() <= STM32L4_USB_IRQ_PRIORITY) {
-	tx_sequence = _tx_sequence;
+	tx_read = _tx_read;
 	do {
 	  stm32l4_usbd_cdc_poll(_usbd_cdc);
-	} while (tx_sequence == _tx_sequence);
+	} while (tx_read == _tx_read);
       } else {
 	armv7m_core_yield();
       }
@@ -441,7 +441,6 @@ void CDC::EventCallback( uint32_t events )
 
     _tx_read = (_tx_read + _tx_count) & CDC_TX_BUFFER_MASK;
     _tx_count = 0;
-    _tx_sequence++;
 
     callback = _completionCallback;
     _completionCallback = NULL;
