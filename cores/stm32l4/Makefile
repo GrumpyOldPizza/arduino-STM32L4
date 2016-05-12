@@ -34,7 +34,7 @@ SRCS = \
 	hooks.c \
 	main.cpp \
 	new.cpp \
-	stdlib_noniso.cpp \
+	stdlib_noniso.c \
 	wiring.c \
 	wiring_analog.c \
 	wiring_digital.c \
