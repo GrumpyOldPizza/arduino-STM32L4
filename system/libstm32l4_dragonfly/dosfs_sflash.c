@@ -29,7 +29,10 @@
 #include "dosfs_sflash.h"
 
 #include <stdio.h>
+
+#if (DOSFS_CONFIG_SFLASH_DEBUG == 1)
 #include <assert.h>
+#endif /* DOSFS_CONFIG_SFLASH_DEBUG == 1 */
 
 dosfs_sflash_t dosfs_sflash;
 
@@ -823,8 +826,10 @@ static uint32_t dosfs_sflash_ftl_victim(dosfs_sflash_t *sflash)
 	    
 	    // printf("%d: %d %d (%d)\n", index, sflash->victim_score[index], sflash->victim_delta[index], erase_count);
 	    
+#if (DOSFS_CONFIG_SFLASH_DEBUG == 1)
 	    assert(erase_count == (sflash->erase_count_max - sflash->victim_delta[index]));
 	    assert(!!(sflash->victim_score[index] & DOSFS_SFLASH_VICTIM_ALLOCATED_MASK) == (free_total == 0));
+#endif /* DOSFS_CONFIG_SFLASH_DEBUG == 1 */
 	}
     }
 #endif
@@ -1000,7 +1005,9 @@ static void dosfs_sflash_ftl_reclaim(dosfs_sflash_t *sflash, uint32_t victim_off
 	    }
 	}
 
+#if (DOSFS_CONFIG_SFLASH_DEBUG == 1)
 	assert(n == ((sflash->victim_score[victim_sector] & DOSFS_SFLASH_VICTIM_DELETED_MASK) >> DOSFS_SFLASH_VICTIM_DELETED_SHIFT));
+#endif /* DOSFS_CONFIG_SFLASH_DEBUG == 1 */)
     }
 
     victim_erase_count++;
@@ -1040,7 +1047,10 @@ static void dosfs_sflash_ftl_reclaim(dosfs_sflash_t *sflash, uint32_t victim_off
     {
 	for (index = 0; index < ((sflash->data_size / DOSFS_SFLASH_ERASE_SIZE) -1); index++)
 	{
+#if (DOSFS_CONFIG_SFLASH_DEBUG == 1)
 	    assert(sflash->victim_delta[index] != 255);
+#endif /* DOSFS_CONFIG_SFLASH_DEBUG == 1 */
+
 	    sflash->victim_delta[index] += 1;
 	}
 
