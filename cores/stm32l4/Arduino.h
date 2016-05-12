@@ -37,7 +37,7 @@ typedef uint16_t word;
 #include "avr/interrupt.h"
 
 #include "binary.h"
-#include "itoa.h"
+#include "stdlib_noniso.h"
 
 #ifdef __cplusplus
 extern "C"{

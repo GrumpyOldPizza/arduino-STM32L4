@@ -31,11 +31,10 @@ SRCS = \
 	WMath.cpp \
 	WString.cpp \
 	abi.cpp \
-	avr/dtostrf.c \
 	hooks.c \
-	itoa.c \
 	main.cpp \
 	new.cpp \
+	stdlib_noniso.cpp \
 	wiring.c \
 	wiring_analog.c \
 	wiring_digital.c \
@@ -59,11 +58,10 @@ OBJS = \
 	WMath.o \
 	WString.o \
 	abi.o \
-	avr/dtostrf.o \
 	hooks.o \
-	itoa.o \
 	main.o \
 	new.o \
+	stdlib_noniso.o \
 	wiring.o \
 	wiring_analog.o \
 	wiring_digital.o \
