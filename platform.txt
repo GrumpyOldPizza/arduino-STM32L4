@@ -47,6 +47,11 @@ compiler.elf2hex.cmd=arm-none-eabi-objcopy
 compiler.ldflags=-mcpu={build.mcu} -mthumb -Wl,--cref -Wl,--check-sections -Wl,--gc-sections -Wl,--unresolved-symbols=report-all -Wl,--warn-common -Wl,--warn-section-align
 compiler.size.cmd=arm-none-eabi-size
 compiler.define=-DARDUINO=
+compiler.platform.path={runtime.platform.path}/tools/windows/
+compiler.platform.path.macos={runtime.platform.path}/tools/macos/
+compiler.platform.path.linux={runtime.platform.path}/tools/linux/
+compiler.hex2dfu.cmd=dfu-suffix
+compiler.hex2dfu.cmd.windows=dfu-suffix.exe
 
 # this can be overriden in boards.txt
 build.extra_flags=
@@ -81,6 +86,9 @@ recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}"  "-L{build.path}"
 
 ## Create output (bin file)
 recipe.objcopy.bin.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf2hex.flags} {compiler.elf2hex.extra_flags} "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
+
+## Append DFU suffix (bin file)
+recipe.objcopy.dfu.pattern="{compiler.platform.path}/{compiler.hex2dfu.cmd}"  -v 0x0483 -p 0xdf11 -a "{build.path}/{build.project_name}.bin"
 
 ## Save hex
 recipe.output.tmp_file={build.project_name}.bin
