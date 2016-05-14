@@ -185,7 +185,7 @@ uint32_t stm32l4_timer_clock(stm32l4_timer_t *timer)
 
     hclk = stm32l4_system_hclk();
 
-    if ((timer->instance >= TIMER_INSTANCE_TIM2) && (timer->instance >= TIMER_INSTANCE_TIM7))
+    if ((timer->instance >= TIMER_INSTANCE_TIM2) && (timer->instance <= TIMER_INSTANCE_TIM7))
     {
 	pclk = stm32l4_system_pclk1();
     }
