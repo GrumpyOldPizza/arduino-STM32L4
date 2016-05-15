@@ -12,15 +12,15 @@
         {
           "name": "STMicroelectronics STM32L4 Boards",
           "architecture": "STM32L4",
-          "version": "0.0.2",
+          "version": "0.0.1",
           "category": "Contributed",
           "help": {
             "online": "https://github.com/grumpyoldpizza/arduino-STM32L4/issues"
           },
-          "url": "https://github.com/grumpyoldpizza/arduino-STM32L4/archive/0.0.2.tar.gz",
-          "archiveFileName": "arduino-STM32L4-0.0.2.tar.gz",
-          "checksum": "MD5:56404871882bfcd5550882f78934e17d",
-          "size": "9876865",
+          "url": "https://github.com/grumpyoldpizza/arduino-STM32L4/archive/0.0.1.tar.gz",
+          "archiveFileName": "arduino-STM32L4-0.0.1.tar.gz",
+          "checksum": "MD5:c5ca59588f084b39607e93a35636f9d8",
+          "size": "9875643",
           "boards": [
             {"name": "Dragonfly"}
           ],
@@ -31,21 +31,20 @@
               "version": "4.8.3-2014q1"
             }
           ]
-        }
-      ],
-      "platforms": [
+        },
+
         {
           "name": "STMicroelectronics STM32L4 Boards",
           "architecture": "STM32L4",
-          "version": "0.0.1",
+          "version": "0.0.2",
           "category": "Contributed",
           "help": {
             "online": "https://github.com/grumpyoldpizza/arduino-STM32L4/issues"
           },
-          "url": "https://github.com/grumpyoldpizza/arduino-STM32L4/archive/0.0.1.tar.gz",
-          "archiveFileName": "arduino-STM32L4-0.0.1.tar.gz",
-          "checksum": "MD5:c5ca59588f084b39607e93a35636f9d8",
-          "size": "9875643",
+          "url": "https://github.com/grumpyoldpizza/arduino-STM32L4/archive/0.0.2.tar.gz",
+          "archiveFileName": "arduino-STM32L4-0.0.2.tar.gz",
+          "checksum": "MD5:56404871882bfcd5550882f78934e17d",
+          "size": "9876865",
           "boards": [
             {"name": "Dragonfly"}
           ],
