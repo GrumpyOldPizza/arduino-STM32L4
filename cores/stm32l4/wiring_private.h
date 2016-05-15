@@ -35,6 +35,7 @@ extern "C" {
 #include "stm32l4_gpio.h"
 #include "stm32l4_uart.h"
 #include "stm32l4_i2c.h"
+#include "stm32l4_servo.h"
 #include "stm32l4_spi.h"
 #include "stm32l4_usbd_cdc.h"
 #include "stm32l4_system.h"
@@ -76,6 +77,23 @@ extern "C" {
  * DMA_CHANNEL_DMA2_CH6_SAI1_A
  * DMA_CHANNEL_DMA2_CH7_QUADSPI
  *
+ ************************************************************************/
+
+/************************************************************************
+ * TIM map:
+ * 
+ * TIM1    PWM
+ * TIM2    CAPTURE
+ * TIM3    PWM
+ * TIM4    PWM
+ * TIM5    PWM
+ * TIM6    (ADC)
+ * TIM7    TONE
+ * TIM8
+ * TIM15   SERVO
+ * TIM16   IR
+ * TIM17   IR
+ * 
  ************************************************************************/
 
 extern stm32l4_exti_t stm32l4_exti;

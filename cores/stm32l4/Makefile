@@ -12,9 +12,10 @@ LDFLAGS  = -L../../variants/dragonfly -Os -Wl,--gc-sections -save-temps $(EXTRAS
 WARNINGS = -w
 EXTRAS   = -DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mabi=aapcs -mslow-flash-data
 DEFINES  = -DF_CPU=80000000L -DARDUINO=10606 -D_ARDUINO_STM32L4_DRAGONFLY -DARDUINO_ARCH_STM32L4
-INCLUDES = -I../../system/libstm32l4_dragonfly/CMSIS/Include -I../../system/libstm32l4_dragonfly/CMSIS/Device/ST/STM32L4xx/Include -I../../system/libstm32l4_dragonfly/USB/HAL/Inc -I../../system/libstm32l4_dragonfly/USB/Core/Inc -I../../system/libstm32l4_dragonfly/USB/Class/CDC/Inc -I../../system/libstm32l4_dragonfly/USB/Class/MSC/Inc -I../../system/libstm32l4_dragonfly/USB -I../../system/libstm32l4_dragonfly/ -I../../variants/dragonfly -I../../libraries/SPI/ -I../../libraries/Wire/ -I../../libraries/SerialFlash/ -I../../libraries/SerialFlash/util -I. 
+INCLUDES = -I../../system/libstm32l4_dragonfly/CMSIS/Include -I../../system/libstm32l4_dragonfly/CMSIS/Device/ST/STM32L4xx/Include -I../../system/libstm32l4_dragonfly/USB/HAL/Inc -I../../system/libstm32l4_dragonfly/USB/Core/Inc -I../../system/libstm32l4_dragonfly/USB/Class/CDC/Inc -I../../system/libstm32l4_dragonfly/USB/Class/MSC/Inc -I../../system/libstm32l4_dragonfly/USB -I../../system/libstm32l4_dragonfly/ -I../../variants/dragonfly -I../../libraries/SPI/ -I../../libraries/Wire/ -I../../libraries/Servo/src/ -I. 
 
 SRCS = \
+	../../libraries/Servo/src/Servo.cpp \
 	../../libraries/SPI/SPI.cpp \
 	../../libraries/Wire/Wire.cpp \
 	../../variants/dragonfly/variant.cpp \
@@ -42,6 +43,7 @@ SRCS = \
 	wiring_shift.c
 
 OBJS = \
+	../../libraries/Servo/src/Servo.o \
 	../../libraries/SPI/SPI.o \
 	../../libraries/Wire/Wire.o \
 	../../variants/dragonfly/variant.o \

@@ -59,7 +59,7 @@ void tone (uint32_t pin, uint32_t frequency, uint32_t duration)
   }
 
   if (stm32l4_tone.state == TIMER_STATE_NONE) {
-    stm32l4_timer_create(&stm32l4_tone, TIMER_INSTANCE_TIM6, STM32L4_TONE_IRQ_PRIORITY, 0);
+    stm32l4_timer_create(&stm32l4_tone, TIMER_INSTANCE_TIM7, STM32L4_TONE_IRQ_PRIORITY, 0);
   }
 
   GPIO_TypeDef *GPIO = g_APinDescription[pin].GPIO;

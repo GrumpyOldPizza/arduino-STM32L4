@@ -51,11 +51,16 @@ typedef void (*stm32l4_servo_callback_t)(void *context, uint32_t events);
 #define SERVO_STATE_READY                        3
 #define SERVO_STATE_ACTIVE                       4
 
-#define SERVO_SLOT_COUNT                         12
+#define SERVO_SLOT_COUNT                         9
+
+#define SERVO_SYNC_MARGIN                        50     /* sync needs to be at least 50us after the last pulse      */
+#define SERVO_SYNC_WIDTH                         1950   /* last slot is 2ms, hence the default sync width is 1950us */
+#define SERVO_FRAME_WIDTH                        20000  /* the default RC servo frame is 10 slots or 20000us        */
+#define SERVO_PULSE_THRESHOLD                     500   /* below a pulse is deemed illegal                          */
+#define SERVO_PULSE_MIN                          1000
+#define SERVO_PULSE_MAX                          2000
 
 typedef struct _stm32l4_servo_table_t {
-    uint16_t                    period;
-    uint16_t                    sync;
     uint32_t                    entries;
     struct {
 	uint16_t                  pin;

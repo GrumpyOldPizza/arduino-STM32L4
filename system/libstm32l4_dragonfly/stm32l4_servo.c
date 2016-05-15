@@ -149,7 +149,7 @@ bool stm32l4_servo_create(stm32l4_servo_t *servo, unsigned int instance, unsigne
     servo->events = 0;
 
     servo->index = 0;
-    servo->prescaler = stm32l4_timer_clock(&servo->timer) / 1000000;
+    servo->prescaler = 0;
     servo->period = 0;
     servo->active = NULL;
     servo->pending = NULL;
@@ -220,7 +220,7 @@ bool stm32l4_servo_disable(stm32l4_servo_t *servo)
 bool stm32l4_servo_configure(stm32l4_servo_t *servo, const stm32l4_servo_table_t *table)
 {
     stm32l4_servo_schedule_t *pending;
-    unsigned int index, offset;
+    unsigned int entry, index, offset;
 
     if (servo->state < SERVO_STATE_BUSY)
     {
@@ -231,25 +231,42 @@ bool stm32l4_servo_configure(stm32l4_servo_t *servo, const stm32l4_servo_table_t
 
     pending = ((servo->active == &servo->schedule[1]) ? &servo->schedule[0] : &servo->schedule[1]);
 
-    pending->entries = table->entries;
-    pending->period = table->period;
-
-    for (offset = 0, index = 0; index < table->entries; index++)
+    for (offset = 0, entry = 0, index = 0; entry < table->entries; entry++)
     {
-	offset += table->slot[index].width;
+	if ((table->slot[entry].pin != GPIO_PIN_NONE) && (table->slot[index].width >= SERVO_PULSE_THRESHOLD))
+	{
+	    offset += table->slot[entry].width;
 
-	pending->slot[index].GPIO = (GPIO_TypeDef *)(GPIOA_BASE + (GPIOB_BASE - GPIOA_BASE) * ((table->slot[index].pin & GPIO_PIN_GROUP_MASK) >> GPIO_PIN_GROUP_SHIFT));
-	pending->slot[index].mask = (1ul << ((table->slot[index].pin & GPIO_PIN_INDEX_MASK) >> GPIO_PIN_INDEX_SHIFT));
-	pending->slot[index].offset = offset;
+	    pending->slot[index].GPIO = (GPIO_TypeDef *)(GPIOA_BASE + (GPIOB_BASE - GPIOA_BASE) * ((table->slot[entry].pin & GPIO_PIN_GROUP_MASK) >> GPIO_PIN_GROUP_SHIFT));
+	    pending->slot[index].mask = (1ul << ((table->slot[entry].pin & GPIO_PIN_INDEX_MASK) >> GPIO_PIN_INDEX_SHIFT));
+	    pending->slot[index].offset = offset;
+
+	    index++;
+	}
     }
 
-    if (offset >= (table->period - table->sync))
+    if (offset == 0)
     {
+	pending->period = 0;
 	pending->offset = 0;
+	pending->entries = 0;
     }
     else
     {
-	pending->offset = table->period - table->sync;
+	pending->entries = index;
+
+	servo->prescaler = stm32l4_timer_clock(&servo->timer) / 1000000;
+
+	if ((offset + SERVO_SYNC_MARGIN + SERVO_SYNC_WIDTH) >= SERVO_FRAME_WIDTH)
+	{
+	    pending->period = (offset + SERVO_SYNC_MARGIN + SERVO_SYNC_WIDTH);
+	    pending->offset = SERVO_SYNC_MARGIN;
+	}
+	else
+	{
+	    pending->period = SERVO_FRAME_WIDTH;
+	    pending->offset = SERVO_FRAME_WIDTH - SERVO_SYNC_WIDTH;
+	}
     }
 
     if (servo->active)
@@ -258,7 +275,7 @@ bool stm32l4_servo_configure(stm32l4_servo_t *servo, const stm32l4_servo_table_t
     }
     else
     {
-	if (table->period)
+	if (pending->period)
 	{
 	    servo->active = pending;
 
