@@ -88,8 +88,8 @@ typedef struct _stm32l4_servo_t {
     stm32l4_servo_callback_t          callback;
     void                              *context;
     volatile uint32_t                 events;
-    volatile stm32l4_servo_schedule_t *active;
-    volatile stm32l4_servo_schedule_t *pending;
+    stm32l4_servo_schedule_t * volatile active;
+    stm32l4_servo_schedule_t * volatile pending;
     stm32l4_servo_schedule_t          schedule[2];
 } stm32l4_servo_t;
 

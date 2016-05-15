@@ -245,7 +245,6 @@ static void stm32l4_spi_dma_callback(stm32l4_spi_t *spi, uint32_t events)
 static void stm32l4_spi_finish(stm32l4_spi_t *spi, uint32_t events)
 {
     SPI_TypeDef *SPI = spi->SPI;
-    uint32_t spi_cr2;
 
     NVIC_DisableIRQ(spi->interrupt);
 	
@@ -1273,7 +1272,6 @@ bool stm32l4_spi_receive(stm32l4_spi_t *spi, uint8_t *rx_data, unsigned int rx_c
     SPI_TypeDef *SPI = spi->SPI;
     uint32_t spi_cr1, spi_cr2;
     uint16_t tx_default = 0xffff;
-    uint8_t rx_crc16[2];
     unsigned int count;
 
     if ((spi->state != SPI_STATE_READY) && (spi->state != SPI_STATE_SELECTED))
@@ -1496,7 +1494,6 @@ bool stm32l4_spi_transmit(stm32l4_spi_t *spi, const uint8_t *tx_data, unsigned i
 {
     SPI_TypeDef *SPI = spi->SPI;
     uint32_t spi_cr1, spi_cr2;
-    uint8_t tx_crc16[2], rx_crc16[2];
     unsigned int count;
 
     if ((spi->state != SPI_STATE_READY) && (spi->state != SPI_STATE_SELECTED))
@@ -1667,7 +1664,6 @@ bool stm32l4_spi_transfer(stm32l4_spi_t *spi, const uint8_t *tx_data, uint8_t *r
 {
     SPI_TypeDef *SPI = spi->SPI;
     uint32_t spi_cr1, spi_cr2;
-    uint8_t tx_crc16[2], rx_crc16[2];
     unsigned int count;
 
     if ((spi->state != SPI_STATE_READY) && (spi->state != SPI_STATE_SELECTED))

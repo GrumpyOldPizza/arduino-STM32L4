@@ -42,22 +42,22 @@
   ((volatile uint32_t*)(0x42000000 + ((uint32_t)(_address) - 0x40000000) * 32 + ((_index) * 4)))
 
 
-static void inline armv7m_bitband_sram_write(volatile uint32_t *p_data, uint32_t index, uint32_t data)
+static inline void armv7m_bitband_sram_write(volatile uint32_t *p_data, uint32_t index, uint32_t data)
 {
     *ARMV7M_BITBAND_SRAM_ADDRESS(p_data, index) = data;
 }
 
-static uint32_t inline armv7m_bitband_sram_read(volatile uint32_t *p_data, uint32_t index)
+static inline uint32_t armv7m_bitband_sram_read(volatile uint32_t *p_data, uint32_t index)
 {
     return *ARMV7M_BITBAND_SRAM_ADDRESS(p_data, index);
 }
 
-static void inline armv7m_bitband_peripheral_write(volatile uint32_t *p_data, uint32_t index, uint32_t data)
+static inline void armv7m_bitband_peripheral_write(volatile uint32_t *p_data, uint32_t index, uint32_t data)
 {
     *ARMV7M_BITBAND_PERIPHERAL_ADDRESS(p_data, index) = data;
 }
 
-static uint32_t inline armv7m_bitband_peripheral_read(volatile uint32_t *p_data, uint32_t index)
+static inline uint32_t armv7m_bitband_peripheral_read(volatile uint32_t *p_data, uint32_t index)
 {
     return *ARMV7M_BITBAND_PERIPHERAL_ADDRESS(p_data, index);
 }

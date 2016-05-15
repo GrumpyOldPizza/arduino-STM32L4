@@ -113,11 +113,11 @@ typedef struct
 USBD_MSC_BOT_HandleTypeDef; 
 
 /* Structure for MSC process */
-extern USBD_ClassTypeDef  USBD_MSC;
+extern const USBD_ClassTypeDef  USBD_MSC;
 #define USBD_MSC_CLASS    &USBD_MSC
 
 uint8_t  USBD_MSC_RegisterStorage  (USBD_HandleTypeDef   *pdev, 
-                                    USBD_StorageTypeDef *fops);
+                                    const USBD_StorageTypeDef *fops);
 /**
   * @}
   */ 

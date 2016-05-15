@@ -61,7 +61,7 @@
 #define  USB_SIZ_STRING_SERIAL       0x1A
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
-extern USBD_DescriptorsTypeDef CDC_MSC_Desc;
+extern const USBD_DescriptorsTypeDef CDC_MSC_Desc;
 
 #endif /* __USBD_DESC_H */
  

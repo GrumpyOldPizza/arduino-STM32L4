@@ -53,8 +53,6 @@ void UsageFault_Handler(void)
 
 void init( void )
 {
-  uint32_t pin;
-
   stm32l4_system_configure(F_CPU, F_CPU, F_CPU/2, F_CPU/2);
 
   armv7m_svcall_initialize();

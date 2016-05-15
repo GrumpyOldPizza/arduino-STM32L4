@@ -57,8 +57,6 @@ bool stm32l4_exti_create(stm32l4_exti_t *exti, unsigned int priority)
 
 bool stm32l4_exti_destroy(stm32l4_exti_t *exti)
 {
-    uint32_t n_mask;
-
     if (exti->state != EXTI_STATE_INIT)
     {
 	return false;

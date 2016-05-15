@@ -37,8 +37,8 @@ static const unsigned int stm32l4_pwm_xlate_instance[PWM_INSTANCE_COUNT] = {
 static int _readResolution = 10;
 static int _writeResolution = 8;
 
-static int _writeFrequency[PWM_INSTANCE_COUNT];
-static int _writeRange[PWM_INSTANCE_COUNT];
+static uint32_t _writeFrequency[PWM_INSTANCE_COUNT];
+static uint32_t _writeRange[PWM_INSTANCE_COUNT];
 
 static uint8_t _writeCalibrate = 3;
 

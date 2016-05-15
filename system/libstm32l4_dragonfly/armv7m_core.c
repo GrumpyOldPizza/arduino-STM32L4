@@ -32,8 +32,8 @@
 
 int armv7m_core_priority(void)
 {
-    uint32_t ipsr, faultmask, primask, basepri;
-    int priority;
+    uint32_t ipsr, faultmask, primask;
+    int priority, basepri;
     
     ipsr = __get_IPSR();
 

@@ -106,7 +106,6 @@ typedef struct _stm32l4_qspi_pins_t {
 } stm32l4_qspi_pins_t;
 
 typedef struct _stm32l4_qspi_t {
-    QUADSPI_TypeDef             *QSPI;
     volatile uint8_t            state;
     uint8_t                     instance;
     uint8_t                     interrupt;

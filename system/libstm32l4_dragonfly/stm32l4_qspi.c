@@ -102,22 +102,22 @@ static stm32l4_qspi_driver_t stm32l4_qspi_driver;
 #define QUADSPI_CR_FTHRES_8                 0x00000700
 #define QUADSPI_CR_FTHRES_16                0x00000F00
 
-static inline void stm32l4_qspi_read8(QUADSPI_TypeDef *QSPI, void *rx_data)
+static inline void stm32l4_qspi_read8(void *rx_data)
 {
     *((uint8_t*)rx_data) = *((volatile uint8_t*)(&QUADSPI->DR));
 }
 
-static inline void stm32l4_qspi_read32(QUADSPI_TypeDef *QSPI, void *rx_data)
+static inline void stm32l4_qspi_read32(void *rx_data)
 {
     *((uint32_t*)rx_data) = QUADSPI->DR;
 }
 
-static inline void stm32l4_qspi_write8(QUADSPI_TypeDef *QSPI, const void *tx_data)
+static inline void stm32l4_qspi_write8(const void *tx_data)
 {
     *((volatile uint8_t*)(&QUADSPI->DR)) = *((const uint8_t*)tx_data);
 }
 
-static inline void stm32l4_qspi_write32(QUADSPI_TypeDef *QSPI, const void *tx_data)
+static inline void stm32l4_qspi_write32(const void *tx_data)
 {
     QUADSPI->DR = *((const uint32_t*)tx_data);
 }
@@ -144,8 +144,6 @@ static void stm32l4_qspi_pins(stm32l4_qspi_t *qspi)
 
 static void stm32l4_qspi_dma_callback(stm32l4_qspi_t *qspi, uint32_t events)
 {
-    QUADSPI_TypeDef *QSPI = qspi->QSPI;
-
     QUADSPI->FCR = QUADSPI_FCR_CTCF;
 
     QUADSPI->CR |= QUADSPI_CR_ABORT;
@@ -160,7 +158,6 @@ static void stm32l4_qspi_dma_callback(stm32l4_qspi_t *qspi, uint32_t events)
 
 static void stm32l4_qspi_interrupt(stm32l4_qspi_t *qspi)
 {
-    QUADSPI_TypeDef *QSPI = qspi->QSPI;
     uint8_t *rx_data, *rx_data_e;
 
       
@@ -202,7 +199,7 @@ static void stm32l4_qspi_interrupt(stm32l4_qspi_t *qspi)
 	    
 	    while (rx_data != rx_data_e)
 	    {
-		stm32l4_qspi_read8(QSPI, rx_data);
+		stm32l4_qspi_read8(rx_data);
 		rx_data++;
 	    }
 
@@ -225,7 +222,6 @@ bool stm32l4_qspi_create(stm32l4_qspi_t *qspi, unsigned int instance, const stm3
 
     if (instance == QSPI_INSTANCE_QUADSPI)
     {
-	qspi->QSPI = QUADSPI;
 	qspi->interrupt = QUADSPI_IRQn;
     }
     else
@@ -321,8 +317,6 @@ bool stm32l4_qspi_disable(stm32l4_qspi_t *qspi)
 
 bool stm32l4_qspi_configure(stm32l4_qspi_t *qspi, uint32_t clock, uint32_t option)
 {
-    QUADSPI_TypeDef *QSPI = qspi->QSPI;
-
     if ((qspi->state != QSPI_STATE_READY) && (qspi->state != QSPI_STATE_BUSY))
     {
 	return false;
@@ -385,8 +379,6 @@ bool stm32l4_qspi_notify(stm32l4_qspi_t *qspi, stm32l4_qspi_callback_t callback,
 
 bool stm32l4_qspi_select(stm32l4_qspi_t *qspi) 
 {
-    QUADSPI_TypeDef *QSPI = qspi->QSPI;
-
     if ((qspi->state != QSPI_STATE_READY) && (qspi->state != QSPI_STATE_SELECTED))
     {
 	return false;
@@ -408,8 +400,6 @@ bool stm32l4_qspi_select(stm32l4_qspi_t *qspi)
 
 bool stm32l4_qspi_unselect(stm32l4_qspi_t *qspi)
 {
-    QUADSPI_TypeDef *QSPI = qspi->QSPI;
-
     if (qspi->state != QSPI_STATE_SELECTED)
     {
 	return false;
@@ -431,8 +421,6 @@ bool stm32l4_qspi_unselect(stm32l4_qspi_t *qspi)
 
 bool stm32l4_qspi_mode(stm32l4_qspi_t *qspi, uint32_t mode)
 {
-    QUADSPI_TypeDef *QSPI = qspi->QSPI;
-
     if (qspi->state != QSPI_STATE_SELECTED)
     {
 	return false;
@@ -447,8 +435,6 @@ bool stm32l4_qspi_mode(stm32l4_qspi_t *qspi, uint32_t mode)
 
 bool stm32l4_qspi_command(stm32l4_qspi_t *qspi, uint32_t command, uint32_t address)
 {
-    QUADSPI_TypeDef *QSPI = qspi->QSPI;
-
     if (qspi->state != QSPI_STATE_SELECTED)
     {
 	return false;
@@ -468,7 +454,6 @@ bool stm32l4_qspi_command(stm32l4_qspi_t *qspi, uint32_t command, uint32_t addre
 
 bool stm32l4_qspi_receive(stm32l4_qspi_t *qspi, uint32_t command, uint32_t address, uint8_t *rx_data, unsigned int rx_count, uint32_t control)
 {
-    QUADSPI_TypeDef *QSPI = qspi->QSPI;
     uint32_t quadspi_cr, quadspi_sr, dma_count, dma_option;
     uint8_t *rx_data_e;
 
@@ -510,7 +495,7 @@ bool stm32l4_qspi_receive(stm32l4_qspi_t *qspi, uint32_t command, uint32_t addre
 		{
 		    while (rx_data != rx_data_e)
 		    {
-			stm32l4_qspi_read32(QSPI, rx_data);
+			stm32l4_qspi_read32(rx_data);
 			rx_data += 4;
 		    }
 
@@ -519,7 +504,7 @@ bool stm32l4_qspi_receive(stm32l4_qspi_t *qspi, uint32_t command, uint32_t addre
 
 		if (quadspi_sr & QUADSPI_SR_FTF)
 		{
-		    stm32l4_qspi_read32(QSPI, rx_data);
+		    stm32l4_qspi_read32(rx_data);
 		    rx_data += 4;
 		}
 	    }
@@ -534,7 +519,7 @@ bool stm32l4_qspi_receive(stm32l4_qspi_t *qspi, uint32_t command, uint32_t addre
 		{
 		    while (rx_data != rx_data_e)
 		    {
-			stm32l4_qspi_read8(QSPI, rx_data);
+			stm32l4_qspi_read8(rx_data);
 			rx_data += 1;
 		    }
 
@@ -543,7 +528,7 @@ bool stm32l4_qspi_receive(stm32l4_qspi_t *qspi, uint32_t command, uint32_t addre
 
 		if (quadspi_sr & QUADSPI_SR_FTF)
 		{
-		    stm32l4_qspi_read8(QSPI, rx_data);
+		    stm32l4_qspi_read8(rx_data);
 		    rx_data += 1;
 		}
 	    }
@@ -606,7 +591,6 @@ bool stm32l4_qspi_receive(stm32l4_qspi_t *qspi, uint32_t command, uint32_t addre
 
 bool stm32l4_qspi_transmit(stm32l4_qspi_t *qspi, uint32_t command, uint32_t address, const uint8_t *tx_data, unsigned int tx_count, uint32_t control)
 {
-    QUADSPI_TypeDef *QSPI = qspi->QSPI;
     const uint8_t *tx_data_e;
     uint32_t quadspi_cr, dma_count, dma_option;
 
@@ -644,7 +628,7 @@ bool stm32l4_qspi_transmit(stm32l4_qspi_t *qspi, uint32_t command, uint32_t addr
 	    {
 		while (!(QUADSPI->SR & QUADSPI_SR_FTF)) { };
 		
-		stm32l4_qspi_write32(QSPI, tx_data);
+		stm32l4_qspi_write32(tx_data);
 		tx_data += 4;
 	    }
 	}
@@ -654,7 +638,7 @@ bool stm32l4_qspi_transmit(stm32l4_qspi_t *qspi, uint32_t command, uint32_t addr
 	    {
 		while (!(QUADSPI->SR & QUADSPI_SR_FTF)) { };
 		
-		stm32l4_qspi_write8(QSPI, tx_data);
+		stm32l4_qspi_write8(tx_data);
 		tx_data += 1;
 	    }
 	}
@@ -718,7 +702,6 @@ bool stm32l4_qspi_transmit(stm32l4_qspi_t *qspi, uint32_t command, uint32_t addr
 
 bool stm32l4_qspi_wait(stm32l4_qspi_t *qspi, uint32_t command, uint32_t address, uint8_t *rx_data, unsigned int rx_count, uint32_t mask, uint32_t match, uint32_t control)
 {
-    QUADSPI_TypeDef *QSPI = qspi->QSPI;
     uint8_t *rx_data_e;
 
     if (qspi->state != QSPI_STATE_SELECTED)
@@ -751,7 +734,7 @@ bool stm32l4_qspi_wait(stm32l4_qspi_t *qspi, uint32_t command, uint32_t address,
 
 	while (rx_data != rx_data_e)
 	{
-	    stm32l4_qspi_read8(QSPI, rx_data);
+	    stm32l4_qspi_read8(rx_data);
 	    rx_data++;
 	}
     }

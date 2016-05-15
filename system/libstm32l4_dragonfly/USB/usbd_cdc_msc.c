@@ -107,7 +107,7 @@ static const uint8_t  *USBD_CDC_MSC_GetOtherSpeedCfgDesc (uint16_t *length);
 static const uint8_t  *USBD_CDC_MSC_GetDeviceQualifierDescriptor (uint16_t *length);
 
 #if (USBD_SUPPORT_USER_STRING == 1)
-static const uint8_t  *USBD_CDC_MSC_GetUsrStrDescriptor (USBD_HandleTypeDef *pdev ,uint8_t index,  uint16_t *length);   
+extern const uint8_t  *USBD_CDC_MSC_GetUsrStrDescriptor (USBD_HandleTypeDef *pdev ,uint8_t index,  uint16_t *length);   
 #endif  
 
 /* USB Standard Device Descriptor */

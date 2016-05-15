@@ -24,10 +24,10 @@
  * before the start of the pulse. */
 uint32_t pulseIn(uint32_t pin, uint32_t state, uint32_t timeout)
 {
-  if ( g_APinDescription[pin].GPIO == NULL )
-  {
-    return ;
-  }
+    if (g_APinDescription[pin].GPIO == NULL)
+    {
+	return 0;
+    }
 
   // cache the port and bit of the pin in order to speed up the
   // pulse width measuring loop and achieve finer resolution.  calling

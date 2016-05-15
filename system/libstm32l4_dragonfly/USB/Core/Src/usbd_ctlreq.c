@@ -97,7 +97,7 @@ static void USBD_SetFeature(USBD_HandleTypeDef *pdev ,
 static void USBD_ClrFeature(USBD_HandleTypeDef *pdev , 
                             USBD_SetupReqTypedef *req);
 
-static uint8_t USBD_GetLen(uint8_t *buf);
+static uint8_t USBD_GetLen(const uint8_t *buf);
 
 /**
   * @}
@@ -332,7 +332,7 @@ static void USBD_GetDescriptor(USBD_HandleTypeDef *pdev ,
                                USBD_SetupReqTypedef *req)
 {
   uint16_t len;
-  uint8_t *pbuf;
+  const uint8_t *pbuf;
   
     
   switch (req->wValue >> 8)
@@ -349,13 +349,11 @@ static void USBD_GetDescriptor(USBD_HandleTypeDef *pdev ,
   case USB_DESC_TYPE_CONFIGURATION:     
     if(pdev->dev_speed == USBD_SPEED_HIGH )   
     {
-      pbuf   = (uint8_t *)pdev->pClass->GetHSConfigDescriptor(&len);
-      pbuf[1] = USB_DESC_TYPE_CONFIGURATION;
+      pbuf = pdev->pClass->GetHSConfigDescriptor(&len);
     }
     else
     {
-      pbuf   = (uint8_t *)pdev->pClass->GetFSConfigDescriptor(&len);
-      pbuf[1] = USB_DESC_TYPE_CONFIGURATION;
+      pbuf = pdev->pClass->GetFSConfigDescriptor(&len);
     }
     break;
     
@@ -400,7 +398,7 @@ static void USBD_GetDescriptor(USBD_HandleTypeDef *pdev ,
 
     if(pdev->dev_speed == USBD_SPEED_HIGH  )   
     {
-      pbuf   = (uint8_t *)pdev->pClass->GetDeviceQualifierDescriptor(&len);
+      pbuf = pdev->pClass->GetDeviceQualifierDescriptor(&len);
       break;
     }
     else
@@ -412,8 +410,7 @@ static void USBD_GetDescriptor(USBD_HandleTypeDef *pdev ,
   case USB_DESC_TYPE_OTHER_SPEED_CONFIGURATION:
     if(pdev->dev_speed == USBD_SPEED_HIGH  )   
     {
-      pbuf   = (uint8_t *)pdev->pClass->GetOtherSpeedConfigDescriptor(&len);
-      pbuf[1] = USB_DESC_TYPE_OTHER_SPEED_CONFIGURATION;
+      pbuf = (uint8_t *)pdev->pClass->GetOtherSpeedConfigDescriptor(&len);
       break; 
     }
     else
@@ -433,7 +430,7 @@ static void USBD_GetDescriptor(USBD_HandleTypeDef *pdev ,
     len = MIN(len , req->wLength);
     
     USBD_CtlSendData (pdev, 
-                      pbuf,
+                      (uint8_t*)pbuf,
                       len);
   }
   
@@ -729,7 +726,7 @@ void USBD_CtlError( USBD_HandleTypeDef *pdev ,
   * @param  len : descriptor length
   * @retval None
   */
-void USBD_GetString(uint8_t *desc, uint8_t *unicode, uint16_t *len)
+void USBD_GetString(const uint8_t *desc, uint8_t *unicode, uint16_t *len)
 {
   uint8_t idx = 0;
   
@@ -753,7 +750,7 @@ void USBD_GetString(uint8_t *desc, uint8_t *unicode, uint16_t *len)
    * @param  buf : pointer to the ascii string buffer
   * @retval string length
   */
-static uint8_t USBD_GetLen(uint8_t *buf)
+static uint8_t USBD_GetLen(const uint8_t *buf)
 {
     uint8_t  len = 0;
 

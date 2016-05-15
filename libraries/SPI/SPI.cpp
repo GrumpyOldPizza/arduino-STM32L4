@@ -311,6 +311,8 @@ uint16_t SPIClass::_exchange16Select(struct _stm32l4_spi_t *spi, uint16_t data)
   spi_class->_exchangeRoutine = stm32l4_spi_exchange;
   spi_class->_exchange8Routine = stm32l4_spi_exchange8;
   spi_class->_exchange16Routine = stm32l4_spi_exchange16;
+
+  stm32l4_spi_select(spi, settings._control);
   
   return (*spi_class->_exchange16Routine)(spi, data);
 }

@@ -1007,7 +1007,7 @@ static void dosfs_sflash_ftl_reclaim(dosfs_sflash_t *sflash, uint32_t victim_off
 
 #if (DOSFS_CONFIG_SFLASH_DEBUG == 1)
 	assert(n == ((sflash->victim_score[victim_sector] & DOSFS_SFLASH_VICTIM_DELETED_MASK) >> DOSFS_SFLASH_VICTIM_DELETED_SHIFT));
-#endif /* DOSFS_CONFIG_SFLASH_DEBUG == 1 */)
+#endif /* DOSFS_CONFIG_SFLASH_DEBUG == 1 */
     }
 
     victim_erase_count++;
@@ -1285,7 +1285,7 @@ static void dosfs_sflash_ftl_check(dosfs_sflash_t *sflash)
 {
     uint32_t offset, index, sector, address, info_logical, cache_logical;
     uint32_t *cache, temp[512 / 4], erase_info[4];
-    uint32_t read_logical, read_offset, xlate_segment, xlate_index;
+    uint32_t read_logical, xlate_segment, xlate_index;
     uint16_t *xlate_cache, *xlate2_cache;
 
     return;
@@ -2389,7 +2389,6 @@ static void dosfs_sflash_ftl_discard(dosfs_sflash_t *sflash, uint32_t address)
 
 static int dosfs_sflash_release(void *context)
 {
-    dosfs_sflash_t *sflash = (dosfs_sflash_t*)context;
     int status = F_NO_ERROR;
 
 #if (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1)

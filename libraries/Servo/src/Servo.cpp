@@ -42,8 +42,6 @@ static void servo_event_callback(void *context, uint32_t events)
 
 Servo::Servo()
 {
-    uint8_t servoIndex;
-
     if (stm32l4_servo.state == SERVO_STATE_NONE) {
 	stm32l4_servo_create(&stm32l4_servo, TIMER_INSTANCE_TIM15, STM32L4_SERVO_IRQ_PRIORITY);
     }

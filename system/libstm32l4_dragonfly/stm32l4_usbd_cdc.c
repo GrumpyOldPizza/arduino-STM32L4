@@ -55,8 +55,6 @@ static stm32l4_usbd_cdc_device_t stm32l4_usbd_cdc_device;
 
 static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
 {
-    //fprintf(stderr, "CONNECT\r\n");
-
     stm32l4_usbd_cdc_device.USBD = USBD;
     stm32l4_usbd_cdc_device.tx_busy = 0;
     stm32l4_usbd_cdc_device.connect = 0;;
@@ -73,8 +71,6 @@ static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
 
 static void stm32l4_usbd_cdc_deinit(void)
 {
-    //fprintf(stderr, "DISCONNECT\r\n");
-
     stm32l4_usbd_cdc_device.USBD = NULL;
     stm32l4_usbd_cdc_device.tx_busy = 0;
 
@@ -174,7 +170,7 @@ static void stm32l4_usbd_cdc_data_transmit(void)
     }
 }
 
-USBD_CDC_ItfTypeDef stm32l4_usbd_cdc_interface = {
+const USBD_CDC_ItfTypeDef stm32l4_usbd_cdc_interface = {
     stm32l4_usbd_cdc_init,
     stm32l4_usbd_cdc_deinit,
     stm32l4_usbd_cdc_control,

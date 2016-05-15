@@ -51,8 +51,6 @@ void attachInterrupt(uint32_t pin, voidFuncPtr callback, uint32_t mode)
  */
 void detachInterrupt(uint32_t pin)
 {
-  unsigned long instance;
-  
   if (!(g_APinDescription[pin].attr & PIN_ATTR_EXTI))
     return;
 

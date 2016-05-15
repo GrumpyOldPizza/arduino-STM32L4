@@ -98,13 +98,13 @@ uint8_t  USBD_MSC_DataIn (USBD_HandleTypeDef *pdev,
 uint8_t  USBD_MSC_DataOut (USBD_HandleTypeDef *pdev, 
                                uint8_t epnum);
 
-uint8_t  *USBD_MSC_GetHSCfgDesc (uint16_t *length);
+const uint8_t  *USBD_MSC_GetHSCfgDesc (uint16_t *length);
 
-uint8_t  *USBD_MSC_GetFSCfgDesc (uint16_t *length);
+const uint8_t  *USBD_MSC_GetFSCfgDesc (uint16_t *length);
 
-uint8_t  *USBD_MSC_GetOtherSpeedCfgDesc (uint16_t *length);
+const uint8_t  *USBD_MSC_GetOtherSpeedCfgDesc (uint16_t *length);
 
-uint8_t  *USBD_MSC_GetDeviceQualifierDescriptor (uint16_t *length);
+const uint8_t  *USBD_MSC_GetDeviceQualifierDescriptor (uint16_t *length);
 
 
 /**
@@ -117,7 +117,7 @@ uint8_t  *USBD_MSC_GetDeviceQualifierDescriptor (uint16_t *length);
   */ 
 
 
-USBD_ClassTypeDef  USBD_MSC = 
+const USBD_ClassTypeDef  USBD_MSC = 
 {
   USBD_MSC_Init,
   USBD_MSC_DeInit,
@@ -137,7 +137,7 @@ USBD_ClassTypeDef  USBD_MSC =
 
 /* USB Mass storage device Configuration Descriptor */
 /*   All Descriptors (Configuration, Interface, Endpoint, Class, Vendor */
-__ALIGN_BEGIN uint8_t USBD_MSC_CfgHSDesc[USB_MSC_CONFIG_DESC_SIZ]  __ALIGN_END =
+__ALIGN_BEGIN const uint8_t USBD_MSC_CfgHSDesc[USB_MSC_CONFIG_DESC_SIZ]  __ALIGN_END =
 {
   
   0x09,   /* bLength: Configuation Descriptor size */
@@ -181,7 +181,7 @@ __ALIGN_BEGIN uint8_t USBD_MSC_CfgHSDesc[USB_MSC_CONFIG_DESC_SIZ]  __ALIGN_END =
 
 /* USB Mass storage device Configuration Descriptor */
 /*   All Descriptors (Configuration, Interface, Endpoint, Class, Vendor */
-uint8_t USBD_MSC_CfgFSDesc[USB_MSC_CONFIG_DESC_SIZ]  __ALIGN_END =
+const uint8_t USBD_MSC_CfgFSDesc[USB_MSC_CONFIG_DESC_SIZ]  __ALIGN_END =
 {
   
   0x09,   /* bLength: Configuation Descriptor size */
@@ -223,7 +223,7 @@ uint8_t USBD_MSC_CfgFSDesc[USB_MSC_CONFIG_DESC_SIZ]  __ALIGN_END =
   0x00     /*Polling interval in milliseconds*/
 };
 
-__ALIGN_BEGIN uint8_t USBD_MSC_OtherSpeedCfgDesc[USB_MSC_CONFIG_DESC_SIZ]   __ALIGN_END  =
+__ALIGN_BEGIN const uint8_t USBD_MSC_OtherSpeedCfgDesc[USB_MSC_CONFIG_DESC_SIZ]   __ALIGN_END  =
 {
   
   0x09,   /* bLength: Configuation Descriptor size */
@@ -266,7 +266,7 @@ __ALIGN_BEGIN uint8_t USBD_MSC_OtherSpeedCfgDesc[USB_MSC_CONFIG_DESC_SIZ]   __AL
 };
 
 /* USB Standard Device Descriptor */
-__ALIGN_BEGIN  uint8_t USBD_MSC_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC]  __ALIGN_END =
+__ALIGN_BEGIN const uint8_t USBD_MSC_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC]  __ALIGN_END =
 {
   USB_LEN_DEV_QUALIFIER_DESC,
   USB_DESC_TYPE_DEVICE_QUALIFIER,
@@ -536,7 +536,7 @@ uint8_t  USBD_MSC_DataOut (USBD_HandleTypeDef *pdev,
 * @param  length : pointer data length
 * @retval pointer to descriptor buffer
 */
-uint8_t  *USBD_MSC_GetHSCfgDesc (uint16_t *length)
+const uint8_t  *USBD_MSC_GetHSCfgDesc (uint16_t *length)
 {
   *length = sizeof (USBD_MSC_CfgHSDesc);
   return USBD_MSC_CfgHSDesc;
@@ -548,7 +548,7 @@ uint8_t  *USBD_MSC_GetHSCfgDesc (uint16_t *length)
 * @param  length : pointer data length
 * @retval pointer to descriptor buffer
 */
-uint8_t  *USBD_MSC_GetFSCfgDesc (uint16_t *length)
+const uint8_t  *USBD_MSC_GetFSCfgDesc (uint16_t *length)
 {
   *length = sizeof (USBD_MSC_CfgFSDesc);
   return USBD_MSC_CfgFSDesc;
@@ -560,7 +560,7 @@ uint8_t  *USBD_MSC_GetFSCfgDesc (uint16_t *length)
 * @param  length : pointer data length
 * @retval pointer to descriptor buffer
 */
-uint8_t  *USBD_MSC_GetOtherSpeedCfgDesc (uint16_t *length)
+const uint8_t  *USBD_MSC_GetOtherSpeedCfgDesc (uint16_t *length)
 {
   *length = sizeof (USBD_MSC_OtherSpeedCfgDesc);
   return USBD_MSC_OtherSpeedCfgDesc;
@@ -571,7 +571,7 @@ uint8_t  *USBD_MSC_GetOtherSpeedCfgDesc (uint16_t *length)
 * @param  length : pointer data length
 * @retval pointer to descriptor buffer
 */
-uint8_t  *USBD_MSC_GetDeviceQualifierDescriptor (uint16_t *length)
+const uint8_t  *USBD_MSC_GetDeviceQualifierDescriptor (uint16_t *length)
 {
   *length = sizeof (USBD_MSC_DeviceQualifierDesc);
   return USBD_MSC_DeviceQualifierDesc;
@@ -583,7 +583,7 @@ uint8_t  *USBD_MSC_GetDeviceQualifierDescriptor (uint16_t *length)
 * @retval status
 */
 uint8_t  USBD_MSC_RegisterStorage  (USBD_HandleTypeDef   *pdev, 
-                                    USBD_StorageTypeDef *fops)
+				    const USBD_StorageTypeDef *fops)
 {
   if(fops != NULL)
   {

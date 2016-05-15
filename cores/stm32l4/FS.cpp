@@ -56,8 +56,6 @@ int File::available() {
 }
 
 int File::read() {
-    int c;
-
     if (!_file)
         return -1;
 

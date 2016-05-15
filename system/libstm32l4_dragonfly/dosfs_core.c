@@ -11449,7 +11449,7 @@ int f_seek(F_FILE *file, long offset, int whence)
 		break;
 
 	    case F_SEEK_SET:
-		if ((offset < 0) || (offset > DOSFS_FILE_SIZE_MAX))
+		if (offset < 0)
 		{
 		    status = F_ERR_NOTUSEABLE;
 		}
