@@ -113,6 +113,11 @@ uint32_t analogRead(uint32_t pin)
     return mapResolution(input, 12, _readResolution);
 }
 
+void analogWriteResolution( int resolution )
+{
+    _writeResolution = resolution;
+}
+
 void analogWriteFrequency(uint32_t pin, uint32_t frequency)
 {
     uint32_t instance, carrier, modulus, divider;
