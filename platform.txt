@@ -48,7 +48,7 @@ compiler.ldflags=-mcpu={build.mcu} -mthumb -Wl,--cref -Wl,--check-sections -Wl,-
 compiler.size.cmd=arm-none-eabi-size
 compiler.define=-DARDUINO=
 compiler.platform.path={runtime.platform.path}/tools/windows/
-compiler.platform.path.macos={runtime.platform.path}/tools/macos/
+compiler.platform.path.macosx={runtime.platform.path}/tools/macosx/
 compiler.platform.path.linux={runtime.platform.path}/tools/linux/
 compiler.hex2dfu.cmd=dfu-suffix
 compiler.hex2dfu.cmd.windows=dfu-suffix.exe
@@ -106,7 +106,7 @@ recipe.size.regex=\.text\s+([0-9]+).*
 tools.stm32l4_upload.cmd=stm32l4-upload
 tools.stm32l4_upload.cmd.windows=stm32l4-upload.bat
 tools.stm32l4_upload.path={runtime.platform.path}/tools/windows
-tools.stm32l4_upload.path.macos={runtime.platform.path}/tools/macos
+tools.stm32l4_upload.path.macosx={runtime.platform.path}/tools/macosx
 tools.stm32l4_upload.path.linux={runtime.platform.path}/tools/linux
 tools.stm32l4_upload.upload.params.verbose=-v
 tools.stm32l4_upload.upload.params.quiet=
