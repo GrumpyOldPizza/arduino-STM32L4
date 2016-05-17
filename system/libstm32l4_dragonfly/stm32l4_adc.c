@@ -36,6 +36,16 @@
 #include "stm32l4_gpio.h"
 #include "stm32l4_system.h"
 
+#define ADC_SAMPLE_TIME_2_5    0
+#define ADC_SAMPLE_TIME_6_5    1
+#define ADC_SAMPLE_TIME_12_5   2
+#define ADC_SAMPLE_TIME_24_5   3
+#define ADC_SAMPLE_TIME_47_5   4
+#define ADC_SAMPLE_TIME_92_5   5
+#define ADC_SAMPLE_TIME_247_5  6
+#define ADC_SAMPLE_TIME_640_5  7
+
+
 typedef struct _stm32l4_adc_driver_t {
     stm32l4_adc_t   *instances[ADC_INSTANCE_COUNT];
 } stm32l4_adc_driver_t;
@@ -62,8 +72,6 @@ bool stm32l4_adc_create(stm32l4_adc_t *adc, unsigned int instance, unsigned int 
     adc->callback = NULL;
     adc->context = NULL;
     adc->events = 0;
-
-    armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_ADCSEL, (RCC_CCIPR_ADCSEL_0 | RCC_CCIPR_ADCSEL_1)); /* SYSCLK */
     
     stm32l4_adc_driver.instances[adc->instance] = adc;
 
@@ -90,6 +98,12 @@ bool stm32l4_adc_enable(stm32l4_adc_t *adc, uint32_t option, stm32l4_adc_callbac
     {
 	return false;
     }
+
+#if 0
+    /* Not needed as we always use HCLK/1 or HCLK/2 
+     */
+    armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_ADCSEL, (RCC_CCIPR_ADCSEL_0 | RCC_CCIPR_ADCSEL_1)); /* SYSCLK */
+#endif
 
     adc->state = ADC_STATE_BUSY;
 
@@ -127,12 +141,12 @@ bool stm32l4_adc_disable(stm32l4_adc_t *adc)
 
     if (adc->instance == ADC_INSTANCE_ADC1)
     {
-	armv7m_atomic_and(&ADC123_COMMON->CCR, ~(ADC_CCR_VBATEN | ADC_CCR_TSEN | ADC_CCR_VREFEN));
-    }
+        armv7m_atomic_and(&ADC123_COMMON->CCR, ~(ADC_CCR_VBATEN | ADC_CCR_VREFEN));
 
-    if (!stm32l4_adc_driver.instances[ADC_INSTANCE_ADC2] && !stm32l4_adc_driver.instances[ADC_INSTANCE_ADC3])
-    {
-	stm32l4_system_periph_disable(SYSTEM_PERIPH_ADC);
+	if (!stm32l4_adc_driver.instances[ADC_INSTANCE_ADC2] && !stm32l4_adc_driver.instances[ADC_INSTANCE_ADC3])
+	{
+	    stm32l4_system_periph_disable(SYSTEM_PERIPH_ADC);
+	}
     }
 
     adc->events = 0;
@@ -157,12 +171,19 @@ bool stm32l4_adc_configure(stm32l4_adc_t *adc, uint32_t option)
     {
 	stm32l4_system_periph_enable(SYSTEM_PERIPH_ADC);
 
-	if (adc->instance == ADC_INSTANCE_ADC1)
+	if ((stm32l4_system_hclk() <= 48000000) && (stm32l4_system_hclk() == stm32l4_system_sysclk()))
 	{
-	    armv7m_atomic_or(&ADC123_COMMON->CCR, (ADC_CCR_VBATEN | ADC_CCR_TSEN | ADC_CCR_VREFEN));
+	    armv7m_atomic_modify(&ADC123_COMMON->CCR, ADC_CCR_CKMODE, ADC_CCR_CKMODE_0); /* HCLK / 1 */
+	}
+	else
+	{
+	    armv7m_atomic_modify(&ADC123_COMMON->CCR, ADC_CCR_CKMODE, ADC_CCR_CKMODE_1); /* HCLK / 2 */
 	}
 
-	/* The shared clock is left to be async SYSCLK ... */
+	if (adc->instance == ADC_INSTANCE_ADC1)
+	{
+	    armv7m_atomic_or(&ADC123_COMMON->CCR, (ADC_CCR_VBATEN | ADC_CCR_VREFEN));
+	}
 
 	ADCx->CR &= ~ADC_CR_DEEPPWD;
 
@@ -170,16 +191,17 @@ bool stm32l4_adc_configure(stm32l4_adc_t *adc, uint32_t option)
 
 	armv7m_clock_spin(20000);
 
-
 	/* Finally turn on the ADC */
 
 	ADCx->ISR = ADC_ISR_ADRDY;
 
-	ADCx->CR |= ADC_CR_ADEN;
-
-	while (!(ADCx->ISR & ADC_ISR_ADRDY))
+	do
 	{
+	    ADCx->CR |= ADC_CR_ADEN;
 	}
+	while (!(ADCx->ISR & ADC_ISR_ADRDY));
+
+	ADCx->CFGR = ADC_CFGR_OVRMOD | ADC_CFGR_JQDIS;
     }
 
     return true;
@@ -223,21 +245,23 @@ bool stm32l4_adc_calibrate(stm32l4_adc_t *adc)
     while (ADCx->CR & ADC_CR_ADCAL)
     {
     }
-    
+
     /* Differential Input Calibration */
     ADCx->CR |= (ADC_CR_ADCALDIF | ADC_CR_ADCAL);
 
     while (ADCx->CR & ADC_CR_ADCAL)
     {
     }
-    
+
+    armv7m_clock_spin(100000);
+
     ADCx->ISR = ADC_ISR_ADRDY;
-    
-    ADCx->CR |= ADC_CR_ADEN;
-    
-    while (!(ADCx->ISR & ADC_ISR_ADRDY))
+
+    do
     {
+	ADCx->CR |= ADC_CR_ADEN;
     }
+    while (!(ADCx->ISR & ADC_ISR_ADRDY));
 
     return true;
 }
@@ -245,48 +269,100 @@ bool stm32l4_adc_calibrate(stm32l4_adc_t *adc)
 uint32_t stm32l4_adc_convert(stm32l4_adc_t *adc, unsigned int channel)
 {
     ADC_TypeDef *ADCx = adc->ADCx;
+    uint32_t convert, adc_smp;
 
     if (adc->state != ADC_STATE_READY)
     {
 	return false;
     }
 
-#if 0
-    ADCx->SQR1 = (channel << 6);
-    ADCx->SMPR1 = ADC_SMPR1_SMP0_2;  /* 47.5 */
-
-    ADCx->ISR = ADC_ISR_EOC;
-
-    ADCx->CR |= ADC_CR_ADSTART;
-
-    while (!(ADCx->ISR & ADC_ISR_EOC))
-    {
-    }
-
-    ADCx->ISR = ADC_ISR_EOC;
-
-    ADCx->CR |= ADC_CR_ADSTART;
-
-    while (!(ADCx->ISR & ADC_ISR_EOC))
-    {
-    }
-#endif
-
     /* Silicon ERRATA 2.4.4. Wrong ADC conversion results when delay between
      * calibration and first conversion or between 2 consecutive conversions is too long. 
-     *
-     * The WAR is to do 2 back to back conversions that cannot be interrupted.
      */
-    ADCx->SQR1 = (channel << 12) | (channel << 6) | 1;
-    ADCx->SMPR1 = ADC_SMPR1_SMP0_2 | ADC_SMPR1_SMP1_2;  /* 47.5 */
 
-    ADCx->ISR = ADC_ISR_EOC;
+    if ((adc->instance == ADC_INSTANCE_ADC1) &&
+	((channel == ADC_CHANNEL_ADC1_TS) || (channel == ADC_CHANNEL_ADC1_VBAT) || (channel == ADC_CHANNEL_ADC1_VREFINT)))
+    {
+	if (channel == ADC_CHANNEL_ADC1_TS)
+	{
+	    ADCx->CR |= ADC_CR_ADDIS;
+
+	    while (ADCx->CR & ADC_CR_ADEN)
+	    {
+	    }
+	    
+  	    armv7m_atomic_or(&ADC123_COMMON->CCR, ADC_CCR_TSEN);
+
+	    ADCx->ISR = ADC_ISR_ADRDY;
+
+	    do
+	    {
+		ADCx->CR |= ADC_CR_ADEN;
+	    }
+	    while (!(ADCx->ISR & ADC_ISR_ADRDY));
+
+	    armv7m_clock_spin(120000);
+
+	    /* min time is 5us */
+	    adc_smp = ADC_SAMPLE_TIME_247_5;
+	}
+	else if (channel == ADC_CHANNEL_ADC1_VBAT)
+	{
+	    /* min time is 12us */
+	    adc_smp = ADC_SAMPLE_TIME_640_5;
+	}
+	else
+	{
+	  adc_smp = ADC_SAMPLE_TIME_47_5;
+	}
+    }
+    else
+    {
+	adc_smp = ADC_SAMPLE_TIME_47_5;
+    }
+
+    ADCx->SQR1 = (channel << 6);
+    ADCx->SMPR1 = (channel < 10) ? (adc_smp << (channel * 3)) : 0;
+    ADCx->SMPR2 = (channel >= 10) ? (adc_smp << ((channel * 3) - 30)) : 0;
 
     ADCx->CR |= ADC_CR_ADSTART;
-
+    
     while (!(ADCx->ISR & ADC_ISR_EOC))
     {
     }
+    
+    convert = ADCx->DR & ADC_DR_RDATA;
+	
+    ADCx->ISR = ADC_ISR_EOC;
+    
+    ADCx->CR |= ADC_CR_ADSTART;
+    
+    while (!(ADCx->ISR & ADC_ISR_EOC))
+    {
+    }
+    
+    convert = ADCx->DR & ADC_DR_RDATA;
 
-    return ADCx->DR & ADC_DR_RDATA;
+    ADCx->ISR = ADC_ISR_EOC;
+
+    if ((adc->instance == ADC_INSTANCE_ADC1) && (channel == ADC_CHANNEL_ADC1_TS))
+    {
+	ADCx->CR |= ADC_CR_ADDIS;
+
+	while (ADCx->CR & ADC_CR_ADEN)
+	{
+	}
+	
+	armv7m_atomic_and(&ADC123_COMMON->CCR, ~ADC_CCR_TSEN);
+
+	ADCx->ISR = ADC_ISR_ADRDY;
+
+	do
+	{
+	    ADCx->CR |= ADC_CR_ADEN;
+	}
+	while (!(ADCx->ISR & ADC_ISR_ADRDY));
+    }
+
+    return convert;
 }

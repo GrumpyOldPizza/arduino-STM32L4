@@ -489,6 +489,10 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	    stm32l4_system_device.lseclk = ~0ul;
 	}
 
+	/* Enable VBAT charging.
+	 */
+	PWR->CR4 |= PWR_CR4_VBE;
+
 	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
     }
 

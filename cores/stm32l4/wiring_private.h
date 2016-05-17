@@ -96,6 +96,7 @@ extern "C" {
  * 
  ************************************************************************/
 
+extern stm32l4_adc_t stm32l4_adc;
 extern stm32l4_exti_t stm32l4_exti;
 
 #ifdef __cplusplus

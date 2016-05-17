@@ -25,6 +25,7 @@ SRCS = \
 	Print.cpp \
 	Reset.cpp \
 	RingBuffer.cpp \
+	STM32.cpp \
 	Stream.cpp \
 	Tone.cpp \
 	Uart.cpp \
@@ -53,6 +54,7 @@ OBJS = \
 	Print.o \
 	Reset.o \
 	RingBuffer.o \
+	STM32.o \
 	Stream.o \
 	Tone.o \
 	Uart.o \

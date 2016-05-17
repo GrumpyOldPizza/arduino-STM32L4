@@ -23,7 +23,6 @@
 extern "C" {
 #endif
 
-static stm32l4_adc_t stm32l4_adc;
 static stm32l4_dac_t stm32l4_dac;
 static stm32l4_timer_t stm32l4_pwm[PWM_INSTANCE_COUNT];
 
@@ -112,11 +111,6 @@ uint32_t analogRead(uint32_t pin)
     stm32l4_adc_disable(&stm32l4_adc);
 
     return mapResolution(input, 12, _readResolution);
-}
-
-void analogWriteResolution( int resolution )
-{
-    _writeResolution = resolution;
 }
 
 void analogWriteFrequency(uint32_t pin, uint32_t frequency)

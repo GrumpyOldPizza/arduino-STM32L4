@@ -74,6 +74,7 @@ void loop( void ) ;
   #include "Tone.h"
   #include "WMath.h"
   #include "HardwareSerial.h"
+  #include "STM32.h"
 #endif
 #ifdef __cplusplus
   #include "CDC.h"

@@ -24,8 +24,8 @@
 extern "C" {
 #endif
 
+stm32l4_adc_t stm32l4_adc;
 stm32l4_exti_t stm32l4_exti;
-
 
 void HardFault_Handler(void)
 {
