@@ -1536,7 +1536,7 @@ static void dosfs_sflash_ftl_check(dosfs_sflash_t *sflash)
  * the entries into the tables ...
  */
 
-static void dosfs_sflash_ftl_collect(dosfs_sflash_t *sflash, const uint32_t *cache, uint32_t offset, uint32_t sector, uint32_t *p_data_written, uint32_t *p_data_deleted)
+static bool dosfs_sflash_ftl_collect(dosfs_sflash_t *sflash, const uint32_t *cache, uint32_t offset, uint32_t sector, uint32_t *p_data_written, uint32_t *p_data_deleted)
 {
     unsigned int index, free_total;
     uint32_t info_logical;
@@ -1563,7 +1563,7 @@ static void dosfs_sflash_ftl_collect(dosfs_sflash_t *sflash, const uint32_t *cac
 	    case DOSFS_SFLASH_INFO_TYPE_VICTIM:
 	    case DOSFS_SFLASH_INFO_TYPE_ERASE:
 	    case DOSFS_SFLASH_INFO_TYPE_RECLAIM:
-		break;
+		return false;
 
 	    case DOSFS_SFLASH_INFO_TYPE_DELETED:
 		sflash->victim_score[sector] += DOSFS_SFLASH_VICTIM_DELETED_INCREMENT;
@@ -1596,10 +1596,20 @@ static void dosfs_sflash_ftl_collect(dosfs_sflash_t *sflash, const uint32_t *cac
 		break;
 
 	    case DOSFS_SFLASH_INFO_TYPE_XLATE:
+		if ((cache[index] & DOSFS_SFLASH_INFO_DATA_MASK) >= DOSFS_SFLASH_XLATE_COUNT)
+		{
+		    return false;
+		}
+
 		sflash->xlate_table[cache[index] & DOSFS_SFLASH_INFO_DATA_MASK] = info_logical;
 		break;
 
 	    case DOSFS_SFLASH_INFO_TYPE_XLATE_SECONDARY:
+		if ((cache[index] & DOSFS_SFLASH_INFO_DATA_MASK) >= DOSFS_SFLASH_XLATE_COUNT)
+		{
+		    return false;
+		}
+
 		sflash->xlate2_table[cache[index] & DOSFS_SFLASH_INFO_DATA_MASK] = info_logical;
 		break;
 
@@ -1619,6 +1629,8 @@ static void dosfs_sflash_ftl_collect(dosfs_sflash_t *sflash, const uint32_t *cac
     }
 
     sflash->alloc_free += free_total;
+
+    return true;
 }
 
 static bool dosfs_sflash_ftl_mount(dosfs_sflash_t *sflash)
@@ -1725,7 +1737,10 @@ static bool dosfs_sflash_ftl_mount(dosfs_sflash_t *sflash)
 		    sflash->victim_sector = (cache[0] & DOSFS_SFLASH_INFO_DATA_MASK);
 		}
 
-		dosfs_sflash_ftl_collect(sflash, cache, offset, (cache[0] & DOSFS_SFLASH_INFO_DATA_MASK), &data_written[0], &data_deleted[0]);
+		if (!dosfs_sflash_ftl_collect(sflash, cache, offset, (cache[0] & DOSFS_SFLASH_INFO_DATA_MASK), &data_written[0], &data_deleted[0]))
+		{
+		    return false;
+		}
 		break;
 
 	    case DOSFS_SFLASH_INFO_TYPE_RECLAIM:
@@ -1855,7 +1870,10 @@ static bool dosfs_sflash_ftl_mount(dosfs_sflash_t *sflash)
 
 	    dosfs_sflash_nor_write(sflash, reclaim_offset, 4, (const uint8_t*)cache); /* RECLAIM -> ERASE */
 
-	    dosfs_sflash_ftl_collect(sflash, cache, reclaim_offset, (cache[0] & DOSFS_SFLASH_INFO_DATA_MASK), &data_written[0], &data_deleted[0]);
+	    if (!dosfs_sflash_ftl_collect(sflash, cache, reclaim_offset, (cache[0] & DOSFS_SFLASH_INFO_DATA_MASK), &data_written[0], &data_deleted[0]))
+	    {
+		return false;
+	    }
 	}
     }
 
