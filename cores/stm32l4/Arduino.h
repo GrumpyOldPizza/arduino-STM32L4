@@ -118,6 +118,8 @@ void loop( void ) ;
 
 #define bit(b) (1UL << (b))
 
+#define _BV(bit) (1 << (bit))
+
 #if (ARDUINO_SAMD_VARIANT_COMPLIANCE >= 10606)
 // Interrupts
 #define digitalPinToInterrupt(P)   ( P )
