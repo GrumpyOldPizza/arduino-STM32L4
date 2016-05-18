@@ -166,4 +166,14 @@ class SPIClass {
   extern SPIClass SPI2;
 #endif
 
+// For compatibility with sketches designed for AVR @ 16 MHz
+// New programs should use SPI.beginTransaction to set the SPI clock
+#define SPI_CLOCK_DIV2   (F_CPU / 8000000)
+#define SPI_CLOCK_DIV4   (F_CPU / 4000000)
+#define SPI_CLOCK_DIV8   (F_CPU / 2000000)
+#define SPI_CLOCK_DIV16  (F_CPU / 1000000)
+#define SPI_CLOCK_DIV32  (F_CPU / 500000)
+#define SPI_CLOCK_DIV64  (F_CPU / 250000)
+#define SPI_CLOCK_DIV128 (F_CPU / 125000)
+
 #endif
