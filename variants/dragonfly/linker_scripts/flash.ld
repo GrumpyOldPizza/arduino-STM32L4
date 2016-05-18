@@ -160,8 +160,8 @@ SECTIONS
    .data2 :
    {
      __data2_start__ = .;
-     __data2_end__ = .;
        . = ALIGN(8);
+     __data2_end__ = .;
    } > SRAM2 AT >FLASH
 
    .data :
@@ -169,32 +169,34 @@ SECTIONS
      __data_start__ = .;
        *(vtable)
        *(.data* .gnu.linkonce.d.*)
-     __data_end__ = .;
        . = ALIGN(8);
+     __data_end__ = .;
    } > SRAM1 AT >FLASH
 
-   .bss2  :
+   .bss2 (NOLOAD) :
    {
      __bss2_start__ = .;
-     __bss2_end__ = .;
+       *(.bss2*)
        . = ALIGN(8);
+     __bss2_end__ = .;
    } > SRAM2
 
-   .bss :
+   .bss (NOLOAD) :
    {
      __bss_start__ = .;
        *(.bss* .gnu.linkonce.b.*)
        *(COMMON)
-     __bss_end__ = .;
        . = ALIGN(8);
+     __bss_end__ = .;
    } > SRAM1
 
-   .noinit2 :
+   .noinit2 (NOLOAD) :
    {
+       *(.noinit2*)
        . = ALIGN(8);
    } > SRAM2
 
-   .noinit :
+   .noinit (NOLOAD) :
    {
        *(.noinit*)
        . = ALIGN(8);
