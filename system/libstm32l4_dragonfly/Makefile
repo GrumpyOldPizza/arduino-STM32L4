@@ -33,6 +33,7 @@ SRCS = \
 	armv7m_core.c \
 	armv7m_orchid.c \
 	armv7m_pendsv.c \
+	armv7m_rtlib.S \
 	armv7m_svcall.c \
 	armv7m_systick.c \
 	armv7m_timer.c \
@@ -77,6 +78,7 @@ OBJS = \
 	armv7m_core.o \
 	armv7m_orchid.o \
 	armv7m_pendsv.o \
+	armv7m_rtlib.o \
 	armv7m_svcall.o \
 	armv7m_systick.o \
 	armv7m_timer.o \
