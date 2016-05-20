@@ -21,6 +21,7 @@ SRCS = \
 	../../variants/dragonfly/variant.cpp \
 	CDC.cpp \
 	FS.cpp \
+	HardwareSerial.cpp \
 	IPAddress.cpp \
 	Print.cpp \
 	Reset.cpp \
@@ -50,6 +51,7 @@ OBJS = \
 	../../variants/dragonfly/variant.o \
 	CDC.o \
 	FS.o \
+	HardwareSerial.o \
 	IPAddress.o \
 	Print.o \
 	Reset.o \

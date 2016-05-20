@@ -32,7 +32,7 @@
 #define CDC_TX_BUFFER_MASK ((CDC_TX_BUFFER_SIZE<<1)-1)
 #define CDC_TX_INDEX_MASK  (CDC_TX_BUFFER_SIZE-1)
 
-static stm32l4_usbd_cdc_t stm32l4_usbd_cdc;
+stm32l4_usbd_cdc_t stm32l4_usbd_cdc;
 
 CDC::CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc)
 {
@@ -56,7 +56,13 @@ void CDC::begin(unsigned long baudrate)
 
 void CDC::begin(unsigned long baudrate, uint16_t config)
 {
-  stm32l4_usbd_cdc_enable(_usbd_cdc, 0, CDC::_event_callback, (void*)this, (USBD_CDC_EVENT_RECEIVE | USBD_CDC_EVENT_TRANSMIT));
+  /* If USBD_CDC has already been enabled/initialized by STDIO, just add the notify.
+   */
+  if (_usbd_cdc->state == USBD_CDC_STATE_INIT) {
+    stm32l4_usbd_cdc_enable(_usbd_cdc, 0, CDC::_event_callback, (void*)this, (USBD_CDC_EVENT_RECEIVE | USBD_CDC_EVENT_TRANSMIT));
+  } else {
+    stm32l4_usbd_cdc_notify(_usbd_cdc, CDC::_event_callback, (void*)this, (USBD_CDC_EVENT_RECEIVE | USBD_CDC_EVENT_TRANSMIT));
+  }
 }
 
 void CDC::end()
@@ -507,3 +513,5 @@ bool CDC::rts() {
 }
 
 CDC SerialUSB(&stm32l4_usbd_cdc);
+
+bool SerialUSB_empty() { return SerialUSB.empty(); }

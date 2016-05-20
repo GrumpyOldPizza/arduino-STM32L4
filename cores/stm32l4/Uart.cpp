@@ -482,6 +482,8 @@ static const stm32l4_uart_pins_t stm32l4_usart3_pins = { GPIO_PIN_PC5_USART3_RX,
 
 Uart __attribute__((weak)) Serial1(&stm32l4_usart3, UART_INSTANCE_USART3, &stm32l4_usart3_pins, STM32L4_UART_IRQ_PRIORITY, UART_MODE_RX_DMA | UART_MODE_TX_DMA);
 
+bool Serial1_empty() { return Serial1.empty(); }
+
 #if SERIAL_INTERFACES_COUNT > 1
 
 static stm32l4_uart_t stm32l4_uart4;
@@ -489,6 +491,8 @@ static stm32l4_uart_t stm32l4_uart4;
 static const stm32l4_uart_pins_t stm32l4_uart4_pins = { GPIO_PIN_PA1_UART4_RX, GPIO_PIN_PA0_UART4_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
 
 Uart __attribute__((weak)) Serial2(&stm32l4_uart4, UART_INSTANCE_UART4, &stm32l4_uart4_pins, STM32L4_UART_IRQ_PRIORITY, UART_MODE_RX_DMA | UART_MODE_RX_DMA_SECONDARY);
+
+bool Serial2_empty() { return Serial2.empty(); }
 
 #endif
 
@@ -500,6 +504,8 @@ static const stm32l4_uart_pins_t stm32l4_usart2_pins = { GPIO_PIN_PA3_USART2_RX,
 
 Uart __attribute__((weak)) Serial3(&stm32l4_usart2, UART_INSTANCE_USART2, &stm32l4_usart2_pins, STM32L4_UART_IRQ_PRIORITY, 0);
 
+bool Serial3_empty() { return Serial3.empty(); }
+
 #endif
 
 #if SERIAL_INTERFACES_COUNT > 3
@@ -510,6 +516,8 @@ static const stm32l4_uart_pins_t stm32l4_uart5_pins = { GPIO_PIN_PD2_UART5_RX, G
 
 Uart __attribute__((weak)) Serial4(&stm32l4_uart5, UART_INSTANCE_UART5, &stm32l4_uart5_pins, STM32L4_UART_IRQ_PRIORITY, 0);
 
+bool Serial4_empty() { return Serial4.empty(); }
+
 #endif
 
 #if SERIAL_INTERFACES_COUNT > 4
@@ -519,6 +527,8 @@ static stm32l4_uart_t stm32l4_usart1;
 static const stm32l4_uart_pins_t stm32l4_usart1_pins = { GPIO_PIN_PB7_USART1_RX, GPIO_PIN_PB6_USART1_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
 
 Uart __attribute__((weak)) Serial5(&stm32l4_usart1, UART_INSTANCE_USART1, &stm32l4_usart1_pins, STM32L4_UART_IRQ_PRIORITY, 0);
+
+bool Serial5_empty() { return Serial5.empty(); }
 
 #endif
 

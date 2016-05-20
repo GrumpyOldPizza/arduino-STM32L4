@@ -51,6 +51,9 @@ class CDC : public HardwareSerial
     // STM32L4 EXTENSTION: asynchronous receive callback
     void onReceive(void(*callback)(int));
 
+    // STM32L4 EXTENSTION: quick check for empty
+    inline int empty() { return (_rx_read == _rx_write); };
+
     operator bool();
 
     // These return the settings specified by the USB host for the

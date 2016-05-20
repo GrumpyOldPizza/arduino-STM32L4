@@ -49,6 +49,9 @@ class Uart : public HardwareSerial
     // STM32L4 EXTENSTION: asynchronous receive callback
     void onReceive(void(*callback)(int));
 
+    // STM32L4 EXTENSTION: quick check for empty
+    inline int empty() { return (_rx_read == _rx_write); };
+
     operator bool() { return true; }
 
   private:
