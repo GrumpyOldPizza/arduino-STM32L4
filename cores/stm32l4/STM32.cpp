@@ -99,7 +99,6 @@ float STM32Class::getVREF()
 float STM32Class::getTemperature()
 {
     int32_t ts_data, ts_cal1, ts_cal2, vref_data, vrefint;
-    float ts_v30, ts_slope, vref;
 
     if (stm32l4_adc.state == ADC_STATE_NONE)
     {
