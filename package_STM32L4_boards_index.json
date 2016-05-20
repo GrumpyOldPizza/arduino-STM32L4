@@ -79,6 +79,30 @@
               "version": "4.8.3-2014q1"
             }
           ]
+        },
+
+        {
+          "name": "STMicroelectronics STM32L4 Boards",
+          "architecture": "STM32L4",
+          "version": "0.0.4",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/grumpyoldpizza/arduino-STM32L4/issues"
+          },
+          "url": "https://github.com/grumpyoldpizza/arduino-STM32L4/archive/0.0.4.tar.gz",
+          "archiveFileName": "arduino-STM32L4-0.0.4.tar.gz",
+          "checksum": "MD5:cbcd168818a923b4727b8e9edce8e4a8",
+          "size": "9886328",
+          "boards": [
+            {"name": "Dragonfly"}
+          ],
+          "toolsDependencies": [
+            {
+              "packager": "arduino",
+              "name": "arm-none-eabi-gcc",
+              "version": "4.8.3-2014q1"
+            }
+          ]
         }
       ],
       "tools":[
