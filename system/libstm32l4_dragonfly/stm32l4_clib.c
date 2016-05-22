@@ -135,8 +135,28 @@ int _write(int file, char *buf, int nbytes)
 	    stm32l4_usbd_cdc_enable(&stm32l4_usbd_cdc, 0, NULL, NULL, 0);
 	}
 
-	if (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+	if (stm32l4_usbd_cdc_connected(&stm32l4_usbd_cdc))
 	{
+	    if (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+	    {
+		if (armv7m_core_priority() <= (int)NVIC_GetPriority(OTG_FS_IRQn))
+		{
+		    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+		    {
+			stm32l4_usbd_cdc_poll(&stm32l4_usbd_cdc);
+		    }
+		}
+		else
+		{
+		    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+		    {
+			armv7m_core_yield();
+		    }
+		}
+	    }
+
+	    stm32l4_usbd_cdc_transmit(&stm32l4_usbd_cdc, (const uint8_t*)buf, nbytes);
+
 	    if (armv7m_core_priority() <= (int)NVIC_GetPriority(OTG_FS_IRQn))
 	    {
 		while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
@@ -153,23 +173,6 @@ int _write(int file, char *buf, int nbytes)
 	    }
 	}
 
-	stm32l4_usbd_cdc_transmit(&stm32l4_usbd_cdc, (const uint8_t*)buf, nbytes);
-
-	if (armv7m_core_priority() <= (int)NVIC_GetPriority(OTG_FS_IRQn))
-	{
-	    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-	    {
-		stm32l4_usbd_cdc_poll(&stm32l4_usbd_cdc);
-	    }
-	}
-	else
-	{
-	    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-	    {
-		armv7m_core_yield();
-	    }
-	}
-	
 	return nbytes;
 
     default:
