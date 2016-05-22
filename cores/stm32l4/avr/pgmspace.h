@@ -96,13 +96,13 @@ typedef const void* uint_farptr_t;
 #define strlcpy_PF(dest, src, n) strlcpy((dest), (src), (n))
 #define memcmp_PF(s1, s2, n) memcmp((s1), (s2), (n))
 
-#define sprintf_P(s, f, ...) sprintf((s), (f), __VA_ARGS__)
-#define snprintf_P(s, n, f, ...) snprintf((s), (n), (f), __VA_ARGS__)
+#define printf_P(...) printf(__VA_ARGS__)
+#define fprintf_P(fp, ...) fprintf((fp), __VA_ARGS__)
+#define sprintf_P(s, ...) sprintf((s), __VA_ARGS__)
+#define snprintf_P(s, n, ...) snprintf((s), (n), __VA_ARGS__)
+#define vfprintf_P(fp, f, ap) vfprintf((fp), (f), (ap))
 #define vsprintf_P(s, f, ap) vsprintf((s), (f), (ap))
 #define vsnprintf_P(s, n, f, ap) vsnprintf((s), (n), (f), (ap))
-#define vfprintf_P(fp, f, ap) vfprintf((fp), (f), (ap))
-#define printf_P(f, ...) printf((f), __VA_ARGS__)
-#define fprintf_P(fp, f, ...) fprintf((fp), (f), __VA_ARGS__)
 
 #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
 #define pgm_read_word(addr) (*(const unsigned short *)(addr))
