@@ -161,7 +161,7 @@ static void stm32l4_i2c_master_transmit(stm32l4_i2c_t *i2c)
     }
     else
     {
-	if (i2c->rx_data || !(i2c->xf_control & I2C_CONTROL_RESTART))
+	if (!i2c->rx_data && !(i2c->xf_control & I2C_CONTROL_RESTART))
 	{
 	    i2c_cr2 |= I2C_CR2_AUTOEND;
 	}
