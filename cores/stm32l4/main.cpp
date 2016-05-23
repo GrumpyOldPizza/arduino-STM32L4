@@ -40,7 +40,7 @@ int main( void )
   for (;;)
   {
     loop();
-    if (serialEventRun) serialEventRun();
+    if (serialEventCallback) (*serialEventCallback)();
   }
 
   return 0;

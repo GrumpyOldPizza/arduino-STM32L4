@@ -28,7 +28,7 @@
 #define UART_TX_BUFFER_MASK ((UART_TX_BUFFER_SIZE<<1)-1)
 #define UART_TX_INDEX_MASK  (UART_TX_BUFFER_SIZE-1)
 
-Uart::Uart(struct _stm32l4_uart_t *uart, unsigned int instance, const struct _stm32l4_uart_pins_t *pins, unsigned int priority, unsigned int mode)
+Uart::Uart(struct _stm32l4_uart_t *uart, unsigned int instance, const struct _stm32l4_uart_pins_t *pins, unsigned int priority, unsigned int mode, bool serialEvent)
 {
   _uart = uart;
 
@@ -41,11 +41,14 @@ Uart::Uart(struct _stm32l4_uart_t *uart, unsigned int instance, const struct _st
   _completionCallback = NULL;
 
   stm32l4_uart_create(uart, instance, pins, priority, mode);
+
+  if (serialEvent)
+    serialEventCallback = serialEventDispatch;
 }
 
 void Uart::begin(unsigned long baudrate)
 {
-  begin(baudrate, (uint8_t)SERIAL_8N1);
+  begin(baudrate, SERIAL_8N1);
 }
 
 void Uart::begin(unsigned long baudrate, uint16_t config)
@@ -476,59 +479,69 @@ void Uart::_event_callback(void *context, uint32_t events)
   reinterpret_cast<class Uart*>(context)->EventCallback(events);
 }
 
+bool Serial1_empty() { return Serial1.empty(); }
+
+extern void serialEvent1() __attribute__((weak));
+
 static stm32l4_uart_t stm32l4_usart3;
 
 static const stm32l4_uart_pins_t stm32l4_usart3_pins = { GPIO_PIN_PC5_USART3_RX, GPIO_PIN_PC4_USART3_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
 
-Uart __attribute__((weak)) Serial1(&stm32l4_usart3, UART_INSTANCE_USART3, &stm32l4_usart3_pins, STM32L4_UART_IRQ_PRIORITY, UART_MODE_RX_DMA | UART_MODE_TX_DMA);
-
-bool Serial1_empty() { return Serial1.empty(); }
+Uart __attribute__((weak)) Serial1(&stm32l4_usart3, UART_INSTANCE_USART3, &stm32l4_usart3_pins, STM32L4_UART_IRQ_PRIORITY, UART_MODE_RX_DMA | UART_MODE_TX_DMA, (serialEvent1 != NULL));
 
 #if SERIAL_INTERFACES_COUNT > 1
+
+bool Serial2_empty() { return Serial2.empty(); }
+
+extern void serialEvent2() __attribute__((weak));
 
 static stm32l4_uart_t stm32l4_uart4;
 
 static const stm32l4_uart_pins_t stm32l4_uart4_pins = { GPIO_PIN_PA1_UART4_RX, GPIO_PIN_PA0_UART4_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
 
-Uart __attribute__((weak)) Serial2(&stm32l4_uart4, UART_INSTANCE_UART4, &stm32l4_uart4_pins, STM32L4_UART_IRQ_PRIORITY, UART_MODE_RX_DMA | UART_MODE_RX_DMA_SECONDARY);
-
-bool Serial2_empty() { return Serial2.empty(); }
+Uart __attribute__((weak)) Serial2(&stm32l4_uart4, UART_INSTANCE_UART4, &stm32l4_uart4_pins, STM32L4_UART_IRQ_PRIORITY, UART_MODE_RX_DMA | UART_MODE_RX_DMA_SECONDARY, (serialEvent2 != NULL));
 
 #endif
 
 #if SERIAL_INTERFACES_COUNT > 2
 
+bool Serial3_empty() { return Serial3.empty(); }
+
+extern void serialEvent3() __attribute__((weak));
+
 static stm32l4_uart_t stm32l4_usart2;
 
 static const stm32l4_uart_pins_t stm32l4_usart2_pins = { GPIO_PIN_PA3_USART2_RX, GPIO_PIN_PA2_USART2_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
 
-Uart __attribute__((weak)) Serial3(&stm32l4_usart2, UART_INSTANCE_USART2, &stm32l4_usart2_pins, STM32L4_UART_IRQ_PRIORITY, 0);
-
-bool Serial3_empty() { return Serial3.empty(); }
+Uart __attribute__((weak)) Serial3(&stm32l4_usart2, UART_INSTANCE_USART2, &stm32l4_usart2_pins, STM32L4_UART_IRQ_PRIORITY, 0, (serialEvent3 != NULL));
 
 #endif
 
 #if SERIAL_INTERFACES_COUNT > 3
 
+bool Serial4_empty() { return Serial4.empty(); }
+
+extern void serialEvent4() __attribute__((weak));
+
 static stm32l4_uart_t stm32l4_uart5;
 
 static const stm32l4_uart_pins_t stm32l4_uart5_pins = { GPIO_PIN_PD2_UART5_RX, GPIO_PIN_PC12_UART5_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
 
-Uart __attribute__((weak)) Serial4(&stm32l4_uart5, UART_INSTANCE_UART5, &stm32l4_uart5_pins, STM32L4_UART_IRQ_PRIORITY, 0);
-
-bool Serial4_empty() { return Serial4.empty(); }
+Uart __attribute__((weak)) Serial4(&stm32l4_uart5, UART_INSTANCE_UART5, &stm32l4_uart5_pins, STM32L4_UART_IRQ_PRIORITY, 0, (serialEvent4 != NULL));
 
 #endif
 
 #if SERIAL_INTERFACES_COUNT > 4
 
+bool Serial5_empty() { return Serial5.empty(); }
+
+extern void serialEvent5() __attribute__((weak));
+
 static stm32l4_uart_t stm32l4_usart1;
 
 static const stm32l4_uart_pins_t stm32l4_usart1_pins = { GPIO_PIN_PB7_USART1_RX, GPIO_PIN_PB6_USART1_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
 
-Uart __attribute__((weak)) Serial5(&stm32l4_usart1, UART_INSTANCE_USART1, &stm32l4_usart1_pins, STM32L4_UART_IRQ_PRIORITY, 0);
-
-bool Serial5_empty() { return Serial5.empty(); }
+Uart __attribute__((weak)) Serial5(&stm32l4_usart1, UART_INSTANCE_USART1, &stm32l4_usart1_pins, STM32L4_UART_IRQ_PRIORITY, 0, (serialEvent5 != NULL));
 
 #endif
 

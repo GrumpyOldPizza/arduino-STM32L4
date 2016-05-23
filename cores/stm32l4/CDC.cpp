@@ -34,7 +34,7 @@
 
 stm32l4_usbd_cdc_t stm32l4_usbd_cdc;
 
-CDC::CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc)
+CDC::CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc, bool serialEvent)
 {
   _usbd_cdc = usbd_cdc;
 
@@ -47,6 +47,9 @@ CDC::CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc)
   _completionCallback = NULL;
 
   stm32l4_usbd_cdc_create(usbd_cdc);
+
+  if (serialEvent)
+    serialEventCallback = serialEventDispatch;
 }
 
 void CDC::begin(unsigned long baudrate)
@@ -512,6 +515,8 @@ bool CDC::rts() {
   return stm32l4_usbd_cdc_info.lineState & 2;
 }
 
-CDC SerialUSB(&stm32l4_usbd_cdc);
+extern void serialEvent() __attribute__((weak));
 
 bool SerialUSB_empty() { return SerialUSB.empty(); }
+
+CDC SerialUSB(&stm32l4_usbd_cdc, (serialEvent != NULL));

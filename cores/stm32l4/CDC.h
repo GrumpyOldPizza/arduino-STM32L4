@@ -27,7 +27,7 @@
 class CDC : public HardwareSerial
 {
   public:
-    CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc);
+    CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc, bool serialEvent);
     void begin(unsigned long baudRate);
     void begin(unsigned long baudrate, uint16_t config);
     void end(void);
