@@ -29,12 +29,16 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <sys/stat.h>
 #include <sys/times.h>
 #include <sys/unistd.h>
 
 #include "armv7m.h"
 #include "stm32l4_usbd_cdc.h"
+
+int (*stm32l4_stdio_put)(char, FILE*) = NULL;
+int (*stm32l4_stdio_get)(FILE*) = NULL;
 
 #undef errno
 extern int errno;
@@ -110,9 +114,32 @@ int _lseek(int file, int offset, int whence)
 
 int _read(int file, char *buf, int nbytes)
 {
+    int c, n;
+
     switch (file) {
     case STDIN_FILENO:
-	return 0;
+	n = 0;
+
+	if (nbytes != 0)
+	{
+	    if (stm32l4_stdio_get != NULL)
+	    {
+		do
+		{
+		    c = (*stm32l4_stdio_get)(stdin);
+		    
+		    if (c == -1)
+		    {
+			break;
+		    }
+
+		    buf[n++] = c;
+		    nbytes--;
+		}
+		while (nbytes != 0);
+	    }
+	}
+	return n;
 
     default:
         errno = EBADF;
@@ -122,62 +149,87 @@ int _read(int file, char *buf, int nbytes)
 
 int _write(int file, char *buf, int nbytes)
 {
+    int n;
+
     switch (file) {
     case STDOUT_FILENO:
     case STDERR_FILENO:
-	if (stm32l4_usbd_cdc.state == USBD_CDC_STATE_NONE)
-	{
-	    stm32l4_usbd_cdc_create(&stm32l4_usbd_cdc);
-	}
+	n = 0;
 
-	if (stm32l4_usbd_cdc.state == USBD_CDC_STATE_INIT)
+	if (nbytes != 0)
 	{
-	    stm32l4_usbd_cdc_enable(&stm32l4_usbd_cdc, 0, NULL, NULL, 0);
-	}
-
-	if (stm32l4_usbd_cdc_connected(&stm32l4_usbd_cdc))
-	{
-	    if (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+	    if (stm32l4_stdio_put != NULL)
 	    {
-		if (armv7m_core_priority() <= (int)NVIC_GetPriority(OTG_FS_IRQn))
+		do
 		{
-		    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+		    if (!(*stm32l4_stdio_put)(buf[n], stdout))
 		    {
-			stm32l4_usbd_cdc_poll(&stm32l4_usbd_cdc);
+			break;
 		    }
-		}
-		else
-		{
-		    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-		    {
-			armv7m_core_yield();
-		    }
-		}
-	    }
 
-	    stm32l4_usbd_cdc_transmit(&stm32l4_usbd_cdc, (const uint8_t*)buf, nbytes);
-
-	    if (armv7m_core_priority() <= (int)NVIC_GetPriority(OTG_FS_IRQn))
-	    {
-		while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-		{
-		    stm32l4_usbd_cdc_poll(&stm32l4_usbd_cdc);
+		    n++;
+		    nbytes--;
 		}
+		while (nbytes != 0);
 	    }
 	    else
 	    {
-		while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+		if (stm32l4_usbd_cdc.state == USBD_CDC_STATE_NONE)
 		{
-		    armv7m_core_yield();
+		    stm32l4_usbd_cdc_create(&stm32l4_usbd_cdc);
 		}
+
+		if (stm32l4_usbd_cdc.state == USBD_CDC_STATE_INIT)
+		{
+		    stm32l4_usbd_cdc_enable(&stm32l4_usbd_cdc, 0, NULL, NULL, 0);
+		}
+
+		if (stm32l4_usbd_cdc_connected(&stm32l4_usbd_cdc))
+		{
+		    if (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+		    {
+			if (armv7m_core_priority() <= (int)NVIC_GetPriority(OTG_FS_IRQn))
+			{
+			    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+			    {
+				stm32l4_usbd_cdc_poll(&stm32l4_usbd_cdc);
+			    }
+			}
+			else
+			{
+			    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+			    {
+				armv7m_core_yield();
+			    }
+			}
+		    }
+
+		    stm32l4_usbd_cdc_transmit(&stm32l4_usbd_cdc, (const uint8_t*)buf, nbytes);
+
+		    if (armv7m_core_priority() <= (int)NVIC_GetPriority(OTG_FS_IRQn))
+		    {
+			while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+			{
+			    stm32l4_usbd_cdc_poll(&stm32l4_usbd_cdc);
+			}
+		    }
+		    else
+		    {
+			while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
+			{
+			    armv7m_core_yield();
+			}
+		    }
+		}
+
+		n = nbytes;
 	    }
 	}
-
-	return nbytes;
+	return n;
 
     default:
-        errno = EBADF;
-        return -1;
+	errno = EBADF;
+	return -1;
     }
 }
 

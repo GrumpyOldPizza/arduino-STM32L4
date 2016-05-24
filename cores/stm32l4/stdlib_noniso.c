@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <math.h>
 #include "stdlib_noniso.h"
 
@@ -219,4 +220,26 @@ char * dtostrf(double number, signed char width, unsigned char prec, char *s) {
     // make sure the string is terminated
     *out = 0;
     return s;
+}
+
+extern int (*stm32l4_stdio_put)(char, FILE*);
+extern int (*stm32l4_stdio_get)(FILE*);
+
+FILE * fdevopen(int(*put)(char, FILE *), int(*get)(FILE *))
+{
+  if (put != NULL)
+    {
+      stm32l4_stdio_put = (void*)put;
+      
+      return stdout;
+    }
+
+  if (get != NULL)
+    {
+      stm32l4_stdio_get = get;
+      
+      return stdin;
+    }
+
+  return NULL;
 }

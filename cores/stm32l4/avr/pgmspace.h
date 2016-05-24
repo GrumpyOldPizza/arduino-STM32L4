@@ -27,6 +27,10 @@
 #ifndef __PGMSPACE_H_
 #define __PGMSPACE_H_ 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <inttypes.h>
 
 #define PROGMEM
@@ -123,5 +127,11 @@ typedef const void* uint_farptr_t;
 #define pgm_read_ptr_far(addr) pgm_read_ptr(addr)
 
 #define pgm_get_far_address(addr) (&(addr))
+
+extern struct __sFILE * fdevopen(int(*put)(char, struct __sFILE *), int(*get)(struct __sFILE *));
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
