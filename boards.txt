@@ -44,5 +44,7 @@ dragonfly.menu.CpuFrequency.48=48 MHz
 dragonfly.menu.CpuFrequency.48.build.f_cpu=48000000L
 dragonfly.menu.CpuFrequency.32=32 MHz
 dragonfly.menu.CpuFrequency.32.build.f_cpu=32000000L
+dragonfly.menu.CpuFrequency.24=24 MHz
+dragonfly.menu.CpuFrequency.24.build.f_cpu=24000000L
 dragonfly.menu.CpuFrequency.16=16 MHz
 dragonfly.menu.CpuFrequency.16.build.f_cpu=16000000L
