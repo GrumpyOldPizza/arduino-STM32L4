@@ -404,12 +404,12 @@ void stm32l4_system_bootloader(void)
 #endif
 }
 
-bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
+bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, uint32_t pclk2, bool clk48)
 {
     uint32_t fclk, fvco, fpll, fpllout, mout, nout, rout, n, r;
     uint32_t count, msirange, hpre, ppre1, ppre2, latency;
 
-    if ((sysclk <= 24000000) && stm32l4_system_device.clk48)
+    if (!clk48 && ((sysclk <= 24000000) && stm32l4_system_device.clk48))
     {
 	return false;
     }
@@ -533,7 +533,7 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
     nout = 8;
     rout = 2;
 
-    if (sysclk <= 24000000)
+    if (!clk48 && (sysclk <= 24000000))
     {
 	/* Range 2, use MSI */
 
@@ -551,6 +551,11 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
     else
     {
 	/* Range 1, use HSE/PLL or MSI/PLL */
+
+	if (sysclk < 16000000)
+	{
+	    sysclk = 16000000;
+	}
 
 	if (sysclk > 80000000)
 	{
@@ -679,7 +684,7 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
     RCC->CFGR = (RCC->CFGR & ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2)) | (hpre | ppre1 | ppre2);
 
 
-    if (sysclk <= 24000000)
+    if (!clk48 && (sysclk <= 24000000))
     {
 	/* Range 2, use MSI */
 
@@ -825,7 +830,7 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	SystemCoreClock = sysclk;
     }
 
-    if (sysclk <= 24000000)
+    if (!clk48 && (sysclk <= 24000000))
     {
 	if      (hclk <=  6000000) { latency = FLASH_ACR_LATENCY_0WS; }
 	else if (hclk <= 12000000) { latency = FLASH_ACR_LATENCY_1WS; }
@@ -859,7 +864,7 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 
 bool stm32l4_system_clk48_enable(void)
 {
-    if ((stm32l4_system_device.sysclk <= 24000000) || (stm32l4_system_device.lseclk != 32768))
+    if (((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL) || (stm32l4_system_device.lseclk != 32768))
     {
 	return false;
     }
@@ -898,7 +903,7 @@ bool stm32l4_system_clk48_enable(void)
 
 bool stm32l4_system_clk48_disable(void)
 {
-    if ((stm32l4_system_device.sysclk <= 24000000) || (stm32l4_system_device.lseclk != 32768))
+    if (((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL) || (stm32l4_system_device.lseclk != 32768))
     {
 	return false;
     }

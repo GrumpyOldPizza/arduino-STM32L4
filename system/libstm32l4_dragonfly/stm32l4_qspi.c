@@ -317,6 +317,8 @@ bool stm32l4_qspi_disable(stm32l4_qspi_t *qspi)
 
 bool stm32l4_qspi_configure(stm32l4_qspi_t *qspi, uint32_t clock, uint32_t option)
 {
+    uint32_t hclk;
+
     if ((qspi->state != QSPI_STATE_READY) && (qspi->state != QSPI_STATE_BUSY))
     {
 	return false;
@@ -332,6 +334,13 @@ bool stm32l4_qspi_configure(stm32l4_qspi_t *qspi, uint32_t clock, uint32_t optio
 	return false;
     }
 
+    hclk = stm32l4_system_hclk();
+
+    if (clock > hclk)
+    {
+	clock = hclk;
+    }
+
     qspi->clock = clock;
     qspi->option = option;
 
@@ -339,7 +348,7 @@ bool stm32l4_qspi_configure(stm32l4_qspi_t *qspi, uint32_t clock, uint32_t optio
 
     QUADSPI->CR &= ~QUADSPI_CR_EN;
     
-    QUADSPI->CR = (((stm32l4_system_hclk() / qspi->clock) -1) << 24) | QUADSPI_CR_APMS | QUADSPI_CR_FTHRES_1;
+    QUADSPI->CR = (((hclk / clock) -1) << 24) | QUADSPI_CR_APMS | QUADSPI_CR_FTHRES_1;
     // QUADSPI->CR = QUADSPI_CR_APMS | QUADSPI_CR_FTHRES_1;
 
     QUADSPI->DCR = QUADSPI_DCR_FSIZE | ((qspi->option & QSPI_OPTION_MODE_MASK) >> QSPI_OPTION_MODE_SHIFT);

@@ -66,6 +66,16 @@ class SPISettings {
 
 	if (bitOrder != MSBFIRST) { control |= SPI_CR1_LSBFIRST; }
 
+#if (F_CPU <= 32000000)
+	if      (clock >= (F_CPU / 2))   { control |= 0;                                            }
+	else if (clock >= (F_CPU / 4))   { control |= (SPI_CR1_BR_0);                               }
+	else if (clock >= (F_CPU / 8))   { control |= (SPI_CR1_BR_1);                               }
+	else if (clock >= (F_CPU / 16))  { control |= (SPI_CR1_BR_0 | SPI_CR1_BR_1);                }
+	else if (clock >= (F_CPU / 32))  { control |= (SPI_CR1_BR_2);                               }
+	else if (clock >= (F_CPU / 64))  { control |= (SPI_CR1_BR_0 | SPI_CR1_BR_2);                }
+	else if (clock >= (F_CPU / 128)) { control |= (SPI_CR1_BR_1 | SPI_CR1_BR_2);                }
+	else                             { control |= (SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_BR_2); }
+#else
 	if      (clock >= (F_CPU / 4))   { control |= 0;                                            }
 	else if (clock >= (F_CPU / 8))   { control |= (SPI_CR1_BR_0);                               }
 	else if (clock >= (F_CPU / 16))  { control |= (SPI_CR1_BR_1);                               }
@@ -74,6 +84,7 @@ class SPISettings {
 	else if (clock >= (F_CPU / 128)) { control |= (SPI_CR1_BR_0 | SPI_CR1_BR_2);                }
 	else if (clock >= (F_CPU / 256)) { control |= (SPI_CR1_BR_1 | SPI_CR1_BR_2);                }
 	else                             { control |= (SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_BR_2); }
+#endif
 
 	this->_control = control;
     }

@@ -53,7 +53,11 @@ void UsageFault_Handler(void)
 
 void init( void )
 {
-  stm32l4_system_configure(F_CPU, F_CPU, F_CPU/2, F_CPU/2);
+#if (F_CPU <= 32000000)
+  stm32l4_system_configure(F_CPU, F_CPU, F_CPU, F_CPU, true);
+#else
+  stm32l4_system_configure(F_CPU, F_CPU, F_CPU/2, F_CPU/2, true);
+#endif
 
   armv7m_svcall_initialize();
   armv7m_pendsv_initialize();

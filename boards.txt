@@ -1,5 +1,7 @@
 # See: http://code.google.com/p/arduino/wiki/Platforms
 
+menu.CpuFrequency=CPU Frequency
+
 ##############################################################
 
 # Tlera Dragonfly
@@ -31,3 +33,16 @@ dragonfly.build.variant_system_lib=stm32l4_dragonfly
 dragonfly.build.variant_system_include="-I{runtime.platform.path}/system/libstm32l4_dragonfly/CMSIS/Include" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/USB/HAL/Inc" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/USB/Core/Inc" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/USB/Class/CDC/Inc" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/USB/Class/MSC/Inc" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/USB" "-I{runtime.platform.path}/system/libstm32l4_dragonfly" 
 dragonfly.build.vid=0x1209
 dragonfly.build.pid=0x6667
+
+dragonfly.menu.CpuFrequency.80=80 MHz
+dragonfly.menu.CpuFrequency.80.build.f_cpu=80000000L
+dragonfly.menu.CpuFrequency.72=72 MHz
+dragonfly.menu.CpuFrequency.72.build.f_cpu=72000000L
+dragonfly.menu.CpuFrequency.64=64 MHz
+dragonfly.menu.CpuFrequency.64.build.f_cpu=64000000L
+dragonfly.menu.CpuFrequency.48=48 MHz
+dragonfly.menu.CpuFrequency.48.build.f_cpu=48000000L
+dragonfly.menu.CpuFrequency.32=32 MHz
+dragonfly.menu.CpuFrequency.32.build.f_cpu=32000000L
+dragonfly.menu.CpuFrequency.16=16 MHz
+dragonfly.menu.CpuFrequency.16.build.f_cpu=16000000L

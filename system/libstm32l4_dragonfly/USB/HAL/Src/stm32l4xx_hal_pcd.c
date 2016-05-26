@@ -324,6 +324,7 @@ HAL_StatusTypeDef HAL_PCD_Stop(PCD_HandleTypeDef *hpcd)
   return HAL_OK;
 }
 #if defined (USB_OTG_FS)
+extern uint32_t stm32l4_system_hclk(void);
 /**
   * @brief  Handles PCD interrupt request.
   * @param  hpcd: PCD handle
@@ -566,7 +567,9 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
         used by application. In the low AHB frequency range it is used to stretch enough the USB response 
         time to IN tokens, the USB turnaround time, so to compensate for the longer AHB read access 
         latency to the Data FIFO */
-      
+
+      hclk = stm32l4_system_hclk();
+
       if((hclk >= 14200000)&&(hclk < 15000000))
       {
         /* hclk Clock Range between 14.2-15 MHz */
