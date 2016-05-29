@@ -74,6 +74,7 @@
 typedef struct _USBD_STORAGE
 {
   int8_t (* Init) (uint8_t lun);
+  int8_t (* DeInit) (uint8_t lun);
   int8_t (* GetCapacity) (uint8_t lun, uint32_t *block_num, uint16_t *block_size);
   int8_t (* IsReady) (uint8_t lun);
   int8_t (* IsWriteProtected) (uint8_t lun);

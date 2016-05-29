@@ -153,6 +153,9 @@ void MSC_BOT_Reset (USBD_HandleTypeDef  *pdev)
 void MSC_BOT_DeInit (USBD_HandleTypeDef  *pdev)
 {
   USBD_MSC_BOT_HandleTypeDef  *hmsc = (USBD_MSC_BOT_HandleTypeDef*)pdev->pClassData[1];  
+
+  ((USBD_StorageTypeDef *)pdev->pUserData[1])->DeInit(0);
+
   hmsc->bot_state  = USBD_BOT_IDLE;
 }
 

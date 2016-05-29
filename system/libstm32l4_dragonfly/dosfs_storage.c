@@ -40,6 +40,13 @@ static int8_t dosfs_storage_init(uint8_t lun)
     return 0;
 }
 
+static int8_t dosfs_storage_deinit(uint8_t lun)
+{
+    dosfs_volume.lock &= ~(DOSFS_VOLUME_LOCK_WRITE_LOCK | DOSFS_VOLUME_LOCK_SCSI_LOCK);
+
+    return 0;
+}
+
 static int8_t dosfs_storage_get_capacity(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
 {
     int status;
@@ -238,6 +245,7 @@ static const int8_t dosfs_storage_inquiry_data[] = {
 const USBD_StorageTypeDef dosfs_storage_interface =
 {
     dosfs_storage_init,
+    dosfs_storage_deinit,
     dosfs_storage_get_capacity,
     dosfs_storage_is_ready,
     dosfs_storage_is_write_protected,
