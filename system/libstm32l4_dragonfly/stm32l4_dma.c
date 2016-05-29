@@ -74,109 +74,60 @@ static const IRQn_Type stm32l4_dma_interrupt_table[16] = {
 
 typedef struct _stm32l4_dma_driver_t {
     volatile uint32_t      mask;
-#ifdef notyet
     volatile uint32_t      flash;
-    volatile uint32_t      sram1;
-    volatile uint32_t      sram2;
-#endif
     stm32l4_dma_t          *instances[16];
 } stm32l4_dma_driver_t;
 
 static stm32l4_dma_driver_t stm32l4_dma_driver;
 
-static void stm32l4_dma_track(uint8_t channel, uint32_t address)
+static void stm32l4_dma_flash_sleep(void)
 {
-#ifdef notyet
-    if (address < 0x40000000)
-    {
-	if (address < 0x10000000)
-	{
-	    armv7m_atomic_add(&stm32l4_dma_driver.flash, 1);
+    uint32_t o_flash, n_flash;
 
+    o_flash = stm32l4_dma_driver.flash;
+	
+    do
+    {
+	n_flash = o_flash - 1;
+	
+	if (n_flash == 0)
+	{
+	    armv7m_atomic_and(&RCC->AHB1SMENR, ~RCC_AHB1SMENR_FLASHSMEN);
+	}
+	else
+	{
 	    armv7m_atomic_or(&RCC->AHB1SMENR, RCC_AHB1SMENR_FLASHSMEN);
 	}
-	else if (address < 0x20000000)
-	{
-	    armv7m_atomic_add(&stm32l4_dma_driver.sram2, 1);
-
-	    armv7m_atomic_or(&RCC->AHB2SMENR, RCC_AHB2SMENR_SRAM2SMEN);
-	}
-	else
-	{
-	    armv7m_atomic_add(&stm32l4_dma_driver.sram1, 1);
-
-	    armv7m_atomic_or(&RCC->AHB1SMENR, RCC_AHB1SMENR_SRAM1SMEN);
-	}
     }
-#endif
+    while (!armv7m_atomic_compare_exchange(&stm32l4_dma_driver.flash, &o_flash, n_flash));
 }
 
-static void stm32l4_dma_untrack(uint8_t channel, uint32_t address)
+static void stm32l4_dma_track(uint32_t address)
 {
-#ifdef notyet
-    uint32_t o_flash, o_sram1, o_sram2, n_flash, n_sram1, n_sram2;
-
-    if (address < 0x40000000)
+    if (address < 0x10000000)
     {
-	if (address < 0x10000000)
+	armv7m_atomic_add(&stm32l4_dma_driver.flash, 1);
+	
+	armv7m_atomic_or(&RCC->AHB1SMENR, RCC_AHB1SMENR_FLASHSMEN);
+    }
+}
+
+static void stm32l4_dma_untrack(uint32_t address)
+{
+    if (address < 0x10000000)
+    {
+	if (stm32l4_dma_driver.flash == 1)
 	{
-	    o_flash = stm32l4_dma_driver.flash;
-
-	    do
+	    if (__get_IPSR() == 0)
 	    {
-		n_flash = o_flash - 1;
-
-		if (n_flash == 0)
-		{
-		    armv7m_atomic_and(&RCC->AHB1SMENR, ~RCC_AHB1SMENR_FLASHSMEN);
-		}
-		else
-		{
-		    armv7m_atomic_or(&RCC->AHB1SMENR, RCC_AHB1SMENR_FLASHSMEN);
-		}
+		armv7m_svcall_0((uint32_t)&stm32l4_dma_flash_sleep);
 	    }
-	    while (!armv7m_atomic_compare_exchange(&stm32l4_dma_driver.flash, &o_flash, n_flash));
-	}
-	else if (address < 0x20000000)
-	{
-	    o_sram2 = stm32l4_dma_driver.sram2;
-
-	    do
+	    else
 	    {
-		n_sram2 = o_sram2 - 1;
-
-		if (n_sram2 == 0)
-		{
-		    armv7m_atomic_and(&RCC->AHB2SMENR, ~RCC_AHB2SMENR_SRAM2SMEN);
-		}
-		else
-		{
-		    armv7m_atomic_or(&RCC->AHB2SMENR, RCC_AHB2SMENR_SRAM2SMEN);
-		}
+		stm32l4_dma_flash_sleep();
 	    }
-	    while (!armv7m_atomic_compare_exchange(&stm32l4_dma_driver.sram2, &o_sram2, n_sram2));
-	}
-	else
-	{
-	    o_sram1 = stm32l4_dma_driver.sram1;
-
-	    do
-	    {
-		n_sram1 = o_sram1 - 1;
-
-		if (n_sram1 == 0)
-		{
-		    armv7m_atomic_and(&RCC->AHB1SMENR, ~RCC_AHB1SMENR_SRAM1SMEN);
-		}
-		else
-		{
-		    armv7m_atomic_or(&RCC->AHB1SMENR, RCC_AHB1SMENR_SRAM1SMEN);
-		}
-	    }
-	    while (!armv7m_atomic_compare_exchange(&stm32l4_dma_driver.sram1, &o_sram1, n_sram1));
 	}
     }
-#endif
 }
 
 static void stm32l4_dma_interrupt(stm32l4_dma_t *dma)
@@ -246,6 +197,7 @@ void stm32l4_dma_destroy(stm32l4_dma_t *dma)
 
 void stm32l4_dma_enable(stm32l4_dma_t *dma, stm32l4_dma_callback_t callback, void *context)
 {
+    DMA_Channel_TypeDef *DMA = dma->DMA;
     unsigned int shift;
 
     dma->callback = callback;
@@ -264,6 +216,8 @@ void stm32l4_dma_enable(stm32l4_dma_t *dma, stm32l4_dma_callback_t callback, voi
 	armv7m_atomic_modify(&DMA2_CSELR->CSELR, (15 << shift), (dma->channel >> 4) << shift);
     }
 
+    DMA->CMAR = 0xffffffff;
+
     if (callback)
     {
 	NVIC_EnableIRQ(dma->interrupt);
@@ -272,7 +226,11 @@ void stm32l4_dma_enable(stm32l4_dma_t *dma, stm32l4_dma_callback_t callback, voi
 
 void stm32l4_dma_disable(stm32l4_dma_t *dma)
 {
+    DMA_Channel_TypeDef *DMA = dma->DMA;
+
     NVIC_DisableIRQ(dma->interrupt);
+
+    stm32l4_dma_untrack(DMA->CMAR);
 }
 
 void stm32l4_dma_start(stm32l4_dma_t *dma, uint32_t tx_data, uint32_t rx_data, uint16_t xf_count, uint32_t option)
@@ -293,22 +251,24 @@ void stm32l4_dma_start(stm32l4_dma_t *dma, uint32_t tx_data, uint32_t rx_data, u
 	DMA2->IFCR = (15 << shift);
     }
 
-    dma->size = xf_count;
+    stm32l4_dma_untrack(DMA->CMAR);
 
     if (option & DMA_OPTION_MEMORY_TO_PERIPHERAL)
     {
-	stm32l4_dma_track(dma->channel, rx_data);
+	stm32l4_dma_track(rx_data);
 
 	DMA->CMAR = rx_data;
 	DMA->CPAR = tx_data;
     }
     else
     {
-	stm32l4_dma_track(dma->channel, (uint32_t)tx_data);
+	stm32l4_dma_track(tx_data);
 
 	DMA->CMAR = tx_data;
 	DMA->CPAR = rx_data;
     }
+
+    dma->size = xf_count;
 
     DMA->CNDTR = xf_count;
     DMA->CCR = option | DMA_CCR_EN;
@@ -320,7 +280,9 @@ uint16_t stm32l4_dma_stop(stm32l4_dma_t *dma)
 
     DMA->CCR &= ~(DMA_CCR_EN | DMA_CCR_TCIE | DMA_CCR_HTIE | DMA_CCR_TEIE);
 
-    stm32l4_dma_untrack(dma->channel, DMA->CMAR);
+    stm32l4_dma_untrack(DMA->CMAR);
+
+    DMA->CMAR = 0xffffffff;
 
     return dma->size - (DMA->CNDTR & 0xffff);
 }
