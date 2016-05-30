@@ -425,22 +425,16 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	return false;
     }
 
-    /* Unlock SYSCFG (and leave it unlocked for EXTI use.
-     */
-
-    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
-
     /* Detect LSE/HSE on the first pass.
      */
 
     if (stm32l4_system_device.lseclk == 0)
     {
-	apb1enr1 = RCC->APB1ENR1;
+	/* This is executed only on the very forst goaround, while interrupts are disabled.
+	 * So RCC does not need atomics.
+	 */
 
-	if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
-	{
-	    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
-	}
+	RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
 
 	PWR->CR1 |= PWR_CR1_DBP;
 	    
@@ -454,13 +448,12 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 
 	    /* Switch to System Memory @ 0x00000000.
 	     */
+
+	    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 	    SYSCFG->MEMRMP = (SYSCFG->MEMRMP & ~SYSCFG_MEMRMP_MEM_MODE) | SYSCFG_MEMRMP_MEM_MODE_0;
 	    RCC->APB2ENR &= ~RCC_APB2ENR_SYSCFGEN;
 
-	    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
-	    {
-		armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
-	    }
+	    RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
 
 	    SCB->VTOR = 0;
 
@@ -514,10 +507,7 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	 */
 	PWR->CR4 |= PWR_CR4_VBE;
 
-	if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
-	{
-	    armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
-	}
+	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
     }
 
     if (stm32l4_system_device.hseclk == 0)

@@ -860,7 +860,7 @@ bool stm32l4_i2c_disable(stm32l4_i2c_t *i2c)
 bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
 {
     I2C_TypeDef *I2C = i2c->I2C;
-    uint32_t pin_scl, pin_sda, i2c_cr1, i2c_cr2, i2c_oar1, i2c_oar2, i2c_timingr, syscfg_cfgr1, count;
+    uint32_t pin_scl, pin_sda, i2c_cr1, i2c_cr2, i2c_oar1, i2c_oar2, i2c_timingr, syscfg_cfgr1, apb2enr, count;
 
     if ((i2c->state != I2C_STATE_READY) && (i2c->state != I2C_STATE_BUSY))
     {
@@ -966,6 +966,13 @@ bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
 	syscfg_cfgr1 = SYSCFG_CFGR1_I2C3_FMP;
 	break;
     }
+
+    apb2enr = RCC->APB2ENR;
+
+    if (!(apb2enr & RCC_APB2ENR_SYSCFGEN))
+    {
+	armv7m_atomic_or(&RCC->APB2ENR, RCC_APB2ENR_SYSCFGEN);
+    }
     
     if (i2c->clock == 1000000)
     {
@@ -976,6 +983,11 @@ bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
 	armv7m_atomic_and(&SYSCFG->CFGR1, ~syscfg_cfgr1);
     }
     
+    if (!(apb2enr & RCC_APB2ENR_SYSCFGEN))
+    {
+	armv7m_atomic_and(&RCC->APB2ENR, ~RCC_APB2ENR_SYSCFGEN);
+    }
+
     I2C->TIMINGR = i2c_timingr;
     I2C->OAR2 = i2c_oar2;
     I2C->OAR1 = i2c_oar1;

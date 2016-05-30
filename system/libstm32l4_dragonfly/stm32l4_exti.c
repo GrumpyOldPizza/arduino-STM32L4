@@ -155,6 +155,7 @@ bool stm32l4_exti_resume(stm32l4_exti_t *exti, uint32_t mask)
 bool stm32l4_exti_notify(stm32l4_exti_t *exti, uint16_t pin, uint32_t control, stm32l4_exti_callback_t callback, void *context)
 {
     unsigned int mask, index, group;
+    uint32_t apb2enr;
 
     if (exti->state != EXTI_STATE_READY)
     {
@@ -192,7 +193,19 @@ bool stm32l4_exti_notify(stm32l4_exti_t *exti, uint16_t pin, uint32_t control, s
 	    armv7m_atomic_and(&EXTI->FTSR1, ~mask);
 	}
 
+	apb2enr = RCC->APB2ENR;
+
+	if (!(apb2enr & RCC_APB2ENR_SYSCFGEN))
+	{
+	    armv7m_atomic_or(&RCC->APB2ENR, RCC_APB2ENR_SYSCFGEN);
+	}
+	
 	armv7m_atomic_modify(&SYSCFG->EXTICR[index >> 2], (0x0000000f << ((index & 3) << 2)), (group << ((index & 3) << 2)));
+
+	if (!(apb2enr & RCC_APB2ENR_SYSCFGEN))
+	{
+	    armv7m_atomic_and(&RCC->APB2ENR, ~RCC_APB2ENR_SYSCFGEN);
+	}
 	
 	armv7m_atomic_or(&exti->enables, mask);
 

@@ -80,28 +80,6 @@ typedef struct _stm32l4_dma_driver_t {
 
 static stm32l4_dma_driver_t stm32l4_dma_driver;
 
-static void stm32l4_dma_flash_sleep(void)
-{
-    uint32_t o_flash, n_flash;
-
-    o_flash = stm32l4_dma_driver.flash;
-	
-    do
-    {
-	n_flash = o_flash - 1;
-	
-	if (n_flash == 0)
-	{
-	    armv7m_atomic_and(&RCC->AHB1SMENR, ~RCC_AHB1SMENR_FLASHSMEN);
-	}
-	else
-	{
-	    armv7m_atomic_or(&RCC->AHB1SMENR, RCC_AHB1SMENR_FLASHSMEN);
-	}
-    }
-    while (!armv7m_atomic_compare_exchange(&stm32l4_dma_driver.flash, &o_flash, n_flash));
-}
-
 static void stm32l4_dma_track(uint32_t address)
 {
     if (address < 0x10000000)
