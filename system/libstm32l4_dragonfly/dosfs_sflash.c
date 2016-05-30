@@ -483,7 +483,9 @@ static uint32_t dosfs_sflash_nor_identify(dosfs_sflash_t *sflash)
 			    QSPI_COMMAND_DATA_SINGLE | QSPI_COMMAND_ADDRESS_SINGLE | QSPI_COMMAND_INSTRUCTION_SINGLE | 0x0b);
 #endif
 
-      return data_size;
+    stm32l4_qspi_unselect(&sflash->qspi);
+
+    return data_size;
 }
 
 static bool dosfs_sflash_nor_erase(dosfs_sflash_t *sflash, uint32_t address)
@@ -2447,8 +2449,10 @@ static int dosfs_sflash_format(void *context)
     int status = F_NO_ERROR;
 
 #if (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1)
-    printf("SFLASH_INFO\n");
+    printf("SFLASH_FORMAT\n");
 #endif /* (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1) */
+
+    stm32l4_qspi_select(&sflash->qspi);
 
     dosfs_sflash_ftl_format(sflash);
 
@@ -2462,6 +2466,8 @@ static int dosfs_sflash_format(void *context)
     {
 	sflash->state = DOSFS_SFLASH_STATE_READY;
     }
+
+    stm32l4_qspi_unselect(&sflash->qspi);
 
     return status;
 }
@@ -2482,6 +2488,8 @@ static int dosfs_sflash_reclaim(void *context, uint32_t size)
     }
     else
     {
+	stm32l4_qspi_select(&sflash->qspi);
+
 	if (size < sflash->xlate_count)
 	{
 	    size = size * 3;
@@ -2499,6 +2507,8 @@ static int dosfs_sflash_reclaim(void *context, uint32_t size)
 
 	    dosfs_sflash_ftl_reclaim(sflash, victim_offset);
 	}
+
+	stm32l4_qspi_unselect(&sflash->qspi);
     }
 
     return status;
@@ -2519,12 +2529,16 @@ static int dosfs_sflash_discard(void *context, uint32_t address, uint32_t length
     }
     else
     {
+	stm32l4_qspi_select(&sflash->qspi);
+
 	while (length--)
 	{
 	    dosfs_sflash_ftl_discard(sflash, address);
 	    
 	    address++;
 	}
+
+	stm32l4_qspi_unselect(&sflash->qspi);
     }
 
     return status;
@@ -2545,7 +2559,11 @@ static int dosfs_sflash_read(void *context, uint32_t address, uint8_t *data)
     }
     else
     {
+	stm32l4_qspi_select(&sflash->qspi);
+
 	dosfs_sflash_ftl_read(sflash, address, data);
+
+	stm32l4_qspi_unselect(&sflash->qspi);
     }
 
     return status;
@@ -2566,12 +2584,16 @@ static int dosfs_sflash_read_sequential(void *context, uint32_t address, uint32_
     }
     else
     {
+	stm32l4_qspi_select(&sflash->qspi);
+
 	while (length--)
 	{
 	    dosfs_sflash_ftl_read(sflash, address, data);
 	    
 	    address++;
 	}
+
+	stm32l4_qspi_unselect(&sflash->qspi);
     }
 
     return status;
@@ -2592,7 +2614,11 @@ static int dosfs_sflash_write(void *context, uint32_t address, const uint8_t *da
     }
     else
     {
+	stm32l4_qspi_select(&sflash->qspi);
+
 	dosfs_sflash_ftl_write(sflash, address, data);
+
+	stm32l4_qspi_unselect(&sflash->qspi);
     }
 
     return status;
@@ -2613,14 +2639,17 @@ static int dosfs_sflash_write_sequential(void *context, uint32_t address, uint32
     }
     else
     {
+	stm32l4_qspi_select(&sflash->qspi);
+
 	while (length--)
 	{
 	    dosfs_sflash_ftl_write(sflash, address, data);
 	    
 	    address++;
 	}
-    }
 
+	stm32l4_qspi_unselect(&sflash->qspi);
+    }
 
     return status;
 }
@@ -2666,6 +2695,8 @@ int dosfs_sflash_init(uint32_t param, const F_INTERFACE **p_interface, void **p_
 	}
 	else
 	{
+	    stm32l4_qspi_select(&sflash->qspi);
+
 	    sflash->xlate_count = ((((sflash->data_size / DOSFS_SFLASH_ERASE_SIZE) * ((DOSFS_SFLASH_ERASE_SIZE / DOSFS_SFLASH_BLOCK_SIZE) -1)) -2) + (DOSFS_SFLASH_XLATE_ENTRIES -1)) / DOSFS_SFLASH_XLATE_ENTRIES;
 	    
 	    sflash->cache[0] = &dosfs_sflash_cache[0];
@@ -2681,6 +2712,8 @@ int dosfs_sflash_init(uint32_t param, const F_INTERFACE **p_interface, void **p_
 	    {
 		sflash->state = DOSFS_SFLASH_STATE_READY;
 	    }
+
+	    stm32l4_qspi_unselect(&sflash->qspi);
 	}
     }
 
