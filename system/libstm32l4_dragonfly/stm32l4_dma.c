@@ -114,19 +114,26 @@ static void stm32l4_dma_track(uint32_t address)
 
 static void stm32l4_dma_untrack(uint32_t address)
 {
+    uint32_t o_flash, n_flash;
+
     if (address < 0x10000000)
     {
-	if (stm32l4_dma_driver.flash == 1)
+	o_flash = stm32l4_dma_driver.flash;
+	  
+	do
 	{
-	    if (__get_IPSR() == 0)
+	    n_flash = o_flash - 1;
+	      
+	    if (n_flash == 0)
 	    {
-		armv7m_svcall_0((uint32_t)&stm32l4_dma_flash_sleep);
+		armv7m_atomic_and(&RCC->AHB1SMENR, ~RCC_AHB1SMENR_FLASHSMEN);
 	    }
 	    else
 	    {
-		stm32l4_dma_flash_sleep();
+		armv7m_atomic_or(&RCC->AHB1SMENR, RCC_AHB1SMENR_FLASHSMEN);
 	    }
 	}
+	while (!armv7m_atomic_compare_exchange(&stm32l4_dma_driver.flash, &o_flash, n_flash));
     }
 }
 
