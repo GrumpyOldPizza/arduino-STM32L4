@@ -143,22 +143,25 @@ void OTG_FS_IRQHandler(void)
   */
 void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
 {
+  uint32_t apb1enr1;
+
   stm32l4_system_clk48_enable();
   
   /* Peripheral clock enable */
   __HAL_RCC_USB_OTG_FS_CLK_ENABLE();
 
-  /* Enable VDDUSB */
-  if(__HAL_RCC_PWR_IS_CLK_DISABLED())
-    {
-      __HAL_RCC_PWR_CLK_ENABLE();
-      PWR->CR2 |= PWR_CR2_USV;
-      __HAL_RCC_PWR_CLK_DISABLE();
-    }
-    else
-    {
-      PWR->CR2 |= PWR_CR2_USV;
-    }
+  /* Enable VUSB */
+  apb1enr1 = RCC->APB1ENR1;
+
+  if (!(apb1enr1 & RCC_APB1ENR1_PWREN)) {
+    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+  }
+
+  PWR->CR2 |= PWR_CR2_USV;
+
+  if (!(apb1enr1 & RCC_APB1ENR1_PWREN)) {
+    armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
+  }
   
   /* Enable USB FS Interrupt */
   NVIC_EnableIRQ(OTG_FS_IRQn);
@@ -171,17 +174,20 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
   */
 void HAL_PCD_MspDeInit(PCD_HandleTypeDef *hpcd)
 {  
-  /* Disable VDDUSB */
-  if(__HAL_RCC_PWR_IS_CLK_DISABLED())
-    {
-      __HAL_RCC_PWR_CLK_ENABLE();
-      PWR->CR2 &= ~PWR_CR2_USV;
-      __HAL_RCC_PWR_CLK_DISABLE();
-    }
-    else
-    {
-      PWR->CR2 &= ~PWR_CR2_USV;
-    }
+  uint32_t apb1enr1;
+
+  /* Disable VUSB */
+  apb1enr1 = RCC->APB1ENR1;
+
+  if (!(apb1enr1 & RCC_APB1ENR1_PWREN)) {
+    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+  }
+
+  PWR->CR2 &= ~PWR_CR2_USV;
+
+  if (!(apb1enr1 & RCC_APB1ENR1_PWREN)) {
+    armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
+  }
 
   /* Peripheral clock disable */
   __HAL_RCC_USB_OTG_FS_CLK_DISABLE();

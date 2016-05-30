@@ -251,11 +251,18 @@ void stm32l4_system_periph_disable(unsigned int periph)
 
 static void stm32l4_system_msi4_sysclk(void)
 {
+    uint32_t apb1enr1;
+
     FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_LATENCY_4WS;
 
     /* Select the proper voltage range */
 
-    RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+    apb1enr1 = RCC->APB1ENR1;
+
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+    }
     
     if (PWR->CR1 & PWR_CR1_LPR)
     {
@@ -270,6 +277,11 @@ static void stm32l4_system_msi4_sysclk(void)
 
     while (PWR->SR2 & PWR_SR2_VOSF)
     {
+    }
+
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
     }
 
     /* Select the HSI as system clock source */
@@ -355,7 +367,7 @@ void stm32l4_system_bootloader(void)
     RCC->AHB1ENR = RCC_AHB1ENR_FLASHEN;
     RCC->AHB2ENR = 0;
     RCC->AHB3ENR = 0;
-    RCC->APB1ENR1 = RCC_APB1ENR1_PWREN;
+    RCC->APB1ENR1 = 0;
     RCC->APB1ENR2 = 0;
     RCC->APB2ENR = RCC_APB2ENR_SYSCFGEN;
     RCC->CCIPR = 0;
@@ -370,8 +382,6 @@ void stm32l4_system_bootloader(void)
      */
 
     stm32l4_system_msi4_sysclk();
-    
-    RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
     
     /* Disable and clear pending interrupts (80 vectors).
      */
@@ -408,6 +418,7 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 {
     uint32_t fclk, fvco, fpll, fpllout, mout, nout, rout, n, r;
     uint32_t count, msirange, hpre, ppre1, ppre2, latency;
+    uint32_t apb1enr1;
 
     if (!clk48 && ((sysclk <= 24000000) && stm32l4_system_device.clk48))
     {
@@ -424,7 +435,12 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 
     if (stm32l4_system_device.lseclk == 0)
     {
-	RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+	apb1enr1 = RCC->APB1ENR1;
+
+	if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+	{
+	    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+	}
 
 	PWR->CR1 |= PWR_CR1_DBP;
 	    
@@ -440,6 +456,11 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	     */
 	    SYSCFG->MEMRMP = (SYSCFG->MEMRMP & ~SYSCFG_MEMRMP_MEM_MODE) | SYSCFG_MEMRMP_MEM_MODE_0;
 	    RCC->APB2ENR &= ~RCC_APB2ENR_SYSCFGEN;
+
+	    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+	    {
+		armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
+	    }
 
 	    SCB->VTOR = 0;
 
@@ -493,7 +514,10 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	 */
 	PWR->CR4 |= PWR_CR4_VBE;
 
-	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
+	if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+	{
+	    armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
+	}
     }
 
     if (stm32l4_system_device.hseclk == 0)
@@ -634,7 +658,12 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
     /* First switch to HSI as system clock.
      */
 
-    RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+    apb1enr1 = RCC->APB1ENR1;
+
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+    }
 
     /* Select Range 1 to switch clocks */
 
@@ -850,7 +879,10 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	FLASH->ACR = FLASH_ACR_PRFTEN | FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
     }
 
-    RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
+    }
 
     stm32l4_system_device.sysclk = sysclk;
     stm32l4_system_device.hclk = hclk;
@@ -952,6 +984,8 @@ uint32_t stm32l4_system_pclk2(void)
 
 bool stm32l4_system_suspend(void)
 {
+    uint32_t apb1enr1;
+
     /* #### Add code here that calls STOP_ENTER, and if that fails calls out STOP_CANCEL */
        
     /* Disable FLASH in sleep/deepsleep */
@@ -1017,11 +1051,19 @@ bool stm32l4_system_suspend(void)
 
     /* Set up STOP1 */
 
-    RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+    apb1enr1 = RCC->APB1ENR1;
 
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+    }
+    
     PWR->CR1 = (PWR->CR1 & ~PWR_CR1_LPMS) | PWR_CR1_LPMS_STOP1;
 
-    RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
+    }
 
     return true;
 }
@@ -1102,15 +1144,27 @@ bool stm32l4_system_stop(void)
 
 bool stm32l4_system_standby(void)
 {
-    /* #### Add code here that calls STANDBY_ENTER, and if that fails calls out STANDBY_CANCEL */
+    uint32_t apb1enr1;
 
-    RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+    /* #### Add code here that calls STANDBY_ENTER, and if that fails calls out STANDBY_CANCEL */
 
     /* ERRATA 2.1.15. WAR: Switch MSI to 4MHz before entering low power mode */
 
     stm32l4_system_msi4_sysclk();
 
+    apb1enr1 = RCC->APB1ENR1;
+
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+    }
+    
     PWR->CR1 = (PWR->CR1 & ~PWR_CR1_LPMS) | PWR_CR1_LPMS_STANDBY;
+
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
+    }
 
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
@@ -1121,13 +1175,27 @@ bool stm32l4_system_standby(void)
 
 bool stm32l4_system_shutdown(void)
 {
+    uint32_t apb1enr1;
+
     /* #### Add code here that calls SHUTDOWN_ENTER, and if that fails calls out SHUTDOWN_CANCEL */
 
     /* ERRATA 2.1.15. WAR: Switch MSI to 4MHz before entering low power mode */
 
     stm32l4_system_msi4_sysclk();
 
+    apb1enr1 = RCC->APB1ENR1;
+
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+    }
+    
     PWR->CR1 = (PWR->CR1 & ~PWR_CR1_LPMS) | PWR_CR1_LPMS_SHUTDOWN;
+
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
+    }
 
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
