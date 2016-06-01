@@ -102,6 +102,8 @@ static stm32l4_qspi_driver_t stm32l4_qspi_driver;
 #define QUADSPI_CR_FTHRES_8                 0x00000700
 #define QUADSPI_CR_FTHRES_16                0x00000F00
 
+static void stm32l4_qspi_dma_callback(stm32l4_qspi_t *qspi, uint32_t events);
+
 static inline void stm32l4_qspi_read8(void *rx_data)
 {
     *((uint8_t*)rx_data) = *((volatile uint8_t*)(&QUADSPI->DR));
@@ -124,12 +126,28 @@ static inline void stm32l4_qspi_write32(const void *tx_data)
 
 static void stm32l4_qspi_start(stm32l4_qspi_t *qspi)
 {
-    armv7m_atomic_or(&RCC->AHB3ENR, RCC_AHB3ENR_QSPIEN);
+    stm32l4_system_periph_enable(SYSTEM_PERIPH_QSPI);
+
+    if (qspi->state != QSPI_STATE_BUSY)
+    {
+	if (qspi->mode & QSPI_MODE_DMA)
+	{
+	    stm32l4_dma_enable(&qspi->dma, (stm32l4_dma_callback_t)stm32l4_qspi_dma_callback, qspi);
+	}
+    }
 }
 
 static void stm32l4_qspi_stop(stm32l4_qspi_t *qspi)
 {
-    armv7m_atomic_and(&RCC->AHB3ENR, ~RCC_AHB3ENR_QSPIEN);
+    if (qspi->state != QSPI_STATE_BUSY)
+    {
+	if (qspi->mode & QSPI_MODE_DMA)
+	{
+	    stm32l4_dma_disable(&qspi->dma);
+	}
+    }
+
+    stm32l4_system_periph_disable(SYSTEM_PERIPH_QSPI);
 }
 
 static void stm32l4_qspi_pins(stm32l4_qspi_t *qspi)
@@ -245,8 +263,6 @@ bool stm32l4_qspi_create(stm32l4_qspi_t *qspi, unsigned int instance, const stm3
 	}
     }
 
-    NVIC_SetPriority(qspi->interrupt, qspi->priority);
-
     stm32l4_qspi_driver.instances[instance] = qspi;
 
     return true;
@@ -282,6 +298,8 @@ bool stm32l4_qspi_enable(stm32l4_qspi_t *qspi, uint32_t clock, uint32_t option, 
     qspi->context = NULL;
     qspi->events = 0;
 
+    NVIC_SetPriority(qspi->interrupt, qspi->priority);
+
     qspi->state = QSPI_STATE_BUSY;
 
     if (!stm32l4_qspi_configure(qspi, clock, option))
@@ -305,11 +323,6 @@ bool stm32l4_qspi_disable(stm32l4_qspi_t *qspi)
 	return false;
     }
 
-    if (qspi->mode & QSPI_MODE_DMA)
-    {
-	stm32l4_dma_disable(&qspi->dma);
-    }
-
     qspi->state = QSPI_STATE_NONE;
 
     return true;
@@ -325,11 +338,6 @@ bool stm32l4_qspi_configure(stm32l4_qspi_t *qspi, uint32_t clock, uint32_t optio
     }
 
     if (clock > 48000000)
-    {
-	return false;
-    }
-
-    if ((option & (QSPI_OPTION_RX_DMA | QSPI_OPTION_TX_DMA)) && ! (qspi->mode & QSPI_MODE_DMA))
     {
 	return false;
     }
@@ -352,18 +360,6 @@ bool stm32l4_qspi_configure(stm32l4_qspi_t *qspi, uint32_t clock, uint32_t optio
     // QUADSPI->CR = QUADSPI_CR_APMS | QUADSPI_CR_FTHRES_1;
 
     QUADSPI->DCR = QUADSPI_DCR_FSIZE | ((qspi->option & QSPI_OPTION_MODE_MASK) >> QSPI_OPTION_MODE_SHIFT);
-
-    if (qspi->mode & QSPI_MODE_DMA)
-    {
-	if (qspi->option & (QSPI_OPTION_RX_DMA | QSPI_OPTION_TX_DMA))
-	{
-	    stm32l4_dma_enable(&qspi->dma, (stm32l4_dma_callback_t)stm32l4_qspi_dma_callback, qspi);
-	}
-	else
-	{
-	    stm32l4_dma_disable(&qspi->dma);
-	}
-    }
     
     stm32l4_qspi_pins(qspi);
 	
@@ -549,7 +545,7 @@ bool stm32l4_qspi_receive(stm32l4_qspi_t *qspi, uint32_t command, uint32_t addre
     }
     else
     {
-	if (!(qspi->option & QSPI_OPTION_RX_DMA))
+	if (!(qspi->mode & QSPI_MODE_DMA))
 	{
 	    return false;
 	}
@@ -658,7 +654,7 @@ bool stm32l4_qspi_transmit(stm32l4_qspi_t *qspi, uint32_t command, uint32_t addr
     }
     else
     {
-	if (!(qspi->option & QSPI_OPTION_TX_DMA))
+	if (!(qspi->mode & QSPI_MODE_DMA))
 	{
 	    return false;
 	}

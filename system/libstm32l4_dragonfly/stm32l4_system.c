@@ -45,6 +45,7 @@ typedef struct _stm32l4_system_device_t {
 static stm32l4_system_device_t stm32l4_system_device;
 
 static volatile uint32_t * const stm32l4_system_xlate_RSTR[] = {
+    &RCC->AHB1RSTR,  /* SYSTEM_PERIPH_FLASH */
     &RCC->AHB1RSTR,  /* SYSTEM_PERIPH_DMA1 */
     &RCC->AHB1RSTR,  /* SYSTEM_PERIPH_DMA2 */
     &RCC->AHB2RSTR,  /* SYSTEM_PERIPH_GPIOA */
@@ -92,6 +93,7 @@ static volatile uint32_t * const stm32l4_system_xlate_RSTR[] = {
 };
 
 static uint32_t const stm32l4_system_xlate_RSTMSK[] = {
+    RCC_AHB1RSTR_FLASHRST,    /* SYSTEM_PERIPH_FLASH */
     RCC_AHB1RSTR_DMA1RST,     /* SYSTEM_PERIPH_DMA1 */
     RCC_AHB1RSTR_DMA2RST,     /* SYSTEM_PERIPH_DMA2 */
     RCC_AHB2RSTR_GPIOARST,    /* SYSTEM_PERIPH_GPIOA */
@@ -139,6 +141,7 @@ static uint32_t const stm32l4_system_xlate_RSTMSK[] = {
 };
 
 static volatile uint32_t * const stm32l4_system_xlate_ENR[] = {
+    &RCC->AHB1ENR,  /* SYSTEM_PERIPH_FLASH */
     &RCC->AHB1ENR,  /* SYSTEM_PERIPH_DMA1 */
     &RCC->AHB1ENR,  /* SYSTEM_PERIPH_DMA2 */
     &RCC->AHB2ENR,  /* SYSTEM_PERIPH_GPIOA */
@@ -186,6 +189,7 @@ static volatile uint32_t * const stm32l4_system_xlate_ENR[] = {
 };
 
 static uint32_t const stm32l4_system_xlate_ENMSK[] = {
+    RCC_AHB1ENR_FLASHEN,    /* SYSTEM_PERIPH_FLASH */
     RCC_AHB1ENR_DMA1EN,     /* SYSTEM_PERIPH_DMA1 */
     RCC_AHB1ENR_DMA2EN,     /* SYSTEM_PERIPH_DMA2 */
     RCC_AHB2ENR_GPIOAEN,    /* SYSTEM_PERIPH_GPIOA */
@@ -232,6 +236,102 @@ static uint32_t const stm32l4_system_xlate_ENMSK[] = {
     RCC_APB1ENR1_DAC1EN,    /* SYSTEM_PERIPH_DAC */
 };
 
+static volatile uint32_t * const stm32l4_system_xlate_SMENR[] = {
+    &RCC->AHB1SMENR,  /* SYSTEM_PERIPH_FLASH */
+    &RCC->AHB1SMENR,  /* SYSTEM_PERIPH_DMA1 */
+    &RCC->AHB1SMENR,  /* SYSTEM_PERIPH_DMA2 */
+    &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_GPIOA */
+    &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_GPIOB */
+    &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_GPIOC */
+    &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_GPIOD */
+    &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_GPIOE */
+    &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_GPIOF */
+    &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_GPIOG */
+    &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_GPIOH */
+    &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_USB */
+    &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_ADC */
+    &RCC->AHB3SMENR,  /* SYSTEM_PERIPH_QSPI */
+    &RCC->APB2SMENR,  /* SYSTEM_PERIPH_USART1 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_USART2 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_USART3 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_UART4 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_UART5 */
+    &RCC->APB1SMENR2, /* SYSTEM_PERIPH_LPUART1 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_I2C1 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_I2C2 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_I2C3 */
+    &RCC->APB2SMENR,  /* SYSTEM_PERIPH_SPI1 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_SPI2 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_SPI3 */
+    &RCC->APB2SMENR,  /* SYSTEM_PERIPH_SDMMC */
+    &RCC->APB2SMENR,  /* SYSTEM_PERIPH_SAI1 */
+    &RCC->APB2SMENR,  /* SYSTEM_PERIPH_SAI2 */
+    &RCC->APB2SMENR,  /* SYSTEM_PERIPH_DFSDM */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_CAN */
+    &RCC->APB2SMENR,  /* SYSTEM_PERIPH_TIM1 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_TIM2 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_TIM3 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_TIM4 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_TIM5 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_TIM6 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_TIM7 */
+    &RCC->APB2SMENR,  /* SYSTEM_PERIPH_TIM8 */
+    &RCC->APB2SMENR,  /* SYSTEM_PERIPH_TIM15 */
+    &RCC->APB2SMENR,  /* SYSTEM_PERIPH_TIM16 */
+    &RCC->APB2SMENR,  /* SYSTEM_PERIPH_TIM17 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_LPTIM1 */
+    &RCC->APB1SMENR2, /* SYSTEM_PERIPH_LPTIM2 */
+    &RCC->APB1SMENR1, /* SYSTEM_PERIPH_DAC */
+};
+
+static uint32_t const stm32l4_system_xlate_SMENMSK[] = {
+    RCC_AHB1SMENR_FLASHSMEN,    /* SYSTEM_PERIPH_FLASH */
+    RCC_AHB1SMENR_DMA1SMEN,     /* SYSTEM_PERIPH_DMA1 */
+    RCC_AHB1SMENR_DMA2SMEN,     /* SYSTEM_PERIPH_DMA2 */
+    RCC_AHB2SMENR_GPIOASMEN,    /* SYSTEM_PERIPH_GPIOA */
+    RCC_AHB2SMENR_GPIOBSMEN,    /* SYSTEM_PERIPH_GPIOB */
+    RCC_AHB2SMENR_GPIOCSMEN,    /* SYSTEM_PERIPH_GPIOC */
+    RCC_AHB2SMENR_GPIODSMEN,    /* SYSTEM_PERIPH_GPIOD */
+    RCC_AHB2SMENR_GPIOESMEN,    /* SYSTEM_PERIPH_GPIOE */
+    RCC_AHB2SMENR_GPIOFSMEN,    /* SYSTEM_PERIPH_GPIOF */
+    RCC_AHB2SMENR_GPIOGSMEN,    /* SYSTEM_PERIPH_GPIOG */
+    RCC_AHB2SMENR_GPIOHSMEN,    /* SYSTEM_PERIPH_GPIOH */
+    RCC_AHB2SMENR_OTGFSSMEN,    /* SYSTEM_PERIPH_USB */
+    RCC_AHB2SMENR_ADCSMEN,      /* SYSTEM_PERIPH_ADC */
+    RCC_AHB3SMENR_QSPISMEN,     /* SYSTEM_PERIPH_QSPI */
+    RCC_APB2SMENR_USART1SMEN,   /* SYSTEM_PERIPH_USART1 */
+    RCC_APB1SMENR1_USART2SMEN,  /* SYSTEM_PERIPH_USART2 */
+    RCC_APB1SMENR1_USART3SMEN,  /* SYSTEM_PERIPH_USART3 */
+    RCC_APB1SMENR1_UART4SMEN,   /* SYSTEM_PERIPH_UART4 */
+    RCC_APB1SMENR1_UART5SMEN,   /* SYSTEM_PERIPH_UART5 */
+    RCC_APB1SMENR2_LPUART1SMEN, /* SYSTEM_PERIPH_LPUART1 */
+    RCC_APB1SMENR1_I2C1SMEN,    /* SYSTEM_PERIPH_I2C1 */
+    RCC_APB1SMENR1_I2C2SMEN,    /* SYSTEM_PERIPH_I2C2 */
+    RCC_APB1SMENR1_I2C3SMEN,    /* SYSTEM_PERIPH_I2C3 */
+    RCC_APB2SMENR_SPI1SMEN,     /* SYSTEM_PERIPH_SPI1 */
+    RCC_APB1SMENR1_SPI2SMEN,    /* SYSTEM_PERIPH_SPI2 */
+    RCC_APB1SMENR1_SPI3SMEN,    /* SYSTEM_PERIPH_SPI3 */
+    RCC_APB2SMENR_SDMMC1SMEN,   /* SYSTEM_PERIPH_SDMMC */
+    RCC_APB2SMENR_SAI1SMEN,     /* SYSTEM_PERIPH_SAI1 */
+    RCC_APB2SMENR_SAI2SMEN,     /* SYSTEM_PERIPH_SAI2 */
+    RCC_APB2SMENR_DFSDMSMEN,    /* SYSTEM_PERIPH_DFSDM */
+    RCC_APB1SMENR1_CAN1SMEN,    /* SYSTEM_PERIPH_CAN */
+    RCC_APB2SMENR_TIM1SMEN,     /* SYSTEM_PERIPH_TIM1 */
+    RCC_APB1SMENR1_TIM2SMEN,    /* SYSTEM_PERIPH_TIM2 */
+    RCC_APB1SMENR1_TIM3SMEN,    /* SYSTEM_PERIPH_TIM3 */
+    RCC_APB1SMENR1_TIM4SMEN,    /* SYSTEM_PERIPH_TIM4 */
+    RCC_APB1SMENR1_TIM5SMEN,    /* SYSTEM_PERIPH_TIM5 */
+    RCC_APB1SMENR1_TIM6SMEN,    /* SYSTEM_PERIPH_TIM6 */
+    RCC_APB1SMENR1_TIM7SMEN,    /* SYSTEM_PERIPH_TIM7 */
+    RCC_APB2SMENR_TIM8SMEN,     /* SYSTEM_PERIPH_TIM8 */
+    RCC_APB2SMENR_TIM15SMEN,    /* SYSTEM_PERIPH_TIM15 */
+    RCC_APB2SMENR_TIM16SMEN,    /* SYSTEM_PERIPH_TIM16 */
+    RCC_APB2SMENR_TIM17SMEN,    /* SYSTEM_PERIPH_TIM17 */
+    RCC_APB1SMENR1_LPTIM1SMEN,  /* SYSTEM_PERIPH_LPTIM1 */
+    RCC_APB1SMENR2_LPTIM2SMEN,  /* SYSTEM_PERIPH_LPTIM2 */
+    RCC_APB1SMENR1_DAC1SMEN,    /* SYSTEM_PERIPH_DAC */
+};
+
 void stm32l4_system_periph_reset(unsigned int periph)
 {
     armv7m_atomic_or(stm32l4_system_xlate_RSTR[periph], stm32l4_system_xlate_RSTMSK[periph]);
@@ -241,12 +341,77 @@ void stm32l4_system_periph_reset(unsigned int periph)
 void stm32l4_system_periph_enable(unsigned int periph)
 {
     armv7m_atomic_or(stm32l4_system_xlate_ENR[periph], stm32l4_system_xlate_ENMSK[periph]);
-    
 }
 
 void stm32l4_system_periph_disable(unsigned int periph)
 {
     armv7m_atomic_and(stm32l4_system_xlate_ENR[periph], ~stm32l4_system_xlate_ENMSK[periph]);
+}
+
+void stm32l4_system_periph_wake(unsigned int periph)
+{
+    armv7m_atomic_or(stm32l4_system_xlate_SMENR[periph], stm32l4_system_xlate_SMENMSK[periph]);
+}
+
+void stm32l4_system_periph_sleep(unsigned int periph)
+{
+    armv7m_atomic_and(stm32l4_system_xlate_SMENR[periph], ~stm32l4_system_xlate_SMENMSK[periph]);
+}
+
+void stm32l4_system_periph_cond_enable(unsigned int periph, volatile uint32_t *p_mask, uint32_t mask)
+{
+    armv7m_atomic_or(p_mask, mask);
+    armv7m_atomic_or(stm32l4_system_xlate_ENR[periph], stm32l4_system_xlate_ENMSK[periph]);
+}
+
+void stm32l4_system_periph_cond_disable(unsigned int periph, volatile uint32_t *p_mask, uint32_t mask)
+{
+    uint32_t o_mask, n_mask;
+
+    o_mask = *p_mask;
+	  
+    do
+    {
+	n_mask = o_mask & ~mask;
+	      
+	if (n_mask == 0)
+	{
+	    armv7m_atomic_and(stm32l4_system_xlate_ENR[periph], ~stm32l4_system_xlate_ENMSK[periph]);
+	}
+	else
+	{
+	    armv7m_atomic_or(stm32l4_system_xlate_ENR[periph], stm32l4_system_xlate_ENMSK[periph]);
+	}
+    }
+    while (!armv7m_atomic_compare_exchange(p_mask, &o_mask, n_mask));
+}
+
+void stm32l4_system_periph_cond_wake(unsigned int periph, volatile uint32_t *p_mask, uint32_t mask)
+{
+    armv7m_atomic_or(p_mask, mask);
+    armv7m_atomic_or(stm32l4_system_xlate_SMENR[periph], stm32l4_system_xlate_SMENMSK[periph]);
+}
+
+void stm32l4_system_periph_cond_sleep(unsigned int periph, volatile uint32_t *p_mask, uint32_t mask)
+{
+    uint32_t o_mask, n_mask;
+
+    o_mask = *p_mask;
+	  
+    do
+    {
+	n_mask = o_mask & ~mask;
+	      
+	if (n_mask == 0)
+	{
+	    armv7m_atomic_and(stm32l4_system_xlate_SMENR[periph], ~stm32l4_system_xlate_SMENMSK[periph]);
+	}
+	else
+	{
+	    armv7m_atomic_or(stm32l4_system_xlate_SMENR[periph], stm32l4_system_xlate_SMENMSK[periph]);
+	}
+    }
+    while (!armv7m_atomic_compare_exchange(p_mask, &o_mask, n_mask));
 }
 
 static void stm32l4_system_msi4_sysclk(void)
@@ -425,6 +590,11 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	return false;
     }
 
+    /* Unlock SYSCFG (and leave it unlocked for EXTI use.
+     */
+
+    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+
     /* Detect LSE/HSE on the first pass.
      */
 
@@ -449,7 +619,6 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	    /* Switch to System Memory @ 0x00000000.
 	     */
 
-	    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 	    SYSCFG->MEMRMP = (SYSCFG->MEMRMP & ~SYSCFG_MEMRMP_MEM_MODE) | SYSCFG_MEMRMP_MEM_MODE_0;
 	    RCC->APB2ENR &= ~RCC_APB2ENR_SYSCFGEN;
 
@@ -606,8 +775,8 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	    {
 		fpll = fvco / r;
 		
-		/* Prefer higher N,R pairs for added PLL stability. */
-		if (fpllout <= fpll)
+		/* Prefer lower N,R pairs for lower PLL current. */
+		if (fpllout < fpll)
 		{
 		    fpllout = fpll;
 		    

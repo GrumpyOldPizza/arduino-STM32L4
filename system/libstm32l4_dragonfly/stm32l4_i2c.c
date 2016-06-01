@@ -35,6 +35,7 @@
 #include "stm32l4_gpio.h"
 #include "stm32l4_i2c.h"
 #include "stm32l4_dma.h"
+#include "stm32l4_system.h"
 
 typedef struct _stm32l4_i2c_driver_t {
     stm32l4_i2c_t     *instances[I2C_INSTANCE_COUNT];
@@ -58,20 +59,20 @@ static stm32l4_i2c_driver_t stm32l4_i2c_driver;
 
 static void stm32l4_i2c_start(stm32l4_i2c_t *i2c)
 {
-    switch (i2c->instance) {
-    case I2C_INSTANCE_I2C1:
-	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_I2C1EN);
-	break;
-    case I2C_INSTANCE_I2C2:
-	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_I2C2EN);
-	break;
-    case I2C_INSTANCE_I2C3:
-	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_I2C3EN);
-	break;
-    }
+    stm32l4_system_periph_enable(SYSTEM_PERIPH_I2C1 + i2c->instance);
 
     if (i2c->state != I2C_STATE_BUSY)
     {
+	if (i2c->mode & I2C_MODE_RX_DMA)
+	{
+	    stm32l4_dma_enable(&i2c->rx_dma, NULL, NULL);
+	}
+	
+	if (i2c->mode & I2C_MODE_TX_DMA)
+	{
+	    stm32l4_dma_enable(&i2c->tx_dma, NULL, NULL);
+	}
+	
 	NVIC_EnableIRQ(i2c->interrupt+1); /* ERR */
 	NVIC_EnableIRQ(i2c->interrupt+0); /* EV  */
     }
@@ -79,20 +80,23 @@ static void stm32l4_i2c_start(stm32l4_i2c_t *i2c)
 
 static void stm32l4_i2c_stop(stm32l4_i2c_t *i2c)
 {
-    NVIC_DisableIRQ(i2c->interrupt+0); /* EV  */
-    NVIC_DisableIRQ(i2c->interrupt+1); /* ERR */
+    if (i2c->state != I2C_STATE_BUSY)
+    {
+	NVIC_DisableIRQ(i2c->interrupt+0); /* EV  */
+	NVIC_DisableIRQ(i2c->interrupt+1); /* ERR */
 
-    switch (i2c->instance) {
-    case I2C_INSTANCE_I2C1:
-	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_I2C1EN);
-	break;
-    case I2C_INSTANCE_I2C2:
-	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_I2C2EN);
-	break;
-    case I2C_INSTANCE_I2C3:
-	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_I2C3EN);
-	break;
+	if (i2c->mode & I2C_MODE_RX_DMA)
+	{
+	    stm32l4_dma_disable(&i2c->rx_dma);
+	}
+	
+	if (i2c->mode & I2C_MODE_TX_DMA)
+	{
+	    stm32l4_dma_disable(&i2c->tx_dma);
+	}
     }
+
+    stm32l4_system_periph_disable(SYSTEM_PERIPH_I2C1 + i2c->instance);
 }
 
 static void stm32l4_i2c_master_receive(stm32l4_i2c_t *i2c)
@@ -842,16 +846,6 @@ bool stm32l4_i2c_disable(stm32l4_i2c_t *i2c)
 	stm32l4_i2c_stop(i2c);
     }
 
-    if (i2c->mode & I2C_MODE_RX_DMA)
-    {
-	stm32l4_dma_disable(&i2c->rx_dma);
-    }
-
-    if (i2c->mode & I2C_MODE_TX_DMA)
-    {
-	stm32l4_dma_disable(&i2c->tx_dma);
-    }
-
     i2c->state = I2C_STATE_INIT;
 
     return true;
@@ -860,7 +854,7 @@ bool stm32l4_i2c_disable(stm32l4_i2c_t *i2c)
 bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
 {
     I2C_TypeDef *I2C = i2c->I2C;
-    uint32_t pin_scl, pin_sda, i2c_cr1, i2c_cr2, i2c_oar1, i2c_oar2, i2c_timingr, syscfg_cfgr1, apb2enr, count;
+    uint32_t pin_scl, pin_sda, i2c_cr1, i2c_cr2, i2c_oar1, i2c_oar2, i2c_timingr, syscfg_cfgr1, count;
 
     if ((i2c->state != I2C_STATE_READY) && (i2c->state != I2C_STATE_BUSY))
     {
@@ -967,13 +961,6 @@ bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
 	break;
     }
 
-    apb2enr = RCC->APB2ENR;
-
-    if (!(apb2enr & RCC_APB2ENR_SYSCFGEN))
-    {
-	armv7m_atomic_or(&RCC->APB2ENR, RCC_APB2ENR_SYSCFGEN);
-    }
-    
     if (i2c->clock == 1000000)
     {
 	armv7m_atomic_or(&SYSCFG->CFGR1, syscfg_cfgr1);
@@ -982,27 +969,12 @@ bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
     {
 	armv7m_atomic_and(&SYSCFG->CFGR1, ~syscfg_cfgr1);
     }
-    
-    if (!(apb2enr & RCC_APB2ENR_SYSCFGEN))
-    {
-	armv7m_atomic_and(&RCC->APB2ENR, ~RCC_APB2ENR_SYSCFGEN);
-    }
 
     I2C->TIMINGR = i2c_timingr;
     I2C->OAR2 = i2c_oar2;
     I2C->OAR1 = i2c_oar1;
     I2C->CR2 = i2c_cr2;
     I2C->CR1 = i2c_cr1 | I2C_CR1_PE;
-    
-    if (i2c->mode & I2C_MODE_RX_DMA)
-    {
-	stm32l4_dma_enable(&i2c->rx_dma, NULL, NULL);
-    }
-    
-    if (i2c->mode & I2C_MODE_TX_DMA)
-    {
-	stm32l4_dma_enable(&i2c->tx_dma, NULL, NULL);
-    }
 
     if (i2c->option & I2C_OPTION_RESET)
     {

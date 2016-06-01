@@ -32,6 +32,7 @@
 
 #include "stm32l4_exti.h"
 #include "stm32l4_gpio.h"
+#include "stm32l4_system.h"
 
 #include "armv7m.h"
 
@@ -104,12 +105,19 @@ bool stm32l4_exti_enable(stm32l4_exti_t *exti)
 
 bool stm32l4_exti_disable(stm32l4_exti_t *exti)
 {
+    unsigned int group;
+
     if (exti->state != EXTI_STATE_READY)
     {
 	return false;
     }
 
     armv7m_atomic_and(&EXTI->IMR1, ~0x0000ffff);
+
+    for (group = 0; group < 8; group++)
+    {
+	stm32l4_system_periph_cond_sleep((SYSTEM_PERIPH_GPIOA + group), &exti->gpio[group], ~0ul);
+    }
 
     NVIC_DisableIRQ(EXTI15_10_IRQn);
     NVIC_DisableIRQ(EXTI9_5_IRQn);
@@ -154,8 +162,7 @@ bool stm32l4_exti_resume(stm32l4_exti_t *exti, uint32_t mask)
 
 bool stm32l4_exti_notify(stm32l4_exti_t *exti, uint16_t pin, uint32_t control, stm32l4_exti_callback_t callback, void *context)
 {
-    unsigned int mask, index, group;
-    uint32_t apb2enr;
+    unsigned int mask, index, group, o_group;
 
     if (exti->state != EXTI_STATE_READY)
     {
@@ -166,8 +173,16 @@ bool stm32l4_exti_notify(stm32l4_exti_t *exti, uint16_t pin, uint32_t control, s
     group = (pin & GPIO_PIN_GROUP_MASK) >> GPIO_PIN_GROUP_SHIFT;
 
     mask = 1ul << index;
-    
+
     armv7m_atomic_and(&EXTI->IMR1, ~mask);
+
+    if (exti->enables & mask)
+    {
+	o_group = (SYSCFG->EXTICR[index >> 2] >> ((index & 3) << 2)) & 15;
+
+	stm32l4_system_periph_cond_sleep((SYSTEM_PERIPH_GPIOA + o_group), &exti->gpio[o_group], (1ul << index));
+    }
+
     armv7m_atomic_and(&exti->enables, ~mask);
     
     exti->channels[index].callback = callback;
@@ -193,26 +208,16 @@ bool stm32l4_exti_notify(stm32l4_exti_t *exti, uint16_t pin, uint32_t control, s
 	    armv7m_atomic_and(&EXTI->FTSR1, ~mask);
 	}
 
-	apb2enr = RCC->APB2ENR;
-
-	if (!(apb2enr & RCC_APB2ENR_SYSCFGEN))
-	{
-	    armv7m_atomic_or(&RCC->APB2ENR, RCC_APB2ENR_SYSCFGEN);
-	}
-	
 	armv7m_atomic_modify(&SYSCFG->EXTICR[index >> 2], (0x0000000f << ((index & 3) << 2)), (group << ((index & 3) << 2)));
 
-	if (!(apb2enr & RCC_APB2ENR_SYSCFGEN))
-	{
-	    armv7m_atomic_and(&RCC->APB2ENR, ~RCC_APB2ENR_SYSCFGEN);
-	}
-	
 	armv7m_atomic_or(&exti->enables, mask);
 
 	if ((exti->enables & exti->mask) & mask)
 	{
 	    armv7m_atomic_or(&EXTI->IMR1, mask);
 	}
+
+	stm32l4_system_periph_cond_wake((SYSTEM_PERIPH_GPIOA + group), &exti->gpio[group], (1ul << index));
     }
 
     return true;

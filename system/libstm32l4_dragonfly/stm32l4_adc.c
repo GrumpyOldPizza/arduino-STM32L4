@@ -47,7 +47,8 @@
 
 
 typedef struct _stm32l4_adc_driver_t {
-    stm32l4_adc_t   *instances[ADC_INSTANCE_COUNT];
+    stm32l4_adc_t     *instances[ADC_INSTANCE_COUNT];
+    volatile uint32_t adc;
 } stm32l4_adc_driver_t;
 
 static stm32l4_adc_driver_t stm32l4_adc_driver;
@@ -141,13 +142,10 @@ bool stm32l4_adc_disable(stm32l4_adc_t *adc)
 
     if (adc->instance == ADC_INSTANCE_ADC1)
     {
-        armv7m_atomic_and(&ADC123_COMMON->CCR, ~(ADC_CCR_VBATEN | ADC_CCR_VREFEN));
-
-	if (!stm32l4_adc_driver.instances[ADC_INSTANCE_ADC2] && !stm32l4_adc_driver.instances[ADC_INSTANCE_ADC3])
-	{
-	    stm32l4_system_periph_disable(SYSTEM_PERIPH_ADC);
-	}
+	armv7m_atomic_and(&ADC123_COMMON->CCR, ~(ADC_CCR_VBATEN | ADC_CCR_VREFEN));
     }
+
+    stm32l4_system_periph_cond_disable(SYSTEM_PERIPH_ADC, &stm32l4_adc_driver.adc, (1ul << adc->instance));
 
     adc->events = 0;
     adc->callback = NULL;
@@ -169,7 +167,7 @@ bool stm32l4_adc_configure(stm32l4_adc_t *adc, uint32_t option)
     
     if (adc->state == ADC_STATE_BUSY)
     {
-	stm32l4_system_periph_enable(SYSTEM_PERIPH_ADC);
+	stm32l4_system_periph_cond_enable(SYSTEM_PERIPH_ADC, &stm32l4_adc_driver.adc, (1ul << adc->instance));
 
 	if ((stm32l4_system_hclk() <= 48000000) && (stm32l4_system_hclk() == stm32l4_system_sysclk()))
 	{

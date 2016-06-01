@@ -31,6 +31,7 @@
 #include "stm32l4xx.h"
 
 #include "stm32l4_dma.h"
+#include "stm32l4_system.h"
 
 #include "armv7m.h"
 
@@ -73,45 +74,28 @@ static const IRQn_Type stm32l4_dma_interrupt_table[16] = {
 };
 
 typedef struct _stm32l4_dma_driver_t {
+    stm32l4_dma_t          *instances[16];
     volatile uint32_t      mask;
     volatile uint32_t      flash;
-    stm32l4_dma_t          *instances[16];
+    volatile uint32_t      dma1;
+    volatile uint32_t      dma2;
 } stm32l4_dma_driver_t;
 
 static stm32l4_dma_driver_t stm32l4_dma_driver;
 
-static void stm32l4_dma_track(uint32_t address)
+static inline void stm32l4_dma_track(uint32_t channel, uint32_t address)
 {
     if (address < 0x10000000)
     {
-	armv7m_atomic_add(&stm32l4_dma_driver.flash, 1);
-	
-	armv7m_atomic_or(&RCC->AHB1SMENR, RCC_AHB1SMENR_FLASHSMEN);
+	stm32l4_system_periph_cond_wake(SYSTEM_PERIPH_FLASH, &stm32l4_dma_driver.flash, (1ul << channel));
     }
 }
 
-static void stm32l4_dma_untrack(uint32_t address)
+static inline void stm32l4_dma_untrack(uint32_t channel, uint32_t address)
 {
-    uint32_t o_flash, n_flash;
-
     if (address < 0x10000000)
     {
-	o_flash = stm32l4_dma_driver.flash;
-	  
-	do
-	{
-	    n_flash = o_flash - 1;
-	      
-	    if (n_flash == 0)
-	    {
-		armv7m_atomic_and(&RCC->AHB1SMENR, ~RCC_AHB1SMENR_FLASHSMEN);
-	    }
-	    else
-	    {
-		armv7m_atomic_or(&RCC->AHB1SMENR, RCC_AHB1SMENR_FLASHSMEN);
-	    }
-	}
-	while (!armv7m_atomic_compare_exchange(&stm32l4_dma_driver.flash, &o_flash, n_flash));
+	stm32l4_system_periph_cond_sleep(SYSTEM_PERIPH_FLASH, &stm32l4_dma_driver.flash, (1ul << channel));
     }
 }
 
@@ -192,12 +176,14 @@ void stm32l4_dma_enable(stm32l4_dma_t *dma, stm32l4_dma_callback_t callback, voi
 
     if (!(dma->channel & 8))
     {
-	armv7m_atomic_or(&RCC->AHB1ENR, RCC_AHB1ENR_DMA1EN);
+	stm32l4_system_periph_cond_enable(SYSTEM_PERIPH_DMA1, &stm32l4_dma_driver.dma1, (1ul << (dma->channel & 7)));
+
 	armv7m_atomic_modify(&DMA1_CSELR->CSELR, (15 << shift), (dma->channel >> 4) << shift);
     }
     else
     {
-	armv7m_atomic_or(&RCC->AHB1ENR, RCC_AHB1ENR_DMA2EN);
+	stm32l4_system_periph_cond_enable(SYSTEM_PERIPH_DMA2, &stm32l4_dma_driver.dma2, (1ul << (dma->channel & 7)));
+
 	armv7m_atomic_modify(&DMA2_CSELR->CSELR, (15 << shift), (dma->channel >> 4) << shift);
     }
 
@@ -215,7 +201,16 @@ void stm32l4_dma_disable(stm32l4_dma_t *dma)
 
     NVIC_DisableIRQ(dma->interrupt);
 
-    stm32l4_dma_untrack(DMA->CMAR);
+    stm32l4_dma_untrack(dma->channel, DMA->CMAR);
+
+    if (!(dma->channel & 8))
+    {
+	stm32l4_system_periph_cond_disable(SYSTEM_PERIPH_DMA1, &stm32l4_dma_driver.dma1, (1ul << (dma->channel & 7)));
+    }
+    else
+    {
+	stm32l4_system_periph_cond_disable(SYSTEM_PERIPH_DMA2, &stm32l4_dma_driver.dma2, (1ul << (dma->channel & 7)));
+    }
 }
 
 void stm32l4_dma_start(stm32l4_dma_t *dma, uint32_t tx_data, uint32_t rx_data, uint16_t xf_count, uint32_t option)
@@ -236,18 +231,18 @@ void stm32l4_dma_start(stm32l4_dma_t *dma, uint32_t tx_data, uint32_t rx_data, u
 	DMA2->IFCR = (15 << shift);
     }
 
-    stm32l4_dma_untrack(DMA->CMAR);
+    stm32l4_dma_untrack(dma->channel, DMA->CMAR);
 
     if (option & DMA_OPTION_MEMORY_TO_PERIPHERAL)
     {
-	stm32l4_dma_track(rx_data);
+	stm32l4_dma_track(dma->channel, rx_data);
 
 	DMA->CMAR = rx_data;
 	DMA->CPAR = tx_data;
     }
     else
     {
-	stm32l4_dma_track(tx_data);
+	stm32l4_dma_track(dma->channel, tx_data);
 
 	DMA->CMAR = tx_data;
 	DMA->CPAR = rx_data;
@@ -265,7 +260,7 @@ uint16_t stm32l4_dma_stop(stm32l4_dma_t *dma)
 
     DMA->CCR &= ~(DMA_CCR_EN | DMA_CCR_TCIE | DMA_CCR_HTIE | DMA_CCR_TEIE);
 
-    stm32l4_dma_untrack(DMA->CMAR);
+    stm32l4_dma_untrack(dma->channel, DMA->CMAR);
 
     DMA->CMAR = 0xffffffff;
 

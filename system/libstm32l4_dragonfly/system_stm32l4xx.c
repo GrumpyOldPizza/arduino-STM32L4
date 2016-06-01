@@ -227,7 +227,15 @@ void SystemInit(void)
   RCC->APB2ENR &= ~RCC_APB2ENR_SYSCFGEN;
 
   RCC->AHB1SMENR &= ~RCC_AHB1SMENR_FLASHSMEN;
-  
+  RCC->AHB2SMENR &= ~(RCC_AHB2SMENR_GPIOASMEN |
+                      RCC_AHB2SMENR_GPIOBSMEN |
+                      RCC_AHB2SMENR_GPIOCSMEN |
+	              RCC_AHB2SMENR_GPIODSMEN |
+                      RCC_AHB2SMENR_GPIOESMEN |
+                      RCC_AHB2SMENR_GPIOFSMEN |
+	              RCC_AHB2SMENR_GPIOGSMEN |
+	              RCC_AHB2SMENR_GPIOHSMEN);
+
   /* Configure the Vector Table location add offset address ------------------*/
 #ifdef VECT_TAB_SRAM
   SCB->VTOR = SRAM_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal SRAM */

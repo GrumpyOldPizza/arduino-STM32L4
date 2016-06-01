@@ -57,6 +57,7 @@ typedef struct _stm32l4_exti_t {
     uint8_t                 priority;
     uint32_t                enables;
     uint32_t                mask;
+    volatile uint32_t       gpio[8];
     struct {
       stm32l4_exti_callback_t callback;
       void*                   context;

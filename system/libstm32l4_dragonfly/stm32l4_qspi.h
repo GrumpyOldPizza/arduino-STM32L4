@@ -50,8 +50,6 @@
 #define QSPI_OPTION_MODE_SHIFT           0
 #define QSPI_OPTION_MODE_0               0x00000000
 #define QSPI_OPTION_MODE_3               0x00000001
-#define QSPI_OPTION_RX_DMA               0x00000002
-#define QSPI_OPTION_TX_DMA               0x00000004
 
 #define QSPI_EVENT_WAIT_DONE             0x20000000
 #define QSPI_EVENT_RECEIVE_DONE          0x40000000

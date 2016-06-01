@@ -141,6 +141,7 @@ static stm32l4_spi_driver_t stm32l4_spi_driver;
 #define SPI_CR2_DS_8BIT   (SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2)
 #define SPI_CR2_DS_16BIT  (SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2 | SPI_CR2_DS_3)
 
+static void stm32l4_spi_dma_callback(stm32l4_spi_t *spi, uint32_t events);
 
 static inline void stm32l4_spi_read8(SPI_TypeDef *SPI, void *rx_data)
 {
@@ -160,6 +161,42 @@ static inline void stm32l4_spi_write8(SPI_TypeDef *SPI, const void *tx_data)
 static inline void stm32l4_spi_write16(SPI_TypeDef *SPI, const void *tx_data)
 {
     SPI->DR = *((const uint16_t*)tx_data);
+}
+
+static void stm32l4_spi_start(stm32l4_spi_t *spi)
+{
+    stm32l4_system_periph_enable(SYSTEM_PERIPH_SPI1 + spi->instance);
+
+    if (spi->state != SPI_STATE_BUSY)
+    {
+	if (spi->mode & SPI_MODE_RX_DMA)
+	{
+	    stm32l4_dma_enable(&spi->rx_dma, (stm32l4_dma_callback_t)stm32l4_spi_dma_callback, spi);
+	}
+	
+	if (spi->mode & SPI_MODE_TX_DMA)
+	{
+	    stm32l4_dma_enable(&spi->tx_dma, NULL, NULL);
+	}
+    }
+}
+
+static void stm32l4_spi_stop(stm32l4_spi_t *spi)
+{
+    if (spi->state != SPI_STATE_BUSY)
+    {
+	if (spi->mode & SPI_MODE_RX_DMA)
+	{
+	    stm32l4_dma_enable(&spi->rx_dma, (stm32l4_dma_callback_t)stm32l4_spi_dma_callback, spi);
+	}
+	
+	if (spi->mode & SPI_MODE_TX_DMA)
+	{
+	    stm32l4_dma_enable(&spi->tx_dma, NULL, NULL);
+	}
+    }
+
+    stm32l4_system_periph_disable(SYSTEM_PERIPH_SPI1 + spi->instance);
 }
 
 static void stm32l4_spi_dma_callback(stm32l4_spi_t *spi, uint32_t events)
@@ -213,7 +250,7 @@ static void stm32l4_spi_dma_callback(stm32l4_spi_t *spi, uint32_t events)
     {
 	SPI->CR1 &= ~SPI_CR1_SPE;
 	
-	stm32l4_system_periph_disable(SYSTEM_PERIPH_SPI1 + spi->instance);
+	stm32l4_spi_stop(spi);
 	
 	spi->state = SPI_STATE_READY;
     }
@@ -259,7 +296,7 @@ static void stm32l4_spi_finish(stm32l4_spi_t *spi, uint32_t events)
     {
 	SPI->CR1 &= ~SPI_CR1_SPE;
 	
-	stm32l4_system_periph_disable(SYSTEM_PERIPH_SPI1 + spi->instance);
+	stm32l4_spi_stop(spi);
 	
 	spi->state = SPI_STATE_READY;
     }
@@ -883,7 +920,7 @@ bool stm32l4_spi_enable(stm32l4_spi_t *spi, stm32l4_spi_callback_t callback, voi
 
     spi->state = SPI_STATE_BUSY;
 
-    stm32l4_system_periph_enable(SYSTEM_PERIPH_SPI1 + spi->instance);
+    stm32l4_spi_start(spi);
 
     SPI->CR1 = 0;
     SPI->CR2 = 0;
@@ -904,16 +941,6 @@ bool stm32l4_spi_enable(stm32l4_spi_t *spi, stm32l4_spi_callback_t callback, voi
     SPI->CR2 = spi->cr2;
     SPI->CR1 = spi->cr1;
     
-    if (spi->mode & SPI_MODE_RX_DMA)
-    {
-	stm32l4_dma_enable(&spi->rx_dma, (stm32l4_dma_callback_t)stm32l4_spi_dma_callback, spi);
-    }
-
-    if (spi->mode & SPI_MODE_TX_DMA)
-    {
-	stm32l4_dma_enable(&spi->tx_dma, NULL, NULL);
-    }
-    
     stm32l4_gpio_pin_configure(spi->pins.mosi, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
     stm32l4_gpio_pin_write(spi->pins.mosi, 1);
 
@@ -929,7 +956,7 @@ bool stm32l4_spi_enable(stm32l4_spi_t *spi, stm32l4_spi_callback_t callback, voi
 	stm32l4_gpio_pin_configure(spi->pins.ss, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
     }
 
-    stm32l4_system_periph_disable(SYSTEM_PERIPH_SPI1 + spi->instance);
+    stm32l4_spi_stop(spi);
 
     stm32l4_spi_notify(spi, callback, context, events);
 
@@ -943,16 +970,6 @@ bool stm32l4_spi_disable(stm32l4_spi_t *spi)
     if (spi->state != SPI_STATE_READY)
     {
 	return false;
-    }
-
-    if (spi->mode & SPI_MODE_RX_DMA)
-    {
-	stm32l4_dma_disable(&spi->rx_dma);
-    }
-
-    if (spi->mode & SPI_MODE_TX_DMA)
-    {
-	stm32l4_dma_disable(&spi->tx_dma);
     }
 
     spi->state = SPI_STATE_NONE;
@@ -989,7 +1006,7 @@ bool stm32l4_spi_select(stm32l4_spi_t *spi, uint32_t control)
 
     if (spi->select == 1)
     {
-	stm32l4_system_periph_enable(SYSTEM_PERIPH_SPI1 + spi->instance);
+	stm32l4_spi_start(spi);
 
 	spi->state = SPI_STATE_SELECTED;
     }
@@ -1017,7 +1034,7 @@ bool stm32l4_spi_unselect(stm32l4_spi_t *spi)
 
 	while (SPI->SR & SPI_SR_BSY) { }
 
-	stm32l4_system_periph_disable(SYSTEM_PERIPH_SPI1 + spi->instance);
+	stm32l4_spi_stop(spi);
 
 	spi->state = SPI_STATE_READY;
     }
@@ -1281,7 +1298,7 @@ bool stm32l4_spi_receive(stm32l4_spi_t *spi, uint8_t *rx_data, unsigned int rx_c
 
     if (spi->select == 0)
     {
-	stm32l4_system_periph_enable(SYSTEM_PERIPH_SPI1 + spi->instance);
+	stm32l4_spi_start(spi);
     }
 
     spi->control = control;
@@ -1503,7 +1520,7 @@ bool stm32l4_spi_transmit(stm32l4_spi_t *spi, const uint8_t *tx_data, unsigned i
     
     if (spi->select == 0)
     {
-	stm32l4_system_periph_enable(SYSTEM_PERIPH_SPI1 + spi->instance);
+	stm32l4_spi_start(spi);
     }
 
     spi->control = control;
@@ -1673,7 +1690,7 @@ bool stm32l4_spi_transfer(stm32l4_spi_t *spi, const uint8_t *tx_data, uint8_t *r
     
     if (spi->select == 0)
     {
-	stm32l4_system_periph_enable(SYSTEM_PERIPH_SPI1 + spi->instance);
+	stm32l4_spi_start(spi);
     }
 
     spi->control = control;

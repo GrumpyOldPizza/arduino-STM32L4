@@ -73,7 +73,7 @@ static uint32_t dosfs_sflash_nor_identify(dosfs_sflash_t *sflash)
     qspi_pins.io3 = GPIO_PIN_PA6_QUADSPI_BK1_IO3;
 
     stm32l4_qspi_create(&sflash->qspi, QSPI_INSTANCE_QUADSPI, &qspi_pins, 2, QSPI_MODE_DMA);
-    stm32l4_qspi_enable(&sflash->qspi, 40000000, QSPI_OPTION_MODE_3 | QSPI_OPTION_RX_DMA | QSPI_OPTION_TX_DMA, NULL, NULL, 0);
+    stm32l4_qspi_enable(&sflash->qspi, 40000000, QSPI_OPTION_MODE_3, NULL, NULL, 0);
 
     stm32l4_qspi_select(&sflash->qspi);
     stm32l4_qspi_mode(&sflash->qspi, 0);
