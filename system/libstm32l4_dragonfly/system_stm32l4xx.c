@@ -226,7 +226,9 @@ void SystemInit(void)
   SYSCFG->MEMRMP = (SYSCFG->MEMRMP & ~SYSCFG_MEMRMP_MEM_MODE);
   RCC->APB2ENR &= ~RCC_APB2ENR_SYSCFGEN;
 
-  RCC->AHB1SMENR &= ~RCC_AHB1SMENR_FLASHSMEN;
+  RCC->AHB1SMENR &= ~(RCC_AHB1SMENR_FLASHSMEN |
+                      RCC_AHB1SMENR_SRAM1SMEN);
+
   RCC->AHB2SMENR &= ~(RCC_AHB2SMENR_GPIOASMEN |
                       RCC_AHB2SMENR_GPIOBSMEN |
                       RCC_AHB2SMENR_GPIOCSMEN |
@@ -234,7 +236,12 @@ void SystemInit(void)
                       RCC_AHB2SMENR_GPIOESMEN |
                       RCC_AHB2SMENR_GPIOFSMEN |
 	              RCC_AHB2SMENR_GPIOGSMEN |
-	              RCC_AHB2SMENR_GPIOHSMEN);
+	              RCC_AHB2SMENR_GPIOHSMEN |
+                      RCC_AHB2SMENR_SRAM2SMEN);
+
+  RCC->APB1SMENR1 &= ~RCC_APB1SMENR1_PWRSMEN;
+
+  RCC->APB2SMENR  &= ~RCC_APB2SMENR_SYSCFGSMEN;
 
   /* Configure the Vector Table location add offset address ------------------*/
 #ifdef VECT_TAB_SRAM

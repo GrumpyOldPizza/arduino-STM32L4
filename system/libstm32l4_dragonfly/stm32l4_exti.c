@@ -36,7 +36,6 @@
 
 #include "armv7m.h"
 
-
 typedef struct _stm32l4_exti_driver_t {
     stm32l4_exti_t         *instances[1];
 } stm32l4_exti_driver_t;
@@ -105,19 +104,12 @@ bool stm32l4_exti_enable(stm32l4_exti_t *exti)
 
 bool stm32l4_exti_disable(stm32l4_exti_t *exti)
 {
-    unsigned int group;
-
     if (exti->state != EXTI_STATE_READY)
     {
 	return false;
     }
 
     armv7m_atomic_and(&EXTI->IMR1, ~0x0000ffff);
-
-    for (group = 0; group < 8; group++)
-    {
-	stm32l4_system_periph_cond_sleep((SYSTEM_PERIPH_GPIOA + group), &exti->gpio[group], ~0ul);
-    }
 
     NVIC_DisableIRQ(EXTI15_10_IRQn);
     NVIC_DisableIRQ(EXTI9_5_IRQn);
@@ -175,14 +167,6 @@ bool stm32l4_exti_notify(stm32l4_exti_t *exti, uint16_t pin, uint32_t control, s
     mask = 1ul << index;
 
     armv7m_atomic_and(&EXTI->IMR1, ~mask);
-
-    if (exti->enables & mask)
-    {
-	o_group = (SYSCFG->EXTICR[index >> 2] >> ((index & 3) << 2)) & 15;
-
-	stm32l4_system_periph_cond_sleep((SYSTEM_PERIPH_GPIOA + o_group), &exti->gpio[o_group], (1ul << index));
-    }
-
     armv7m_atomic_and(&exti->enables, ~mask);
     
     exti->channels[index].callback = callback;
@@ -216,8 +200,6 @@ bool stm32l4_exti_notify(stm32l4_exti_t *exti, uint16_t pin, uint32_t control, s
 	{
 	    armv7m_atomic_or(&EXTI->IMR1, mask);
 	}
-
-	stm32l4_system_periph_cond_wake((SYSTEM_PERIPH_GPIOA + group), &exti->gpio[group], (1ul << index));
     }
 
     return true;

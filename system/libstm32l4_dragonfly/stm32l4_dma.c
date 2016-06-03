@@ -76,6 +76,8 @@ static const IRQn_Type stm32l4_dma_interrupt_table[16] = {
 typedef struct _stm32l4_dma_driver_t {
     stm32l4_dma_t          *instances[16];
     volatile uint32_t      mask;
+    volatile uint32_t      sram1;
+    volatile uint32_t      sram2;
     volatile uint32_t      flash;
     volatile uint32_t      dma1;
     volatile uint32_t      dma2;
@@ -83,19 +85,41 @@ typedef struct _stm32l4_dma_driver_t {
 
 static stm32l4_dma_driver_t stm32l4_dma_driver;
 
-static inline void stm32l4_dma_track(uint32_t channel, uint32_t address)
+static void stm32l4_dma_track(uint32_t channel, uint32_t address)
 {
-    if (address < 0x10000000)
+    if (address < 0x40000000)
     {
-	stm32l4_system_periph_cond_wake(SYSTEM_PERIPH_FLASH, &stm32l4_dma_driver.flash, (1ul << channel));
+	if (address >= 0x20000000)
+	{
+	    stm32l4_system_periph_cond_wake(SYSTEM_PERIPH_SRAM1, &stm32l4_dma_driver.sram1, (1ul << channel));
+	}
+	else if (address >= 0x10000000)
+	{
+	    stm32l4_system_periph_cond_wake(SYSTEM_PERIPH_SRAM2, &stm32l4_dma_driver.sram2, (1ul << channel));
+	}
+	else
+	{
+	    stm32l4_system_periph_cond_wake(SYSTEM_PERIPH_FLASH, &stm32l4_dma_driver.flash, (1ul << channel));
+	}
     }
 }
 
-static inline void stm32l4_dma_untrack(uint32_t channel, uint32_t address)
+static void stm32l4_dma_untrack(uint32_t channel, uint32_t address)
 {
-    if (address < 0x10000000)
+    if (address < 0x40000000)
     {
-	stm32l4_system_periph_cond_sleep(SYSTEM_PERIPH_FLASH, &stm32l4_dma_driver.flash, (1ul << channel));
+	if (address >= 0x20000000)
+	{
+	    stm32l4_system_periph_cond_sleep(SYSTEM_PERIPH_SRAM1, &stm32l4_dma_driver.sram1, (1ul << channel));
+	}
+	else if (address >= 0x10000000)
+	{
+	    stm32l4_system_periph_cond_sleep(SYSTEM_PERIPH_SRAM2, &stm32l4_dma_driver.sram2, (1ul << channel));
+	}
+	else
+	{
+	    stm32l4_system_periph_cond_sleep(SYSTEM_PERIPH_FLASH, &stm32l4_dma_driver.flash, (1ul << channel));
+	}
     }
 }
 

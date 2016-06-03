@@ -26,7 +26,7 @@
  * WITH THE SOFTWARE.
  */
 
-#include "stm32l4xx.h"
+#include <stdlib.h>
 
 #include "armv7m.h"
 
@@ -46,6 +46,8 @@ static stm32l4_system_device_t stm32l4_system_device;
 
 static volatile uint32_t * const stm32l4_system_xlate_RSTR[] = {
     &RCC->AHB1RSTR,  /* SYSTEM_PERIPH_FLASH */
+    NULL,            /* SYSTEM_PERIPH_SRAM1 */
+    NULL,            /* SYSTEM_PERIPH_SRAM2 */
     &RCC->AHB1RSTR,  /* SYSTEM_PERIPH_DMA1 */
     &RCC->AHB1RSTR,  /* SYSTEM_PERIPH_DMA2 */
     &RCC->AHB2RSTR,  /* SYSTEM_PERIPH_GPIOA */
@@ -94,6 +96,8 @@ static volatile uint32_t * const stm32l4_system_xlate_RSTR[] = {
 
 static uint32_t const stm32l4_system_xlate_RSTMSK[] = {
     RCC_AHB1RSTR_FLASHRST,    /* SYSTEM_PERIPH_FLASH */
+    0,                        /* SYSTEM_PERIPH_SRAM1 */
+    0,                        /* SYSTEM_PERIPH_SRAM2 */
     RCC_AHB1RSTR_DMA1RST,     /* SYSTEM_PERIPH_DMA1 */
     RCC_AHB1RSTR_DMA2RST,     /* SYSTEM_PERIPH_DMA2 */
     RCC_AHB2RSTR_GPIOARST,    /* SYSTEM_PERIPH_GPIOA */
@@ -142,6 +146,8 @@ static uint32_t const stm32l4_system_xlate_RSTMSK[] = {
 
 static volatile uint32_t * const stm32l4_system_xlate_ENR[] = {
     &RCC->AHB1ENR,  /* SYSTEM_PERIPH_FLASH */
+    NULL,           /* SYSTEM_PERIPH_SRAM1 */
+    NULL,           /* SYSTEM_PERIPH_SRAM2 */
     &RCC->AHB1ENR,  /* SYSTEM_PERIPH_DMA1 */
     &RCC->AHB1ENR,  /* SYSTEM_PERIPH_DMA2 */
     &RCC->AHB2ENR,  /* SYSTEM_PERIPH_GPIOA */
@@ -190,6 +196,8 @@ static volatile uint32_t * const stm32l4_system_xlate_ENR[] = {
 
 static uint32_t const stm32l4_system_xlate_ENMSK[] = {
     RCC_AHB1ENR_FLASHEN,    /* SYSTEM_PERIPH_FLASH */
+    0,                      /* SYSTEM_PERIPH_SRAM1 */
+    0,                      /* SYSTEM_PERIPH_SRAM2 */
     RCC_AHB1ENR_DMA1EN,     /* SYSTEM_PERIPH_DMA1 */
     RCC_AHB1ENR_DMA2EN,     /* SYSTEM_PERIPH_DMA2 */
     RCC_AHB2ENR_GPIOAEN,    /* SYSTEM_PERIPH_GPIOA */
@@ -238,6 +246,8 @@ static uint32_t const stm32l4_system_xlate_ENMSK[] = {
 
 static volatile uint32_t * const stm32l4_system_xlate_SMENR[] = {
     &RCC->AHB1SMENR,  /* SYSTEM_PERIPH_FLASH */
+    &RCC->AHB1SMENR,  /* SYSTEM_PERIPH_SRAM1 */
+    &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_SRAM2 */
     &RCC->AHB1SMENR,  /* SYSTEM_PERIPH_DMA1 */
     &RCC->AHB1SMENR,  /* SYSTEM_PERIPH_DMA2 */
     &RCC->AHB2SMENR,  /* SYSTEM_PERIPH_GPIOA */
@@ -286,6 +296,8 @@ static volatile uint32_t * const stm32l4_system_xlate_SMENR[] = {
 
 static uint32_t const stm32l4_system_xlate_SMENMSK[] = {
     RCC_AHB1SMENR_FLASHSMEN,    /* SYSTEM_PERIPH_FLASH */
+    RCC_AHB1SMENR_SRAM1SMEN,    /* SYSTEM_PERIPH_SRAM1 */
+    RCC_AHB2SMENR_SRAM2SMEN,    /* SYSTEM_PERIPH_SRAM2 */
     RCC_AHB1SMENR_DMA1SMEN,     /* SYSTEM_PERIPH_DMA1 */
     RCC_AHB1SMENR_DMA2SMEN,     /* SYSTEM_PERIPH_DMA2 */
     RCC_AHB2SMENR_GPIOASMEN,    /* SYSTEM_PERIPH_GPIOA */

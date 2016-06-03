@@ -37,7 +37,11 @@
 
 static inline void armv7m_core_yield(void)
 {
-    __asm__ volatile ("wfe");
+    /* This odd aequence seems to be required for at least STM32L4. Traces on the logic analyzer
+     * showed that after blocking on wfe, then the subsequent wfe would not block. The only WAR
+     * is to explicitly clear the EVENT flag via the SEV; WFE sequence.
+     */
+    __asm__ volatile ("wfe; sev; wfe");
 }
 
 extern int armv7m_core_priority(void);
