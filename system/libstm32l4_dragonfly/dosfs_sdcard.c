@@ -40,14 +40,14 @@ bool stm32l4_sdcard_spi_init(dosfs_sdcard_t *sdcard)
     stm32l4_spi_pins_t pins;
     uint32_t clock, divide;
 
-    pins.mosi = GPIO_PIN_PB5_SPI1_MOSI;
-    pins.miso = GPIO_PIN_PB4_SPI1_MISO;
-    pins.sck  = GPIO_PIN_PB3_SPI1_SCK;
+    pins.mosi = GPIO_PIN_PC12_SPI3_MOSI;
+    pins.miso = GPIO_PIN_PC11_SPI3_MISO;
+    pins.sck  = GPIO_PIN_PC10_SPI3_SCK;
     pins.ss   = GPIO_PIN_NONE;
 
-    stm32l4_gpio_pin_configure(GPIO_PIN_PA8, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
+    stm32l4_gpio_pin_configure(GPIO_PIN_PD2, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
 
-    stm32l4_spi_create(&sdcard->spi, SPI_INSTANCE_SPI1, &pins, 2, SPI_MODE_RX_DMA | SPI_MODE_TX_DMA | SPI_MODE_RX_DMA_SECONDARY | SPI_MODE_TX_DMA_SECONDARY);
+    stm32l4_spi_create(&sdcard->spi, SPI_INSTANCE_SPI3, &pins, 2, SPI_MODE_RX_DMA | SPI_MODE_TX_DMA | SPI_MODE_RX_DMA_SECONDARY | SPI_MODE_TX_DMA_SECONDARY);
     stm32l4_spi_enable(&sdcard->spi, NULL, NULL, 0);
     
     clock = stm32l4_spi_clock(&sdcard->spi) / 2;
@@ -60,7 +60,7 @@ bool stm32l4_sdcard_spi_init(dosfs_sdcard_t *sdcard)
     }
 
     sdcard->control = SPI_CONTROL_MODE_3 | (divide << SPI_CONTROL_DIV_SHIFT);
-    sdcard->pin_cs = GPIO_PIN_PA8;
+    sdcard->pin_cs = GPIO_PIN_PD2;
 
     return true;
 }
