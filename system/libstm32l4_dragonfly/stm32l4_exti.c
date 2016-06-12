@@ -154,7 +154,7 @@ bool stm32l4_exti_resume(stm32l4_exti_t *exti, uint32_t mask)
 
 bool stm32l4_exti_notify(stm32l4_exti_t *exti, uint16_t pin, uint32_t control, stm32l4_exti_callback_t callback, void *context)
 {
-    unsigned int mask, index, group, o_group;
+    unsigned int mask, index, group;
 
     if (exti->state != EXTI_STATE_READY)
     {

@@ -786,7 +786,11 @@ static inline void stm32l4_gpio_pin_write(unsigned int pin, unsigned int data)
 
     GPIO = (GPIO_TypeDef *)(GPIOA_BASE + (GPIOB_BASE - GPIOA_BASE) * group);
 
-    GPIO->BSRR = (data ? 0x00000001 : 0x00010000) << index;
+    if (data) {
+	GPIO->BSRR = (1ul << index);
+    } else {
+	GPIO->BRR = (1ul << index);
+    }
 }
 
 static inline unsigned int stm32l4_gpio_pin_read(unsigned int pin)

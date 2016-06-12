@@ -45,9 +45,8 @@ bool stm32l4_sdcard_spi_init(dosfs_sdcard_t *sdcard)
     pins.sck  = GPIO_PIN_PC10_SPI3_SCK;
     pins.ss   = GPIO_PIN_NONE;
 
-    stm32l4_gpio_pin_configure(GPIO_PIN_PD2, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
-
-    stm32l4_spi_create(&sdcard->spi, SPI_INSTANCE_SPI3, &pins, 2, SPI_MODE_RX_DMA | SPI_MODE_TX_DMA | SPI_MODE_RX_DMA_SECONDARY | SPI_MODE_TX_DMA_SECONDARY);
+    // ### FIXME: IRQ LEVEL needs to be adjusted !!!
+    stm32l4_spi_create(&sdcard->spi, SPI_INSTANCE_SPI3, &pins, 11, SPI_MODE_RX_DMA | SPI_MODE_TX_DMA | SPI_MODE_RX_DMA_SECONDARY | SPI_MODE_TX_DMA_SECONDARY);
     stm32l4_spi_enable(&sdcard->spi, NULL, NULL, 0);
     
     clock = stm32l4_spi_clock(&sdcard->spi) / 2;
@@ -62,13 +61,32 @@ bool stm32l4_sdcard_spi_init(dosfs_sdcard_t *sdcard)
     sdcard->control = SPI_CONTROL_MODE_3 | (divide << SPI_CONTROL_DIV_SHIFT);
     sdcard->pin_cs = GPIO_PIN_PD2;
 
+    stm32l4_gpio_pin_configure(sdcard->pin_cs, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_OUTPUT));
+    stm32l4_gpio_pin_write(sdcard->pin_cs, 1);
+
     return true;
 }
 
 bool stm32l4_sdcard_spi_present(dosfs_sdcard_t *sdcard)
 {
-  // return !!stm32l4_gpio_pin_read(sdcard->pin_cs);
-  return true;
+    bool present;
+
+    /* This below is kind of fragile. The idea is to first set CS to 0, wait a tad
+     * till the input settles to a 0. The switch the mode to input, while will make
+     * the external pullup on CS take effect. If internal PULLDOWN does not work,
+     * it overpowers the external pullupon CS. The delays are required to let
+     * the signal on CS settle.
+     */
+
+    stm32l4_gpio_pin_write(sdcard->pin_cs, 0);
+    armv7m_clock_spin(2000);
+    stm32l4_gpio_pin_input(sdcard->pin_cs);
+    armv7m_clock_spin(2000);
+    present = !!stm32l4_gpio_pin_read(sdcard->pin_cs);
+    stm32l4_gpio_pin_output(sdcard->pin_cs);
+    stm32l4_gpio_pin_write(sdcard->pin_cs, 1);
+
+    return present;
 }
 
 uint32_t stm32l4_sdcard_spi_mode(dosfs_sdcard_t *sdcard, int mode)
@@ -78,29 +96,15 @@ uint32_t stm32l4_sdcard_spi_mode(dosfs_sdcard_t *sdcard, int mode)
     if (mode == DOSFS_SDCARD_MODE_NONE)
     {
 	speed = 0;
-
-	/* Switch CS_SDCARD to be input
-	 */
-	stm32l4_gpio_pin_configure(sdcard->pin_cs, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
     }
     else
     {
 	if (mode == DOSFS_SDCARD_MODE_IDENTIFY)
 	{
 	    speed = 400000;
-
-	    /* Switch CS_SDCARD to be output
-	     */
-
-	    stm32l4_gpio_pin_configure(sdcard->pin_cs, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_OUTPUT));
-	    stm32l4_gpio_pin_write(sdcard->pin_cs, 1);
 	}
 	else
 	{
-	    // speed = 20000000;
-	    // speed = 10000000;
-	    speed = 5000000;
-	    
 	    if (mode == DOSFS_SDCARD_MODE_DATA_TRANSFER)
 	    {
 		speed = 25000000;
@@ -110,15 +114,13 @@ uint32_t stm32l4_sdcard_spi_mode(dosfs_sdcard_t *sdcard, int mode)
 		speed = 50000000;
 	    }
 
-	    // speed = 5000000;
-
 	    stm32l4_sdcard_spi_deselect(sdcard);
 	}
 
 	clock = stm32l4_spi_clock(&sdcard->spi) / 2;
 	divide = 0;
 	
-	while ((clock > 400000) && (divide < 7))
+	while ((clock > speed) && (divide < 7))
 	{
 	    clock /= 2;
 	    divide++;
@@ -198,7 +200,7 @@ uint8_t stm32l4_sdcard_spi_receive(dosfs_sdcard_t *sdcard)
 
 void stm32l4_sdcard_spi_send_block(dosfs_sdcard_t *sdcard, const uint8_t *data)
 {
-    stm32l4_spi_transmit(&sdcard->spi, data, 512, SPI_CONTROL_CRC16);
+    stm32l4_spi_transmit(&sdcard->spi, data, 512, sdcard->control | SPI_CONTROL_CRC16);
 
     while (!stm32l4_spi_done(&sdcard->spi))
     {
@@ -208,7 +210,7 @@ void stm32l4_sdcard_spi_send_block(dosfs_sdcard_t *sdcard, const uint8_t *data)
 
 uint32_t stm32l4_sdcard_spi_receive_block(dosfs_sdcard_t *sdcard, uint8_t *data)
 {
-    stm32l4_spi_receive(&sdcard->spi, data, 512, SPI_CONTROL_CRC16);
+    stm32l4_spi_receive(&sdcard->spi, data, 512, sdcard->control | SPI_CONTROL_CRC16);
   
     while (!stm32l4_spi_done(&sdcard->spi))
     {
