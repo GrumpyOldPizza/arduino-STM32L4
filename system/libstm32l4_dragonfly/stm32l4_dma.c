@@ -89,17 +89,19 @@ static void stm32l4_dma_track(uint32_t channel, uint32_t address)
 {
     if (address < 0x40000000)
     {
+	uint32_t mask = (1ul << (channel & 15));
+
 	if (address >= 0x20000000)
 	{
-	    stm32l4_system_periph_cond_wake(SYSTEM_PERIPH_SRAM1, &stm32l4_dma_driver.sram1, (1ul << channel));
+	    stm32l4_system_periph_cond_wake(SYSTEM_PERIPH_SRAM1, &stm32l4_dma_driver.sram1, mask);
 	}
 	else if (address >= 0x10000000)
 	{
-	    stm32l4_system_periph_cond_wake(SYSTEM_PERIPH_SRAM2, &stm32l4_dma_driver.sram2, (1ul << channel));
+	    stm32l4_system_periph_cond_wake(SYSTEM_PERIPH_SRAM2, &stm32l4_dma_driver.sram2, mask);
 	}
 	else
 	{
-	    stm32l4_system_periph_cond_wake(SYSTEM_PERIPH_FLASH, &stm32l4_dma_driver.flash, (1ul << channel));
+	    stm32l4_system_periph_cond_wake(SYSTEM_PERIPH_FLASH, &stm32l4_dma_driver.flash, mask);
 	}
     }
 }
@@ -108,17 +110,19 @@ static void stm32l4_dma_untrack(uint32_t channel, uint32_t address)
 {
     if (address < 0x40000000)
     {
+	uint32_t mask = (1ul << (channel & 15));
+
 	if (address >= 0x20000000)
 	{
-	    stm32l4_system_periph_cond_sleep(SYSTEM_PERIPH_SRAM1, &stm32l4_dma_driver.sram1, (1ul << channel));
+	    stm32l4_system_periph_cond_sleep(SYSTEM_PERIPH_SRAM1, &stm32l4_dma_driver.sram1, mask);
 	}
 	else if (address >= 0x10000000)
 	{
-	    stm32l4_system_periph_cond_sleep(SYSTEM_PERIPH_SRAM2, &stm32l4_dma_driver.sram2, (1ul << channel));
+	    stm32l4_system_periph_cond_sleep(SYSTEM_PERIPH_SRAM2, &stm32l4_dma_driver.sram2, mask);
 	}
 	else
 	{
-	    stm32l4_system_periph_cond_sleep(SYSTEM_PERIPH_FLASH, &stm32l4_dma_driver.flash, (1ul << channel));
+	    stm32l4_system_periph_cond_sleep(SYSTEM_PERIPH_FLASH, &stm32l4_dma_driver.flash, mask);
 	}
     }
 }
