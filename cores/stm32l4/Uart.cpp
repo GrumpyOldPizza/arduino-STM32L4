@@ -53,7 +53,16 @@ void Uart::begin(unsigned long baudrate)
 
 void Uart::begin(unsigned long baudrate, uint16_t config)
 {
-  stm32l4_uart_enable(_uart, &_rx_fifo[0], sizeof(_rx_fifo), baudrate, config, Uart::_event_callback, (void*)this, (UART_EVENT_RECEIVE | UART_EVENT_TRANSMIT));
+  if (_uart->state == UART_STATE_INIT) {
+    _rx_write = _rx_read = 0;
+    _tx_write = _tx_read = 0;
+    _tx_count = 0;
+    stm32l4_uart_enable(_uart, &_rx_fifo[0], sizeof(_rx_fifo), baudrate, config, Uart::_event_callback, (void*)this, (UART_EVENT_RECEIVE | UART_EVENT_TRANSMIT));
+  } else {
+    flush();
+
+    stm32l4_uart_configure(_uart, baudrate, config);
+  }
 }
 
 void Uart::end()
