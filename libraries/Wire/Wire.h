@@ -79,6 +79,9 @@ class TwoWire : public Stream
     bool done(void);
     uint8_t status(void);
 
+    // STM32L4 EXTENSTION: reset I2C bus
+    void reset(void);
+
   private:
     struct _stm32l4_i2c_t *_i2c;
     uint32_t _option;

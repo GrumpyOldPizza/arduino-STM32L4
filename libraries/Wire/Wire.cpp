@@ -390,6 +390,11 @@ uint8_t TwoWire::status(void)
   }
 }
 
+void TwoWire::reset(void)
+{
+  stm32l4_i2c_reset(_i2c);
+}
+
 void TwoWire::onReceive(void(*callback)(int))
 {
   _receiveCallback = callback;

@@ -135,6 +135,7 @@ extern bool stm32l4_i2c_enable(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t opti
 extern bool stm32l4_i2c_disable(stm32l4_i2c_t *i2c);
 extern bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option);
 extern bool stm32l4_i2c_notify(stm32l4_i2c_t *i2c, stm32l4_i2c_callback_t callback, void *context, uint32_t events);
+extern bool stm32l4_i2c_reset(stm32l4_i2c_t *i2c);
 extern bool stm32l4_i2c_receive(stm32l4_i2c_t *i2c, uint16_t address, uint8_t *rx_data, uint16_t rx_count, uint32_t control);
 extern bool stm32l4_i2c_transmit(stm32l4_i2c_t *i2c, uint16_t address, const uint8_t *tx_data, uint16_t tx_count, uint32_t control);
 extern bool stm32l4_i2c_transfer(stm32l4_i2c_t *i2c, uint16_t address, const uint8_t *tx_data, uint16_t tx_count, uint8_t *rx_data, uint16_t rx_count, uint32_t control);

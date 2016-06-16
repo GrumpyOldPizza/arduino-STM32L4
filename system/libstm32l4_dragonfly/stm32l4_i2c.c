@@ -869,7 +869,7 @@ bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
     pin_scl = i2c->pins.scl;
     pin_sda = i2c->pins.sda;
 
-    if ((option & I2C_OPTION_ALTERNATE) && (pin_scl == GPIO_PIN_PB8_I2C1_SCL) && (pin_sda == GPIO_PIN_PB9_I2C1_SDA))
+    if ((i2c->option & I2C_OPTION_ALTERNATE) && (pin_scl == GPIO_PIN_PB8_I2C1_SCL) && (pin_sda == GPIO_PIN_PB9_I2C1_SDA))
     {
 	pin_scl = GPIO_PIN_PB6_I2C1_SCL;
 	pin_sda = GPIO_PIN_PB7_I2C1_SDA;
@@ -976,58 +976,16 @@ bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
     I2C->CR2 = i2c_cr2;
     I2C->CR1 = i2c_cr1 | I2C_CR1_PE;
 
-    if (i2c->option & I2C_OPTION_RESET)
+    if ((i2c->state == I2C_STATE_BUSY) && (i2c->option & I2C_OPTION_RESET))
     {
-	stm32l4_gpio_pin_configure(pin_scl, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_OUTPUT));
-	stm32l4_gpio_pin_configure(pin_sda, (GPIO_PUPD_PULLUP | GPIO_MODE_INPUT));
-    
-	/* Clock 8 SCL cycles to force a slave to release SDA and then issue a manul STOP condition.
-	 */
-
-	/* Set SCL to H */ 
-	stm32l4_gpio_pin_write(pin_scl, 1);
-	armv7m_clock_spin(5000);;    
-
-	for (count = 0; count < 9; count++)
-	{
-	    /* Set SCL to L */ 
-	    stm32l4_gpio_pin_write(pin_scl, 0);
-	    armv7m_clock_spin(5000);;    
-	
-	    /* Set SCL to H */ 
-	    stm32l4_gpio_pin_write(pin_scl, 1);
-	    armv7m_clock_spin(5000);;    
-	}
-
-	stm32l4_gpio_pin_configure(pin_sda, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_OUTPUT));
-
-	stm32l4_gpio_pin_write(pin_sda, 1);
-	armv7m_clock_spin(5000);;    
-
-
-	/* Now SCL is H and SDA is H, so generate a STOP condition.
-	 */
-
-	/* Set SCL to L */ 
-	stm32l4_gpio_pin_write(pin_scl, 0);
-	armv7m_clock_spin(5000);;    
-
-	/* Set SDA to L */ 
-	stm32l4_gpio_pin_write(pin_sda, 0);
-	armv7m_clock_spin(5000);;    
-    
-	/* Set SCL to H */ 
-	stm32l4_gpio_pin_write(pin_scl, 1);
-	armv7m_clock_spin(5000);;    
-
-	/* Set SDA to H */ 
-	stm32l4_gpio_pin_write(pin_sda, 1);
-	armv7m_clock_spin(5000);;    
+	stm32l4_i2c_reset(i2c);
+    }
+    else
+    {
+	stm32l4_gpio_pin_configure(pin_scl, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_ALTERNATE));
+	stm32l4_gpio_pin_configure(pin_sda, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_ALTERNATE));
     }
 
-    stm32l4_gpio_pin_configure(pin_scl, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_ALTERNATE));
-    stm32l4_gpio_pin_configure(pin_sda, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_ALTERNATE));
-    
     if (!(i2c->option & I2C_OPTION_ADDRESS_MASK))
     {
 	stm32l4_i2c_stop(i2c);
@@ -1052,6 +1010,77 @@ bool stm32l4_i2c_notify(stm32l4_i2c_t *i2c, stm32l4_i2c_callback_t callback, voi
 
     NVIC_EnableIRQ(i2c->interrupt+1); /* ERR */
     NVIC_EnableIRQ(i2c->interrupt+0); /* EV  */
+
+    return true;
+}
+
+bool stm32l4_i2c_reset(stm32l4_i2c_t *i2c)
+{
+    I2C_TypeDef *I2C = i2c->I2C;
+    uint32_t pin_scl, pin_sda, count;
+
+    if ((i2c->state != I2C_STATE_READY) && (i2c->state != I2C_STATE_BUSY))
+    {
+	return false;
+    }
+
+    pin_scl = i2c->pins.scl;
+    pin_sda = i2c->pins.sda;
+
+    if ((i2c->option & I2C_OPTION_ALTERNATE) && (pin_scl == GPIO_PIN_PB8_I2C1_SCL) && (pin_sda == GPIO_PIN_PB9_I2C1_SDA))
+    {
+	pin_scl = GPIO_PIN_PB6_I2C1_SCL;
+	pin_sda = GPIO_PIN_PB7_I2C1_SDA;
+    }
+
+    stm32l4_gpio_pin_configure(pin_scl, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_OUTPUT));
+    stm32l4_gpio_pin_configure(pin_sda, (GPIO_PUPD_PULLUP | GPIO_MODE_INPUT));
+    
+    /* Clock 9 SCL cycles to force a slave to release SDA and then issue a manul STOP condition.
+     */
+    
+    /* Set SCL to H */ 
+    stm32l4_gpio_pin_write(pin_scl, 1);
+    armv7m_clock_spin(5000);;    
+    
+    for (count = 0; count < 9; count++)
+    {
+	/* Set SCL to L */ 
+	stm32l4_gpio_pin_write(pin_scl, 0);
+	armv7m_clock_spin(5000);;    
+	
+	/* Set SCL to H */ 
+	stm32l4_gpio_pin_write(pin_scl, 1);
+	armv7m_clock_spin(5000);;    
+    }
+    
+    stm32l4_gpio_pin_configure(pin_sda, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_OUTPUT));
+    
+    stm32l4_gpio_pin_write(pin_sda, 1);
+    armv7m_clock_spin(5000);;    
+
+    
+    /* Now SCL is H and SDA is H, so generate a STOP condition.
+     */
+    
+    /* Set SCL to L */ 
+    stm32l4_gpio_pin_write(pin_scl, 0);
+    armv7m_clock_spin(5000);;    
+    
+    /* Set SDA to L */ 
+    stm32l4_gpio_pin_write(pin_sda, 0);
+    armv7m_clock_spin(5000);;    
+    
+    /* Set SCL to H */ 
+    stm32l4_gpio_pin_write(pin_scl, 1);
+    armv7m_clock_spin(5000);;    
+    
+    /* Set SDA to H */ 
+    stm32l4_gpio_pin_write(pin_sda, 1);
+    armv7m_clock_spin(5000);;    
+
+    stm32l4_gpio_pin_configure(pin_scl, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_ALTERNATE));
+    stm32l4_gpio_pin_configure(pin_sda, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_ALTERNATE));
 
     return true;
 }
