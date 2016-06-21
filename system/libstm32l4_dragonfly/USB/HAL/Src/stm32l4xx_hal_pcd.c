@@ -187,7 +187,7 @@ HAL_StatusTypeDef HAL_PCD_Init(PCD_HandleTypeDef *hpcd)
     hpcd->IN_ep[index].xfer_len = 0;
   }
   
-  for (index = 0; index < 15 ; index++)
+  for (index = 0; index < hpcd->Init.dev_endpoints ; index++)
   {
     hpcd->OUT_ep[index].is_in = 0;
     hpcd->OUT_ep[index].num = index;
