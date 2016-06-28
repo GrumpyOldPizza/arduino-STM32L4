@@ -8574,7 +8574,7 @@ static int dosfs_file_open(dosfs_volume_t *volume, const char *filename, uint32_
             break;
         }
 
-	file++;
+	file_s++;
     }
     while (file_s < file_e);
 
