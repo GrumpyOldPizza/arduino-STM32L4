@@ -79,6 +79,9 @@ class TwoWire : public Stream
     bool done(void);
     uint8_t status(void);
 
+    // STM32L4 EXTENSTION: isEnabled() check
+    bool isEnabled(void);
+
     // STM32L4 EXTENSTION: reset I2C bus
     void reset(void);
 

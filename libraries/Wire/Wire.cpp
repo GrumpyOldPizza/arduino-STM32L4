@@ -390,6 +390,11 @@ uint8_t TwoWire::status(void)
   }
 }
 
+bool TwoWire::isEnabled(void)
+{
+  return (_i2c->state >= I2C_STATE_READY);
+}
+
 void TwoWire::reset(void)
 {
   stm32l4_i2c_reset(_i2c);
