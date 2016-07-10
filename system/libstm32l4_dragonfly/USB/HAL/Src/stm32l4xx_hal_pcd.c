@@ -570,61 +570,61 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
 
       hclk = stm32l4_system_hclk();
 
-      if((hclk >= 14200000)&&(hclk < 15000000))
+      if(hclk <= 15000000)
       {
         /* hclk Clock Range between 14.2-15 MHz */
         hpcd->Instance->GUSBCFG |= (uint32_t)((0xF << 10) & USB_OTG_GUSBCFG_TRDT);
       }
       
-      else if((hclk >= 15000000)&&(hclk < 16000000))
+      else if(hclk <= 16000000)
       {
         /* hclk Clock Range between 15-16 MHz */
         hpcd->Instance->GUSBCFG |= (uint32_t)((0xE << 10) & USB_OTG_GUSBCFG_TRDT);
       }
       
-      else if((hclk >= 16000000)&&(hclk < 17200000))
+      else if(hclk <= 17200000)
       {
         /* hclk Clock Range between 16-17.2 MHz */
         hpcd->Instance->GUSBCFG |= (uint32_t)((0xD << 10) & USB_OTG_GUSBCFG_TRDT);
       }
       
-      else if((hclk >= 17200000)&&(hclk < 18500000))
+      else if(hclk <= 18500000)
       {
         /* hclk Clock Range between 17.2-18.5 MHz */
         hpcd->Instance->GUSBCFG |= (uint32_t)((0xC << 10) & USB_OTG_GUSBCFG_TRDT);
       }
       
-      else if((hclk >= 18500000)&&(hclk < 20000000))
+      else if(hclk <= 20000000)
       {
         /* hclk Clock Range between 18.5-20 MHz */
         hpcd->Instance->GUSBCFG |= (uint32_t)((0xB << 10) & USB_OTG_GUSBCFG_TRDT);
       }
       
-      else if((hclk >= 20000000)&&(hclk < 21800000))
+      else if(hclk <= 21800000)
       {
         /* hclk Clock Range between 20-21.8 MHz */
         hpcd->Instance->GUSBCFG |= (uint32_t)((0xA << 10) & USB_OTG_GUSBCFG_TRDT);
       }
       
-      else if((hclk >= 21800000)&&(hclk < 24000000))
+      else if(hclk <= 24000000)
       {
         /* hclk Clock Range between 21.8-24 MHz */
         hpcd->Instance->GUSBCFG |= (uint32_t)((0x9 << 10) & USB_OTG_GUSBCFG_TRDT);
       }
       
-      else if((hclk >= 24000000)&&(hclk < 27700000))
+      else if(hclk <= 27700000)
       {
         /* hclk Clock Range between 24-27.7 MHz */
         hpcd->Instance->GUSBCFG |= (uint32_t)((0x8 << 10) & USB_OTG_GUSBCFG_TRDT);
       }
       
-      else if((hclk >= 27700000)&&(hclk < 32000000))
+      else if(hclk <= 32000000)
       {
         /* hclk Clock Range between 27.7-32 MHz */
         hpcd->Instance->GUSBCFG |= (uint32_t)((0x7 << 10) & USB_OTG_GUSBCFG_TRDT);
       }
       
-      else /* if(hclk >= 32000000) */
+      else /* if(hclk > 32000000) */
       {
         /* hclk Clock Range between 32-80 MHz */
         hpcd->Instance->GUSBCFG |= (uint32_t)((0x6 << 10) & USB_OTG_GUSBCFG_TRDT);
