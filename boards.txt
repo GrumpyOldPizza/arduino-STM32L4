@@ -26,7 +26,7 @@ dragonfly.build.f_cpu=80000000L
 dragonfly.build.board=STM32L4_DRAGONFLY
 dragonfly.build.arch=STM32L4
 dragonfly.build.core=stm32l4
-dragonfly.build.extra_flags=-DSTM32L476xx  -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data
+dragonfly.build.extra_flags=-DSTM32L476xx  -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
 dragonfly.build.ldscript=linker_scripts/flash.ld
 dragonfly.build.variant=dragonfly
 dragonfly.build.variant_system_lib=stm32l4_dragonfly
