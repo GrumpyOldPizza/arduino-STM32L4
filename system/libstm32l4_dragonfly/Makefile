@@ -46,6 +46,7 @@ SRCS = \
 	stm32l4_dac.c \
 	stm32l4_dma.c \
 	stm32l4_exti.c \
+	stm32l4_flash.c \
 	stm32l4_i2c.c \
 	stm32l4_gpio.c \
 	stm32l4_nvic.c \
@@ -92,6 +93,7 @@ OBJS = \
 	stm32l4_dac.o \
 	stm32l4_dma.o \
 	stm32l4_exti.o \
+	stm32l4_flash.o \
 	stm32l4_i2c.o \
 	stm32l4_gpio.o \
 	stm32l4_nvic.o \

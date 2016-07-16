@@ -12,7 +12,7 @@ dragonfly.pid.0=0x6667
 
 dragonfly.upload.tool=stm32l4_upload
 dragonfly.upload.protocol=dfu
-dragonfly.upload.maximum_size=524288
+dragonfly.upload.maximum_size=507904
 dragonfly.upload.use_1200bps_touch=true
 dragonfly.upload.wait_for_upload_port=false
 dragonfly.upload.native_usb=false

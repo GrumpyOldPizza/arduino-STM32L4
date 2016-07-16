@@ -60,7 +60,7 @@
 
 MEMORY
 {
-   FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 0x00080000
+   FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 0x0007c000
    SRAM1 (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00018000
    SRAM2 (rwx) : ORIGIN = 0x10000000, LENGTH = 0x00008000
 }
@@ -157,6 +157,14 @@ SECTIONS
    } > SRAM2
 */
 
+   .ramfunc :
+   {
+     __ramfunc_start__ = .;
+       *(.ramfunc .RamFunc .fastrun)
+       . = ALIGN(8);
+     __ramfunc_end__ = .;
+   } > SRAM2 AT >FLASH
+
    .data2 :
    {
      __data2_start__ = .;
@@ -167,9 +175,9 @@ SECTIONS
    .data :
    {
      __data_start__ = .;
-       *(vtable)
+         *(vtable)
        *(.data* .gnu.linkonce.d.*)
-       . = ALIGN(8);
+     . = ALIGN(8);
      __data_end__ = .;
    } > SRAM1 AT >FLASH
 
@@ -235,6 +243,9 @@ SECTIONS
        LONG (LOADADDR(.data))
        LONG (__data_start__)
        LONG (__data_end__ - __data_start__)
+       LONG (LOADADDR(.ramfunc))
+       LONG (__ramfunc_start__)
+       LONG (__ramfunc_end__ - __ramfunc_start__)
        LONG (LOADADDR(.data2))
        LONG (__data2_start__)
        LONG (__data2_end__ - __data2_start__)

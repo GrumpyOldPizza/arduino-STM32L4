@@ -19,6 +19,7 @@ SRCS = \
 	../../libraries/SPI/SPI.cpp \
 	../../libraries/Wire/Wire.cpp \
 	../../variants/dragonfly/variant.cpp \
+	avr/eeprom.c \
 	CDC.cpp \
 	FS.cpp \
 	HardwareSerial.cpp \
@@ -49,6 +50,7 @@ OBJS = \
 	../../libraries/SPI/SPI.o \
 	../../libraries/Wire/Wire.o \
 	../../variants/dragonfly/variant.o \
+	avr/eeprom.o \
 	CDC.o \
 	FS.o \
 	HardwareSerial.o \
