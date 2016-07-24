@@ -961,7 +961,7 @@ static int dosfs_volume_lock(dosfs_volume_t *volume)
 	    
 	    if (volume->state != DOSFS_VOLUME_STATE_MOUNTED)
 	    {
-		if (volume->context == NULL)
+		if (volume->state == DOSFS_VOLUME_STATE_NONE)
 		{
 		    status = F_ERR_INITFUNC;
 		}
@@ -1036,7 +1036,7 @@ static int  dosfs_volume_lock_nomount(dosfs_volume_t *volume)
 	    armv7m_core_yield();
 	}
 	
-	if (volume->context == NULL)
+	if (volume->state == DOSFS_VOLUME_STATE_NONE)
 	{
 	    status = F_ERR_INITFUNC;
 	}
@@ -5991,7 +5991,7 @@ static uint8_t dosfs_name_checksum_dosname(const uint8_t *dosname)
 
     for (chksum = 0, n = 0; n < 11; n++)
     {
-	chksum = ((chksum >> 1) | (chksum << 7)) + *dosname++;
+	chksum = (((chksum >> 1) & 0x7f) | (chksum << 7)) + *dosname++;
     }
 
     return chksum & 0xff;
@@ -6003,7 +6003,7 @@ static uint16_t dosfs_name_checksum_uniname(const dosfs_unicode_t *uniname, unsi
 
     for (chksum = 0, n = 0; n < unicount; n++)
     {
-	chksum = ((chksum >> 1) | (chksum << 15)) + *uniname++;
+	chksum = (((chksum >> 1) & 0x7fff) | (chksum << 15)) + *uniname++;
     }
 
     return chksum & 0xffff;
