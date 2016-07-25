@@ -6801,7 +6801,7 @@ static int dosfs_path_find_entry(dosfs_volume_t *volume, uint32_t clsno, uint32_
 				    }
 				    else
 				    {
-					if (((sequence & ~DOSFS_LDIR_SEQUENCE_INDEX) == (ordinal +1)) && (chksum == dir->dir_crt_time_tenth))
+					if (((sequence & DOSFS_LDIR_SEQUENCE_INDEX) == (ordinal +1)) && (chksum == dir->dir_crt_time_tenth))
 					{
 					    sequence = (sequence & DOSFS_LDIR_SEQUENCE_MISMATCH) | ordinal;
 					}
