@@ -1720,6 +1720,11 @@ static int dosfs_volume_commit(dosfs_volume_t *volume)
 			    if (status == F_NO_ERROR)
 			    {
 				status = dosfs_dir_cache_read(volume, blkno, &entry);
+
+				if (status == F_NO_ERROR)
+				{
+				    dir = (dosfs_dir_t*)((void*)(entry->data));
+				}
 			    }
 			}
 			
@@ -1843,6 +1848,11 @@ static int dosfs_volume_commit(dosfs_volume_t *volume)
 			    if (status == F_NO_ERROR)
 			    {
 				status = dosfs_dir_cache_read(volume, blkno, &entry);
+
+				if (status == F_NO_ERROR)
+				{
+				    dir = (dosfs_dir_t*)((void*)(entry->data));
+				}
 			    }
 			}
 
@@ -2411,25 +2421,22 @@ static int  dosfs_volume_format(dosfs_volume_t *volume)
 		 * this CHS range, then use the maximum value. This can only happen with FAT32,
 		 * in which case the partition type signals to use LBA anyway.
 		 */
-		if (sys_id == 0x0c)
-		{
-		    start_c = 1023;
-		    start_h = 254;
-		    start_s = 63;
+
+		start_c = boot_blkno / (hpc * spt);
+		start_h = (boot_blkno - (start_c * hpc * spt)) / spt;
+		start_s = boot_blkno - (start_c * hpc * spt) - (start_h * spt) + 1;
 			
-		    end_c   = 1023;
-		    end_h   = 254;
-		    end_s   = 63;
-		}
-		else
+		if (blkcnt <= 16450560)
 		{
-		    start_c = boot_blkno / (hpc * spt);
-		    start_h = (boot_blkno - (start_c * hpc * spt)) / spt;
-		    start_s = boot_blkno - (start_c * hpc * spt) - (start_h * spt) + 1;
-			
 		    end_c = (blkcnt-1) / (hpc * spt);
 		    end_h = ((blkcnt-1) - (end_c * hpc * spt)) / spt;
 		    end_s = (blkcnt-1) - (end_c * hpc * spt) - (end_h * spt) + 1;
+		}
+		else
+		{
+		    end_c   = 1023;
+		    end_h   = 254;
+		    end_s   = 63;
 		}
 
 		/* Write the MBR */
@@ -7460,6 +7467,11 @@ static int dosfs_path_create_entry(dosfs_volume_t *volume, uint32_t clsno_d, uin
 				if (status == F_NO_ERROR)
 				{
 				    status = dosfs_dir_cache_read(volume, blkno, &entry);
+
+				    if (status == F_NO_ERROR)
+				    {
+					dir = (dosfs_dir_t*)((void*)(entry->data));
+				    }
 				}
 			    }
 
@@ -7603,6 +7615,11 @@ static int dosfs_path_destroy_entry(dosfs_volume_t *volume, uint32_t clsno, uint
 		    if (status == F_NO_ERROR)
 		    {
 			status = dosfs_dir_cache_read(volume, blkno, &entry);
+
+			if (status == F_NO_ERROR)
+			{
+			    dir = (dosfs_dir_t*)((void*)(entry->data));
+			}
 		    }
 		}
 		
