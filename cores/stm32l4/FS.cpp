@@ -23,11 +23,11 @@
 #include "dosfs_config.h"
 
 File::File(const char* path, const char* mode) {
-    if (!path || !mode) {
-	_file = NULL;
-    } else {
-	_file = f_open(path, mode);
-    }
+    _file = f_open(path, mode);
+}
+
+File::File() {
+    _file = NULL;
 }
 
 size_t File::write(uint8_t c) {
@@ -144,7 +144,7 @@ File Dir::openFile(const char* mode) {
     char filename[F_MAXPATH];
 
     if (_find.find_clsno == 0x0fffffff)
-        return File(NULL, NULL);
+        return File();
 
     strcpy(filename, _path);
     strcat(filename, _find.filename);

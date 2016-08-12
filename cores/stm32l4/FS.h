@@ -37,7 +37,8 @@ enum SeekMode {
 class File : public Stream
 {
 public:
-  File(const char *path, const char *mode);
+    File(const char *path, const char *mode);
+    File();
 
     // Print methods:
     size_t write(uint8_t) override;
