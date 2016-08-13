@@ -29,7 +29,7 @@ static inline uint32_t millis(void)
   return armv7m_systick_millis();
 }
 
-static inline uint32_t micros(void) 
+static inline uint64_t micros(void) 
 {
   return armv7m_systick_micros();
 }
