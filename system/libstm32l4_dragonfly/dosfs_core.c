@@ -275,10 +275,6 @@ static int dosfs_volume_init(dosfs_volume_t *volume, F_DRIVERINIT initfunc, uint
 #endif /* (DOSFS_CONFIG_FILE_DATA_CACHE == 0) */
 #endif /* (DOSFS_CONFIG_DATA_CACHE_ENTRIES != 0) */
 
-    /* Make sure USB/MSC does not take over right away.
-     */
-    armv7m_atomic_or(&volume->lock, DOSFS_VOLUME_LOCK_NOT_READY);
-
     status = (*initfunc)(param, &volume->interface, &volume->context);
 
     if (status == F_ERR_NOTFORMATTED)

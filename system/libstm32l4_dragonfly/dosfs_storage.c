@@ -58,16 +58,13 @@ static int8_t dosfs_storage_get_capacity(uint8_t lun, uint32_t *block_num, uint1
 	return -1;
     }
 
-    if (dosfs_volume.lock & DOSFS_VOLUME_LOCK_NOT_READY)
+    if ((dosfs_volume.lock & (DOSFS_VOLUME_LOCK_FILE_LOCK | DOSFS_VOLUME_LOCK_FIND_LOCK | DOSFS_VOLUME_LOCK_API_LOCK)) ||
+	((dosfs_volume.lock & DOSFS_VOLUME_LOCK_DEVICE_LEASE) && ((armv7m_systick_millis() - dosfs_volume.lease) < 250)))
     {
-	if ((dosfs_volume.lock & (DOSFS_VOLUME_LOCK_FILE_LOCK | DOSFS_VOLUME_LOCK_FIND_LOCK | DOSFS_VOLUME_LOCK_API_LOCK)) ||
-	    ((dosfs_volume.lock & DOSFS_VOLUME_LOCK_DEVICE_LEASE) && ((armv7m_systick_millis() - dosfs_volume.lease) < 250)))
-	{
-	    return -1;
-	}
-	
-	dosfs_volume.lock &= ~(DOSFS_VOLUME_LOCK_NOT_READY | DOSFS_VOLUME_LOCK_DEVICE_LEASE);
+	return -1;
     }
+    
+    dosfs_volume.lock &= ~DOSFS_VOLUME_LOCK_DEVICE_LEASE;
 
     status = (*dosfs_volume.interface->info)(dosfs_volume.context, &media, &write_protected, &block_count, &au_size, &serial);
 
@@ -91,16 +88,13 @@ static int8_t dosfs_storage_is_ready(uint8_t lun)
 	return -1;
     }
 
-    if (dosfs_volume.lock & DOSFS_VOLUME_LOCK_NOT_READY)
+    if ((dosfs_volume.lock & (DOSFS_VOLUME_LOCK_FILE_LOCK | DOSFS_VOLUME_LOCK_FIND_LOCK | DOSFS_VOLUME_LOCK_API_LOCK)) ||
+	((dosfs_volume.lock & DOSFS_VOLUME_LOCK_DEVICE_LEASE) && ((armv7m_systick_millis() - dosfs_volume.lease) < 250)))
     {
-	if ((dosfs_volume.lock & (DOSFS_VOLUME_LOCK_FILE_LOCK | DOSFS_VOLUME_LOCK_FIND_LOCK | DOSFS_VOLUME_LOCK_API_LOCK)) ||
-	    ((dosfs_volume.lock & DOSFS_VOLUME_LOCK_DEVICE_LEASE) && ((armv7m_systick_millis() - dosfs_volume.lease) < 250)))
-	{
-	    return -1;
-	}
-	
-	dosfs_volume.lock &= ~(DOSFS_VOLUME_LOCK_NOT_READY | DOSFS_VOLUME_LOCK_DEVICE_LEASE);
+	return -1;
     }
+    
+    dosfs_volume.lock &= ~DOSFS_VOLUME_LOCK_DEVICE_LEASE;
 
     return 0;
 }
@@ -145,8 +139,6 @@ static int8_t dosfs_storage_acquire(uint8_t lun)
     if ((dosfs_volume.lock & (DOSFS_VOLUME_LOCK_FILE_LOCK | DOSFS_VOLUME_LOCK_FIND_LOCK | DOSFS_VOLUME_LOCK_API_LOCK)) ||
 	((dosfs_volume.lock & DOSFS_VOLUME_LOCK_DEVICE_LEASE) && ((armv7m_systick_millis() - dosfs_volume.lease) < 250)))
     {
-	dosfs_volume.lock |= DOSFS_VOLUME_LOCK_NOT_READY;
-
 	return -1;
     }
     
