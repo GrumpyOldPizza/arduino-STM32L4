@@ -92,6 +92,8 @@ static void eeprom_flash_initialize(void)
 
     if ((sequence_1 == 0) && (sequence_2 == 0))
     {
+	stm32l4_flash_unlock();
+
         stm32l4_flash_erase((uint32_t)eeprom_flash_data, EEPROM_FLASH_BANK);
 
 	wdata[ 0] = (uint8_t)(1 >>  0);
@@ -112,6 +114,8 @@ static void eeprom_flash_initialize(void)
 	wdata[15] = (uint8_t)(EEPROM_FLASH_MAGIC_2 >> 24);
 
 	stm32l4_flash_program((uint32_t)eeprom_flash_data + 1*EEPROM_FLASH_BANK - 16, 16, &wdata[0]);
+
+	stm32l4_flash_lock();
 
 	eeprom_flash_bottom = 0;
 	eeprom_flash_top = EEPROM_FLASH_SIZE;
@@ -190,6 +194,8 @@ static void eeprom_flash_write(uint32_t offset, const uint8_t *data)
     {
 	eeprom_flash_initialize();
     }
+
+    stm32l4_flash_unlock();
 
     if (eeprom_flash_slot != eeprom_flash_limit)
     {
@@ -272,6 +278,8 @@ static void eeprom_flash_write(uint32_t offset, const uint8_t *data)
 	eeprom_flash_slot = sbottom + EEPROM_FLASH_SIZE;
 	eeprom_flash_limit = sbottom + EEPROM_FLASH_BANK - 16;
     }
+
+    stm32l4_flash_lock();
 }
 
 uint8_t eeprom_read_byte(const uint8_t *address)
