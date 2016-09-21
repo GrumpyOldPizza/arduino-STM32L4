@@ -46,7 +46,6 @@ SPIClass::SPIClass(struct _stm32l4_spi_t *spi, unsigned int instance, const stru
 
   stm32l4_spi_create(spi, instance, pins, priority, mode);
 
-  _enabled = false;
   _selected = false;
 
   _clock = 4000000;
@@ -66,9 +65,7 @@ SPIClass::SPIClass(struct _stm32l4_spi_t *spi, unsigned int instance, const stru
 
 void SPIClass::begin()
 {
-  if (stm32l4_spi_enable(_spi, SPIClass::_eventCallback, (void*)this, (SPI_EVENT_RECEIVE_DONE | SPI_EVENT_TRANSMIT_DONE | SPI_EVENT_TRANSFER_DONE))) {
-    _enabled = true;
-  }
+  stm32l4_spi_enable(_spi, SPIClass::_eventCallback, (void*)this, (SPI_EVENT_RECEIVE_DONE | SPI_EVENT_TRANSMIT_DONE | SPI_EVENT_TRANSFER_DONE));
 }
 
 void SPIClass::end()
@@ -84,8 +81,6 @@ void SPIClass::end()
   }
 
   stm32l4_spi_disable(_spi);
-
-  _enabled = false;
 }
 
 void SPIClass::usingInterrupt(uint32_t pin)
@@ -289,7 +284,7 @@ bool SPIClass::done(void)
 
 bool SPIClass::isEnabled(void)
 {
-  return _enabled;
+  return _spi->state >= SPI_STATE_READY;
 }
     
 void SPIClass::_exchangeSelect(struct _stm32l4_spi_t *spi, const uint8_t *txData, uint8_t *rxData, size_t count) 

@@ -101,7 +101,6 @@ class SPIClass {
 
   private:
     struct _stm32l4_spi_t *_spi;
-    bool _enabled;
     bool _selected;
     uint32_t _clock;
     uint8_t _bitOrder;
