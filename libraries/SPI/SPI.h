@@ -43,12 +43,22 @@
 #define SPI_MODE2 0x02
 #define SPI_MODE3 0x03
 
+// For compatibility with sketches designed for AVR @ 16 MHz
+// New programs should use SPI.beginTransaction to set the SPI clock
+#define SPI_CLOCK_DIV2   2
+#define SPI_CLOCK_DIV4   4
+#define SPI_CLOCK_DIV8   8
+#define SPI_CLOCK_DIV16  16
+#define SPI_CLOCK_DIV32  32
+#define SPI_CLOCK_DIV64  64
+#define SPI_CLOCK_DIV128 128
+
 class SPISettings {
-  public:
+public:
     SPISettings() : _clock(4000000), _bitOrder(MSBFIRST), _dataMode(SPI_MODE0) { }
     SPISettings(uint32_t clock, BitOrder bitOrder, uint8_t dataMode) : _clock(clock), _bitOrder(bitOrder), _dataMode(dataMode) { }
   
-  private:
+private:
     uint32_t _clock;
     uint8_t  _bitOrder;
     uint8_t  _dataMode;
@@ -57,7 +67,7 @@ class SPISettings {
 };
 
 class SPIClass {
-  public:
+public:
     SPIClass(struct _stm32l4_spi_t *spi, unsigned int instance, const struct _stm32l4_spi_pins_t *pins, unsigned int priority, unsigned int mode);
 
     inline uint8_t transfer(uint8_t data) { return exchange8(data); }
@@ -99,7 +109,7 @@ class SPIClass {
     // STM32L4 EXTENSTION: isEnabled() check
     bool isEnabled(void);
 
-  private:
+private:
     struct _stm32l4_spi_t *_spi;
     bool _selected;
     uint32_t _clock;
@@ -135,23 +145,13 @@ class SPIClass {
 };
 
 #if SPI_INTERFACES_COUNT > 0
-  extern SPIClass SPI;
+extern SPIClass SPI;
 #endif
 #if SPI_INTERFACES_COUNT > 1
-  extern SPIClass SPI1;
+extern SPIClass SPI1;
 #endif
 #if SPI_INTERFACES_COUNT > 2
-  extern SPIClass SPI2;
+extern SPIClass SPI2;
 #endif
-
-// For compatibility with sketches designed for AVR @ 16 MHz
-// New programs should use SPI.beginTransaction to set the SPI clock
-#define SPI_CLOCK_DIV2   2
-#define SPI_CLOCK_DIV4   4
-#define SPI_CLOCK_DIV8   8
-#define SPI_CLOCK_DIV16  16
-#define SPI_CLOCK_DIV32  32
-#define SPI_CLOCK_DIV64  64
-#define SPI_CLOCK_DIV128 128
 
 #endif

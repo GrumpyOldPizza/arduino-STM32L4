@@ -42,350 +42,349 @@
 
 SPIClass::SPIClass(struct _stm32l4_spi_t *spi, unsigned int instance, const struct _stm32l4_spi_pins_t *pins, unsigned int priority, unsigned int mode)
 {
-  _spi = spi;
+    _spi = spi;
 
-  stm32l4_spi_create(spi, instance, pins, priority, mode);
+    stm32l4_spi_create(spi, instance, pins, priority, mode);
 
-  _selected = false;
+    _selected = false;
 
-  _clock = 4000000;
-  _bitOrder = MSBFIRST;
-  _dataMode = SPI_MODE0;
+    _clock = 4000000;
+    _bitOrder = MSBFIRST;
+    _dataMode = SPI_MODE0;
 
-  _reference = 16000000;
+    _reference = 16000000;
 
-  _interruptMask = 0;
+    _interruptMask = 0;
 
-  _exchangeRoutine = SPIClass::_exchangeSelect;
-  _exchange8Routine = SPIClass::_exchange8Select;
-  _exchange16Routine = SPIClass::_exchange16Select;
+    _exchangeRoutine = SPIClass::_exchangeSelect;
+    _exchange8Routine = SPIClass::_exchange8Select;
+    _exchange16Routine = SPIClass::_exchange16Select;
 
-  _completionCallback = NULL;
+    _completionCallback = NULL;
 }
 
 void SPIClass::begin()
 {
-  stm32l4_spi_enable(_spi, SPIClass::_eventCallback, (void*)this, (SPI_EVENT_RECEIVE_DONE | SPI_EVENT_TRANSMIT_DONE | SPI_EVENT_TRANSFER_DONE));
+    stm32l4_spi_enable(_spi, SPIClass::_eventCallback, (void*)this, (SPI_EVENT_RECEIVE_DONE | SPI_EVENT_TRANSMIT_DONE | SPI_EVENT_TRANSFER_DONE));
 }
 
 void SPIClass::end()
 {
-  if (_selected) {
-    stm32l4_spi_unselect(_spi);
+    if (_selected) {
+	stm32l4_spi_unselect(_spi);
 
-    _exchangeRoutine = SPIClass::_exchangeSelect;
-    _exchange8Routine = SPIClass::_exchange8Select;
-    _exchange16Routine = SPIClass::_exchange16Select;
+	_exchangeRoutine = SPIClass::_exchangeSelect;
+	_exchange8Routine = SPIClass::_exchange8Select;
+	_exchange16Routine = SPIClass::_exchange16Select;
 
-    _selected = false;
-  }
+	_selected = false;
+    }
 
-  stm32l4_spi_disable(_spi);
+    stm32l4_spi_disable(_spi);
 }
 
 void SPIClass::usingInterrupt(uint32_t pin)
 {
-  if (!(g_APinDescription[pin].attr & PIN_ATTR_EXTI))
-    return;
+    if (!(g_APinDescription[pin].attr & PIN_ATTR_EXTI)) {
+	return;
+    }
 
-  _interruptMask |= (1ul << ((g_APinDescription[pin].pin & GPIO_PIN_INDEX_MASK) >> GPIO_PIN_INDEX_SHIFT));
+    _interruptMask |= (1ul << ((g_APinDescription[pin].pin & GPIO_PIN_INDEX_MASK) >> GPIO_PIN_INDEX_SHIFT));
 }
 
 void SPIClass::notUsingInterrupt(uint32_t pin)
 {
-  if (!(g_APinDescription[pin].attr & PIN_ATTR_EXTI))
-    return;
+    if (!(g_APinDescription[pin].attr & PIN_ATTR_EXTI)) {
+	return;
+    }
 
-  _interruptMask &= ~(1ul << ((g_APinDescription[pin].pin & GPIO_PIN_INDEX_MASK) >> GPIO_PIN_INDEX_SHIFT));
+    _interruptMask &= ~(1ul << ((g_APinDescription[pin].pin & GPIO_PIN_INDEX_MASK) >> GPIO_PIN_INDEX_SHIFT));
 }
 
 void SPIClass::beginTransaction(SPISettings settings)
 {
-  uint32_t option, clock, divide;
+    uint32_t option, clock, divide;
 
-  option = settings._dataMode | ((settings._bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
+    option = settings._dataMode | ((settings._bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
 
-  clock = stm32l4_spi_clock(_spi) / 2;
-  divide = 0;
+    clock = stm32l4_spi_clock(_spi) / 2;
+    divide = 0;
 
-  while ((clock > settings._clock) && (divide < 7)) {
-    clock /= 2;
-    divide++;
-  }
+    while ((clock > settings._clock) && (divide < 7)) {
+	clock /= 2;
+	divide++;
+    }
 
-  option |= (divide << SPI_OPTION_DIV_SHIFT);
+    option |= (divide << SPI_OPTION_DIV_SHIFT);
 
-  if (_selected) {
-    stm32l4_spi_configure(_spi, option);
-  } else {
-    _selected = true;
+    if (_selected) {
+	stm32l4_spi_configure(_spi, option);
+    } else {
+	_selected = true;
 
-    _exchangeRoutine = stm32l4_spi_exchange;
-    _exchange8Routine = stm32l4_spi_exchange8;
-    _exchange16Routine = stm32l4_spi_exchange16;
+	_exchangeRoutine = stm32l4_spi_exchange;
+	_exchange8Routine = stm32l4_spi_exchange8;
+	_exchange16Routine = stm32l4_spi_exchange16;
     
-    stm32l4_spi_select(_spi, option);
-  }
+	stm32l4_spi_select(_spi, option);
+    }
 
-  if (_interruptMask) {
-    stm32l4_exti_suspend(&stm32l4_exti, _interruptMask);
-  }
+    if (_interruptMask) {
+	stm32l4_exti_suspend(&stm32l4_exti, _interruptMask);
+    }
 }
 
 void SPIClass::endTransaction(void)
 {
-  if (_interruptMask) {
-    stm32l4_exti_resume(&stm32l4_exti, _interruptMask);
-  }
+    if (_interruptMask) {
+	stm32l4_exti_resume(&stm32l4_exti, _interruptMask);
+    }
 
-  stm32l4_spi_unselect(_spi);
+    stm32l4_spi_unselect(_spi);
 
-  _exchangeRoutine = SPIClass::_exchangeSelect;
-  _exchange8Routine = SPIClass::_exchange8Select;
-  _exchange16Routine = SPIClass::_exchange16Select;
+    _exchangeRoutine = SPIClass::_exchangeSelect;
+    _exchange8Routine = SPIClass::_exchange8Select;
+    _exchange16Routine = SPIClass::_exchange16Select;
 
-  _selected = false;
+    _selected = false;
 }
 
 void SPIClass::setBitOrder(BitOrder bitOrder)
 {
-  if (_selected) {
-    stm32l4_spi_unselect(_spi);
+    if (_selected) {
+	stm32l4_spi_unselect(_spi);
     
-    _exchangeRoutine = SPIClass::_exchangeSelect;
-    _exchange8Routine = SPIClass::_exchange8Select;
-    _exchange16Routine = SPIClass::_exchange16Select;
+	_exchangeRoutine = SPIClass::_exchangeSelect;
+	_exchange8Routine = SPIClass::_exchange8Select;
+	_exchange16Routine = SPIClass::_exchange16Select;
     
-    _selected = false;
-  }
+	_selected = false;
+    }
 }
 
 void SPIClass::setDataMode(uint8_t dataMode)
 {
-  if (_selected) {
-    stm32l4_spi_unselect(_spi);
+    if (_selected) {
+	stm32l4_spi_unselect(_spi);
     
-    _exchangeRoutine = SPIClass::_exchangeSelect;
-    _exchange8Routine = SPIClass::_exchange8Select;
-    _exchange16Routine = SPIClass::_exchange16Select;
+	_exchangeRoutine = SPIClass::_exchangeSelect;
+	_exchange8Routine = SPIClass::_exchange8Select;
+	_exchange16Routine = SPIClass::_exchange16Select;
     
-    _selected = false;
-  }
+	_selected = false;
+    }
 
-  _dataMode = dataMode;
+    _dataMode = dataMode;
 }
 
 void SPIClass::setClockDivider(uint8_t divider)
 {
-  if (_selected) {
-    stm32l4_spi_unselect(_spi);
+    if (_selected) {
+	stm32l4_spi_unselect(_spi);
     
-    _exchangeRoutine = SPIClass::_exchangeSelect;
-    _exchange8Routine = SPIClass::_exchange8Select;
-    _exchange16Routine = SPIClass::_exchange16Select;
+	_exchangeRoutine = SPIClass::_exchangeSelect;
+	_exchange8Routine = SPIClass::_exchange8Select;
+	_exchange16Routine = SPIClass::_exchange16Select;
     
-    _selected = false;
-  }
+	_selected = false;
+    }
 
-  if (divider != 0) {
-    _clock = _reference / divider;
-  }
+    if (divider != 0) {
+	_clock = _reference / divider;
+    }
 }
 
 void SPIClass::setClockDividerReference(uint32_t clock)
 {
-  _reference = clock;
+    _reference = clock;
 }
 
-void SPIClass::attachInterrupt() {
+void SPIClass::attachInterrupt()
+{
   // Should be enableInterrupt()
 }
 
-void SPIClass::detachInterrupt() {
+void SPIClass::detachInterrupt()
+{
   // Should be disableInterrupt()
 }
 
 bool SPIClass::transfer(const void *txBuffer, void *rxBuffer, size_t count, void(*callback)(void), bool halfDuplex)
 {
-  if (!stm32l4_spi_done(_spi))
-    return false;
-
-  if (!_selected) {
-    uint32_t option, clock, divide;
-
-    option = _dataMode | ((_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
-
-    clock = stm32l4_spi_clock(_spi) / 2;
-    divide = 0;
-
-    while ((clock > _clock) && (divide < 7)) {
-      clock /= 2;
-      divide++;
+    if (!stm32l4_spi_done(_spi)) {
+	return false;
     }
 
-    option |= (divide << SPI_OPTION_DIV_SHIFT);
+    if (!_selected) {
+	uint32_t option, clock, divide;
 
-    stm32l4_spi_select(_spi, option);
+	option = _dataMode | ((_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
 
-    _selected = true;
+	clock = stm32l4_spi_clock(_spi) / 2;
+	divide = 0;
 
-    _exchangeRoutine = stm32l4_spi_exchange;
-    _exchange8Routine = stm32l4_spi_exchange8;
-    _exchange16Routine = stm32l4_spi_exchange16;
+	while ((clock > _clock) && (divide < 7)) {
+	    clock /= 2;
+	    divide++;
+	}
+
+	option |= (divide << SPI_OPTION_DIV_SHIFT);
+
+	stm32l4_spi_select(_spi, option);
+
+	_selected = true;
+
+	_exchangeRoutine = stm32l4_spi_exchange;
+	_exchange8Routine = stm32l4_spi_exchange8;
+	_exchange16Routine = stm32l4_spi_exchange16;
     
-  }
+    }
 
-  if (!stm32l4_spi_done(_spi))
-    return false;
+    _completionCallback = callback;
 
-  _completionCallback = callback;
+    if (rxBuffer) {
+	if (txBuffer) {
+	    if (!stm32l4_spi_transfer(_spi, static_cast<const uint8_t*>(txBuffer), static_cast<uint8_t*>(rxBuffer), count, 0)) {
+		_completionCallback = NULL;
 
-  if (rxBuffer) {
-    if (txBuffer) {
-      if (!stm32l4_spi_transfer(_spi, static_cast<const uint8_t*>(txBuffer), static_cast<uint8_t*>(rxBuffer), count, 0)) {
-	_completionCallback = NULL;
-	return false;
-      }
+		return false;
+	    }
+	} else {
+	    if (!stm32l4_spi_receive(_spi, static_cast<uint8_t*>(rxBuffer), count, (halfDuplex ? SPI_CONTROL_HALFDUPLEX : 0))) {
+		_completionCallback = NULL;
+
+		return false;
+	    }
+	}
     } else {
-      if (!stm32l4_spi_receive(_spi, static_cast<uint8_t*>(rxBuffer), count, (halfDuplex ? SPI_CONTROL_HALFDUPLEX : 0))) {
-	_completionCallback = NULL;
-	return false;
-      }
-    }
-  } else {
-    if (!stm32l4_spi_transmit(_spi, static_cast<const uint8_t*>(txBuffer), count, 0)) {
-      _completionCallback = NULL;
-      return false;
-    }
-  }
+	if (!stm32l4_spi_transmit(_spi, static_cast<const uint8_t*>(txBuffer), count, 0)) {
+	    _completionCallback = NULL;
 
-  return true;
+	    return false;
+	}
+    }
+
+    return true;
 }
 
 void SPIClass::flush(void)
 {
-  if (!stm32l4_spi_done(_spi)) {
-    if (armv7m_core_priority() <= STM32L4_SPI_IRQ_PRIORITY) {
-      do {
-	stm32l4_spi_poll(_spi);
-      } while (!stm32l4_spi_done(_spi));
-    } else {
-      do {
-	armv7m_core_yield();
-      } while (!stm32l4_spi_done(_spi));
+    if (__get_IPSR() == 0) {
+	while (!stm32l4_spi_done(_spi)) {
+	    armv7m_core_yield();
+	}
     }
-  }
 }
 
 bool SPIClass::done(void)
 {
-  return stm32l4_spi_done(_spi);
+    return stm32l4_spi_done(_spi);
 }
 
 bool SPIClass::isEnabled(void)
 {
-  return (_spi->state >= SPI_STATE_READY);
+    return (_spi->state >= SPI_STATE_READY);
 }
     
 void SPIClass::_exchangeSelect(struct _stm32l4_spi_t *spi, const uint8_t *txData, uint8_t *rxData, size_t count) 
 {
-  SPIClass *spi_class = reinterpret_cast<class SPIClass*>(spi->context);
-  uint32_t option, clock, divide;
+    SPIClass *spi_class = reinterpret_cast<class SPIClass*>(spi->context);
+    uint32_t option, clock, divide;
 
-  option = spi_class->_dataMode | ((spi_class->_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
+    option = spi_class->_dataMode | ((spi_class->_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
 
-  clock = stm32l4_spi_clock(spi) / 2;
-  divide = 0;
+    clock = stm32l4_spi_clock(spi) / 2;
+    divide = 0;
 
-  while ((clock > spi_class->_clock) && (divide < 7)) {
-    clock /= 2;
-    divide++;
-  }
+    while ((clock > spi_class->_clock) && (divide < 7)) {
+	clock /= 2;
+	divide++;
+    }
   
-  option |= (divide << SPI_OPTION_DIV_SHIFT);
+    option |= (divide << SPI_OPTION_DIV_SHIFT);
   
-  stm32l4_spi_select(spi, option);
+    stm32l4_spi_select(spi, option);
 
-  spi_class->_selected = true;
+    spi_class->_selected = true;
 
-  spi_class->_exchangeRoutine = stm32l4_spi_exchange;
-  spi_class->_exchange8Routine = stm32l4_spi_exchange8;
-  spi_class->_exchange16Routine = stm32l4_spi_exchange16;
+    spi_class->_exchangeRoutine = stm32l4_spi_exchange;
+    spi_class->_exchange8Routine = stm32l4_spi_exchange8;
+    spi_class->_exchange16Routine = stm32l4_spi_exchange16;
 
-  return (*spi_class->_exchangeRoutine)(spi, txData, rxData, count);
+    return (*spi_class->_exchangeRoutine)(spi, txData, rxData, count);
 }
 
 uint8_t SPIClass::_exchange8Select(struct _stm32l4_spi_t *spi, uint8_t data)
 {
-  SPIClass *spi_class = reinterpret_cast<class SPIClass*>(spi->context);
-  uint32_t option, clock, divide;
+    SPIClass *spi_class = reinterpret_cast<class SPIClass*>(spi->context);
+    uint32_t option, clock, divide;
 
-  option = spi_class->_dataMode | ((spi_class->_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
+    option = spi_class->_dataMode | ((spi_class->_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
 
-  clock = stm32l4_spi_clock(spi) / 2;
-  divide = 0;
+    clock = stm32l4_spi_clock(spi) / 2;
+    divide = 0;
 
-  while ((clock > spi_class->_clock) && (divide < 7)) {
-    clock /= 2;
-    divide++;
-  }
+    while ((clock > spi_class->_clock) && (divide < 7)) {
+	clock /= 2;
+	divide++;
+    }
   
-  option |= (divide << SPI_OPTION_DIV_SHIFT);
+    option |= (divide << SPI_OPTION_DIV_SHIFT);
   
-  stm32l4_spi_select(spi, option);
+    stm32l4_spi_select(spi, option);
 
-  spi_class->_selected = true;
+    spi_class->_selected = true;
 
-  spi_class->_exchangeRoutine = stm32l4_spi_exchange;
-  spi_class->_exchange8Routine = stm32l4_spi_exchange8;
-  spi_class->_exchange16Routine = stm32l4_spi_exchange16;
+    spi_class->_exchangeRoutine = stm32l4_spi_exchange;
+    spi_class->_exchange8Routine = stm32l4_spi_exchange8;
+    spi_class->_exchange16Routine = stm32l4_spi_exchange16;
 
-  return (*spi_class->_exchange8Routine)(spi, data);
+    return (*spi_class->_exchange8Routine)(spi, data);
 }
 
 uint16_t SPIClass::_exchange16Select(struct _stm32l4_spi_t *spi, uint16_t data)
 {
-  SPIClass *spi_class = reinterpret_cast<class SPIClass*>(spi->context);
-  uint32_t option, clock, divide;
+    SPIClass *spi_class = reinterpret_cast<class SPIClass*>(spi->context);
+    uint32_t option, clock, divide;
 
-  option = spi_class->_dataMode | ((spi_class->_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
+    option = spi_class->_dataMode | ((spi_class->_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
 
-  clock = stm32l4_spi_clock(spi) / 2;
-  divide = 0;
+    clock = stm32l4_spi_clock(spi) / 2;
+    divide = 0;
 
-  while ((clock > spi_class->_clock) && (divide < 7)) {
-    clock /= 2;
-    divide++;
-  }
+    while ((clock > spi_class->_clock) && (divide < 7)) {
+	clock /= 2;
+	divide++;
+    }
   
-  option |= (divide << SPI_OPTION_DIV_SHIFT);
+    option |= (divide << SPI_OPTION_DIV_SHIFT);
   
-  stm32l4_spi_select(spi, option);
+    stm32l4_spi_select(spi, option);
 
-  spi_class->_selected = true;
+    spi_class->_selected = true;
 
-  spi_class->_exchangeRoutine = stm32l4_spi_exchange;
-  spi_class->_exchange8Routine = stm32l4_spi_exchange8;
-  spi_class->_exchange16Routine = stm32l4_spi_exchange16;
+    spi_class->_exchangeRoutine = stm32l4_spi_exchange;
+    spi_class->_exchange8Routine = stm32l4_spi_exchange8;
+    spi_class->_exchange16Routine = stm32l4_spi_exchange16;
   
-  return (*spi_class->_exchange16Routine)(spi, data);
+    return (*spi_class->_exchange16Routine)(spi, data);
 }
 
 void SPIClass::EventCallback(uint32_t events)
 {
-  void(*callback)(void);
+    void(*callback)(void);
   
-  callback = _completionCallback;
-  _completionCallback = NULL;
+    callback = _completionCallback;
+    _completionCallback = NULL;
 
-  if (callback) {
-    (*callback)();
-  }
+    if (callback) {
+	(*callback)();
+    }
 }
 
 void SPIClass::_eventCallback(void *context, uint32_t events)
 {
-  reinterpret_cast<class SPIClass*>(context)->EventCallback(events);
+    reinterpret_cast<class SPIClass*>(context)->EventCallback(events);
 }
 
 #if SPI_INTERFACES_COUNT > 0
