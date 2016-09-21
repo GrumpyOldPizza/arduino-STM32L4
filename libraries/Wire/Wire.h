@@ -41,9 +41,8 @@ class TwoWire : public Stream
 {
   public:
     TwoWire(struct _stm32l4_i2c_t *i2c, unsigned int instance, const struct _stm32l4_i2c_pins_t *pins, unsigned int priority, unsigned int mode);
-    void begin(uint8_t address, uint32_t clock, bool alternate);
-    inline void begin() { return begin(0, TWI_CLOCK, false); }
-    inline void begin(uint8_t address) { return begin(address, TWI_CLOCK, false); }
+    void begin();
+    void begin(uint8_t address);
     void end();
     void setClock(uint32_t);
 
@@ -82,6 +81,7 @@ class TwoWire : public Stream
 
   private:
     struct _stm32l4_i2c_t *_i2c;
+    uint32_t _clock;
     uint32_t _option;
 
     uint8_t _rx_data[BUFFER_LENGTH];
@@ -101,10 +101,22 @@ class TwoWire : public Stream
     void EventCallback(uint32_t events);
 
     static const uint32_t TWI_CLOCK = 100000;
+
+    friend class TwoWireEx;
+};
+
+enum TwoWireExPins { WIRE_PINS_20_21 = 0, WIRE_PINS_42_43 = 1 };
+
+class TwoWireEx : public TwoWire
+{
+  public:
+    using TwoWire::TwoWire;
+    void begin(TwoWireExPins pins);
+    void begin(uint8_t address, TwoWireExPins pins);
 };
 
 #if WIRE_INTERFACES_COUNT > 0
-  extern TwoWire Wire;
+  extern TwoWireEx Wire;
 #endif
 #if WIRE_INTERFACES_COUNT > 1
   extern TwoWire Wire1;

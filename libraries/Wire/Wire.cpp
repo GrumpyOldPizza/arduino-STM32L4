@@ -39,6 +39,9 @@ TwoWire::TwoWire(struct _stm32l4_i2c_t *i2c, unsigned int instance, const struct
 {
   _i2c = i2c;
 
+  _clock = TWI_CLOCK;
+  _option = 0;
+
   stm32l4_i2c_create(i2c, instance, pins, priority, mode);
 
   _rx_read = 0;
@@ -52,24 +55,22 @@ TwoWire::TwoWire(struct _stm32l4_i2c_t *i2c, unsigned int instance, const struct
   _receiveCallback = NULL;
 }
 
-void TwoWire::begin(uint8_t address, uint32_t clock, bool alternate) {
+void TwoWire::begin() {
   _option = I2C_OPTION_RESET;
 
-  if (alternate) {
-    _option |= I2C_OPTION_ALTERNATE;
-  }
+  stm32l4_i2c_enable(_i2c, _clock, _option, TwoWire::_eventCallback, (void*)this, (I2C_EVENT_ADDRESS_NACK | I2C_EVENT_DATA_NACK | I2C_EVENT_ARBITRATION_LOST | I2C_EVENT_BUS_ERROR | I2C_EVENT_OVERRUN | I2C_EVENT_RECEIVE_DONE | I2C_EVENT_TRANSMIT_DONE | I2C_EVENT_TRANSFER_DONE));
+}
 
-  if (address) {
-    _option |= (address << I2C_OPTION_ADDRESS_SHIFT);
+void TwoWire::begin(uint8_t address) {
+  _option = I2C_OPTION_RESET | (address << I2C_OPTION_ADDRESS_SHIFT);
 
-    stm32l4_i2c_enable(_i2c, clock, _option, TwoWire::_eventCallback, (void*)this, (I2C_EVENT_RECEIVE_REQUEST | I2C_EVENT_RECEIVE_DONE | I2C_EVENT_TRANSMIT_REQUEST));
-  } else {
-    stm32l4_i2c_enable(_i2c, clock, _option, TwoWire::_eventCallback, (void*)this, (I2C_EVENT_ADDRESS_NACK | I2C_EVENT_DATA_NACK | I2C_EVENT_ARBITRATION_LOST | I2C_EVENT_BUS_ERROR | I2C_EVENT_OVERRUN | I2C_EVENT_RECEIVE_DONE | I2C_EVENT_TRANSMIT_DONE | I2C_EVENT_TRANSFER_DONE));
-  }
+  stm32l4_i2c_enable(_i2c, _clock, _option, TwoWire::_eventCallback, (void*)this, (I2C_EVENT_RECEIVE_REQUEST | I2C_EVENT_RECEIVE_DONE | I2C_EVENT_TRANSMIT_REQUEST));
 }
 
 void TwoWire::setClock(uint32_t clock) {
-  stm32l4_i2c_configure(_i2c, clock, _option);
+  _clock = clock;
+  
+  stm32l4_i2c_configure(_i2c, _clock, _option);
 }
 
 void TwoWire::end() {
@@ -456,13 +457,33 @@ void TwoWire::_eventCallback(void *context, uint32_t events)
   reinterpret_cast<class TwoWire*>(context)->EventCallback(events);
 }
 
+void TwoWireEx::begin(TwoWireExPins pins) {
+  _option = I2C_OPTION_RESET;
+
+  if (pins == WIRE_PINS_42_43) {
+    _option |= I2C_OPTION_ALTERNATE;
+  }
+
+  stm32l4_i2c_enable(_i2c, _clock, _option, TwoWire::_eventCallback, (void*)this, (I2C_EVENT_ADDRESS_NACK | I2C_EVENT_DATA_NACK | I2C_EVENT_ARBITRATION_LOST | I2C_EVENT_BUS_ERROR | I2C_EVENT_OVERRUN | I2C_EVENT_RECEIVE_DONE | I2C_EVENT_TRANSMIT_DONE | I2C_EVENT_TRANSFER_DONE));
+}
+
+void TwoWireEx::begin(uint8_t address, TwoWireExPins pins) {
+  _option = I2C_OPTION_RESET | (address << I2C_OPTION_ADDRESS_SHIFT);
+
+  if (pins == WIRE_PINS_42_43) {
+    _option |= I2C_OPTION_ALTERNATE;
+  }
+
+  stm32l4_i2c_enable(_i2c, _clock, _option, TwoWire::_eventCallback, (void*)this, (I2C_EVENT_RECEIVE_REQUEST | I2C_EVENT_RECEIVE_DONE | I2C_EVENT_TRANSMIT_REQUEST));
+}
+
 #if WIRE_INTERFACES_COUNT > 0
 
 static stm32l4_i2c_t stm32l4_i2c1;
 
 static const stm32l4_i2c_pins_t stm32l4_i2c1_pins = { GPIO_PIN_PB8_I2C1_SCL, GPIO_PIN_PB9_I2C1_SDA };
 
-TwoWire __attribute__((weak)) Wire(&stm32l4_i2c1, I2C_INSTANCE_I2C1, &stm32l4_i2c1_pins, STM32L4_I2C_IRQ_PRIORITY, I2C_MODE_RX_DMA);
+TwoWireEx __attribute__((weak)) Wire(&stm32l4_i2c1, I2C_INSTANCE_I2C1, &stm32l4_i2c1_pins, STM32L4_I2C_IRQ_PRIORITY, I2C_MODE_RX_DMA);
 
 #endif
 
