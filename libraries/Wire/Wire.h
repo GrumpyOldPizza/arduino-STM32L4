@@ -39,7 +39,7 @@
 
 class TwoWire : public Stream
 {
-  public:
+public:
     TwoWire(struct _stm32l4_i2c_t *i2c, unsigned int instance, const struct _stm32l4_i2c_pins_t *pins, unsigned int priority, unsigned int mode);
     void begin();
     void begin(uint8_t address);
@@ -79,7 +79,7 @@ class TwoWire : public Stream
     // STM32L4 EXTENSTION: reset I2C bus
     void reset(void);
 
-  private:
+private:
     struct _stm32l4_i2c_t *_i2c;
     uint32_t _clock;
     uint32_t _option;
@@ -105,24 +105,24 @@ class TwoWire : public Stream
     friend class TwoWireEx;
 };
 
-enum TwoWireExPins { WIRE_PINS_20_21 = 0, WIRE_PINS_42_43 = 1 };
+enum TwoWireExPins { TWI_PINS_20_21 = 0, TWI_PINS_42_43 = 1 };
 
 class TwoWireEx : public TwoWire
 {
-  public:
+public:
     using TwoWire::TwoWire;
     void begin(TwoWireExPins pins);
     void begin(uint8_t address, TwoWireExPins pins);
 };
 
 #if WIRE_INTERFACES_COUNT > 0
-  extern TwoWireEx Wire;
+extern TwoWireEx Wire;
 #endif
 #if WIRE_INTERFACES_COUNT > 1
-  extern TwoWire Wire1;
+extern TwoWire Wire1;
 #endif
 #if WIRE_INTERFACES_COUNT > 2
-  extern TwoWire Wire2;
+extern TwoWire Wire2;
 #endif
 
 #endif
