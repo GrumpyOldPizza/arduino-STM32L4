@@ -96,7 +96,7 @@ class SPIClass {
     void flush(void);
     bool done(void);
 
-    // STM32L4 EXTENSTION: isEnabled
+    // STM32L4 EXTENSTION: isEnabled() check
     bool isEnabled(void);
 
   private:

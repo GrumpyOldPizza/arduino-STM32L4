@@ -32,8 +32,7 @@
 #include "Stream.h"
 #include "variant.h"
 
-#define TWI_RX_BUFFER_SIZE 32
-#define TWI_TX_BUFFER_SIZE 32
+#define BUFFER_LENGTH 32
 
  // WIRE_HAS_END means Wire has end()
 #define WIRE_HAS_END 1
@@ -49,11 +48,10 @@ class TwoWire : public Stream
     void setClock(uint32_t);
 
     void beginTransmission(uint8_t);
-    uint8_t endTransmission(bool stopBit);
-    uint8_t endTransmission(void);
+    uint8_t endTransmission(bool stopBit = true);
 
-    uint8_t requestFrom(uint8_t address, size_t quantity, bool stopBit);
-    uint8_t requestFrom(uint8_t address, size_t quantity);
+    uint8_t requestFrom(uint8_t address, size_t quantity, bool stopBit = true);
+    uint8_t requestFrom(uint8_t address, size_t quantity, uint32_t iaddress, uint8_t isize, bool stopBit = true);
 
     size_t write(uint8_t data);
     size_t write(const uint8_t *buffer, size_t quantity);
@@ -71,11 +69,8 @@ class TwoWire : public Stream
     inline size_t write(int n) { return write((uint8_t)n); }
     using Print::write;
 
-    // STM32L4 EXTENSTION: synchronous composite transmit/receive 
-    uint8_t transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, bool stopBit = true);
-
     // STM32L4 EXTENSTION: asynchronous composite transmit/receive with callback
-    bool transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, bool stopBit, void(*callback)(uint8_t));
+    bool transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, void(*callback)(uint8_t), bool stopBit = true);
     bool done(void);
     uint8_t status(void);
 
@@ -89,11 +84,11 @@ class TwoWire : public Stream
     struct _stm32l4_i2c_t *_i2c;
     uint32_t _option;
 
-    uint8_t _rx_data[TWI_RX_BUFFER_SIZE];
+    uint8_t _rx_data[BUFFER_LENGTH];
     uint8_t _rx_read;
     uint8_t _rx_write;
 
-    uint8_t _tx_data[TWI_TX_BUFFER_SIZE];
+    uint8_t _tx_data[BUFFER_LENGTH];
     uint8_t _tx_write;
     uint8_t _tx_address;
     bool _tx_active;

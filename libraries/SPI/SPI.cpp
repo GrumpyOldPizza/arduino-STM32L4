@@ -284,7 +284,7 @@ bool SPIClass::done(void)
 
 bool SPIClass::isEnabled(void)
 {
-  return _spi->state >= SPI_STATE_READY;
+  return (_spi->state >= SPI_STATE_READY);
 }
     
 void SPIClass::_exchangeSelect(struct _stm32l4_spi_t *spi, const uint8_t *txData, uint8_t *rxData, size_t count) 

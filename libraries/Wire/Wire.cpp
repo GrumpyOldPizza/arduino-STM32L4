@@ -81,8 +81,8 @@ uint8_t TwoWire::requestFrom(uint8_t address, size_t quantity, bool stopBit)
   if (quantity == 0)
     return 0;
   
-  if (quantity > TWI_RX_BUFFER_SIZE)
-    quantity = TWI_RX_BUFFER_SIZE;
+  if (quantity > BUFFER_LENGTH)
+    quantity = BUFFER_LENGTH;
 
   if (!stm32l4_i2c_done(_i2c)) {
     if (armv7m_core_priority() <= STM32L4_I2C_IRQ_PRIORITY) {
@@ -122,9 +122,67 @@ uint8_t TwoWire::requestFrom(uint8_t address, size_t quantity, bool stopBit)
   return quantity;
 }
 
-uint8_t TwoWire::requestFrom(uint8_t address, size_t quantity)
+uint8_t TwoWire::requestFrom(uint8_t address, size_t quantity, uint32_t iaddress, uint8_t isize, bool stopBit)
 {
-  return requestFrom(address, quantity, true);
+  uint8_t tx_data[4];
+
+  if (quantity == 0)
+    return 0;
+  
+  if (quantity > BUFFER_LENGTH)
+    quantity = BUFFER_LENGTH;
+
+  if (!stm32l4_i2c_done(_i2c)) {
+    if (armv7m_core_priority() <= STM32L4_I2C_IRQ_PRIORITY) {
+      do {
+	stm32l4_i2c_poll(_i2c);
+      } while (!stm32l4_i2c_done(_i2c));
+    } else {
+      do {
+	armv7m_core_yield();
+      } while (!stm32l4_i2c_done(_i2c));
+    }
+  }
+
+  if (isize > 0) {
+    if (isize > 4) {
+      isize = 4;
+    }
+
+    tx_data[0] = iaddress >> 0;
+    tx_data[1] = iaddress >> 8;
+    tx_data[2] = iaddress >> 16;
+    tx_data[3] = iaddress >> 24;
+
+    if (!stm32l4_i2c_transfer(_i2c, address, &tx_data[0], isize, &_rx_data[0], quantity, (stopBit ? 0 : I2C_CONTROL_RESTART))) {
+      return 0;
+    }    
+  } else {
+    if (!stm32l4_i2c_receive(_i2c, address, &_rx_data[0], quantity, (stopBit ? 0 : I2C_CONTROL_RESTART))) {
+      return 0;
+    }    
+  }
+
+  if (!stm32l4_i2c_done(_i2c)) {
+    if (armv7m_core_priority() <= STM32L4_I2C_IRQ_PRIORITY) {
+      do {
+	stm32l4_i2c_poll(_i2c);
+      } while (!stm32l4_i2c_done(_i2c));
+    } else {
+      do {
+	armv7m_core_yield();
+      } while (!stm32l4_i2c_done(_i2c));
+    }
+  }
+
+  if (stm32l4_i2c_status(_i2c)) {
+    return 0;
+  }
+
+  _rx_read = 0;
+  _rx_write = quantity;
+
+  return quantity;
 }
 
 void TwoWire::beginTransmission(uint8_t address) {
@@ -192,17 +250,12 @@ uint8_t TwoWire::endTransmission(bool stopBit)
   }
 }
 
-uint8_t TwoWire::endTransmission()
-{
-  return endTransmission(true);
-}
-
 size_t TwoWire::write(uint8_t data)
 {
   if (!_tx_active)
     return 0;
 
-  if (_tx_write >= TWI_TX_BUFFER_SIZE)
+  if (_tx_write >= BUFFER_LENGTH)
     return 0;
 
   _tx_data[_tx_write++] = data;
@@ -218,7 +271,7 @@ size_t TwoWire::write(const uint8_t *data, size_t quantity)
     return 0;
 
   for (count = 0; count < quantity; count++) {
-    if (_tx_write >= TWI_TX_BUFFER_SIZE)
+    if (_tx_write >= BUFFER_LENGTH)
       return count;
 
     _tx_data[_tx_write++] = *data++;
@@ -263,73 +316,7 @@ void TwoWire::flush(void)
   }
 }
 
-uint8_t TwoWire::transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, bool stopBit)
-{
-  unsigned int status;
-
-  if (_tx_active) 
-    return 4;
-
-  if ((txSize > 1024) || (rxSize > 1024)) 
-    return 4;
-
-  if (!stm32l4_i2c_done(_i2c)) {
-    if (armv7m_core_priority() <= STM32L4_I2C_IRQ_PRIORITY) {
-      do {
-	stm32l4_i2c_poll(_i2c);
-      } while (!stm32l4_i2c_done(_i2c));
-    } else {
-      do {
-	armv7m_core_yield();
-      } while (!stm32l4_i2c_done(_i2c));
-    }
-  }
-
-  if (rxSize) {
-    if (txSize) {
-      if (!stm32l4_i2c_transfer(_i2c, address, txBuffer, txSize, rxBuffer, rxSize, (stopBit ? 0 : I2C_CONTROL_RESTART)))
-	return 4;
-    } else {
-      if (!stm32l4_i2c_receive(_i2c, address, rxBuffer, rxSize, (stopBit ? 0 : I2C_CONTROL_RESTART)))
-	return 4;
-    }
-  } else {
-    if (!stm32l4_i2c_transmit(_i2c, address, txBuffer, txSize, (stopBit ? 0 : I2C_CONTROL_RESTART)))
-      return 4;
-  }
-
-  if (!stm32l4_i2c_done(_i2c)) {
-    if (armv7m_core_priority() <= STM32L4_I2C_IRQ_PRIORITY) {
-      do {
-	stm32l4_i2c_poll(_i2c);
-      } while (!stm32l4_i2c_done(_i2c));
-    } else {
-      do {
-	armv7m_core_yield();
-      } while (!stm32l4_i2c_done(_i2c));
-    }
-  }
-
-  status = stm32l4_i2c_status(_i2c);
-
-  if (status == 0) {
-    return 0;
-  }
-
-  if (status & I2C_STATUS_ADDRESS_NACK) {
-    return 2;
-  }
-
-  else if (status & I2C_STATUS_DATA_NACK) {
-    return 3;
-  }
-
-  else {
-    return 4;
-  }
-}
-
-bool TwoWire::transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, bool stopBit, void(*callback)(uint8_t))
+bool TwoWire::transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, void(*callback)(uint8_t), bool stopBit)
 {
   if (_tx_active) 
     return false;
@@ -424,11 +411,11 @@ void TwoWire::EventCallback(uint32_t events)
 	(*_receiveCallback)(_rx_write);
       }
       
-      stm32l4_i2c_service(_i2c, &_rx_data[0], TWI_RX_BUFFER_SIZE);
+      stm32l4_i2c_service(_i2c, &_rx_data[0], BUFFER_LENGTH);
     }
     
     if (events & I2C_EVENT_RECEIVE_REQUEST) {
-      stm32l4_i2c_service(_i2c, &_rx_data[0], TWI_RX_BUFFER_SIZE);
+      stm32l4_i2c_service(_i2c, &_rx_data[0], BUFFER_LENGTH);
     }
     
     if (events & I2C_EVENT_TRANSMIT_REQUEST) {
