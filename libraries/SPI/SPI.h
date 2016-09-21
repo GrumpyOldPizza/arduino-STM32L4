@@ -45,51 +45,13 @@
 
 class SPISettings {
   public:
-    SPISettings(uint32_t clock, BitOrder bitOrder, uint8_t dataMode) {
-	if (__builtin_constant_p(clock)) {
-	    init_AlwaysInline(clock, bitOrder, dataMode);
-	} else {
-	    init_MightInline(clock, bitOrder, dataMode);
-	}
-    }
-  
-    // Default speed set to 4MHz, SPI mode set to MODE 0 and Bit order set to MSB first.
-    SPISettings() { init_AlwaysInline(4000000, MSBFIRST, SPI_MODE0); }
+    SPISettings() : _clock(4000000), _bitOrder(MSBFIRST), _dataMode(SPI_MODE0) { }
+    SPISettings(uint32_t clock, BitOrder bitOrder, uint8_t dataMode) : _clock(clock), _bitOrder(bitOrder), _dataMode(dataMode) { }
   
   private:
-    void init_MightInline(uint32_t clock, BitOrder bitOrder, uint8_t dataMode) {
-	init_AlwaysInline(clock, bitOrder, dataMode);
-    }
-  
-    void init_AlwaysInline(uint32_t clock, BitOrder bitOrder, uint8_t dataMode) __attribute__((__always_inline__)) {
-	uint32_t control = dataMode;
-
-	if (bitOrder != MSBFIRST) { control |= SPI_CR1_LSBFIRST; }
-
-#if (F_CPU <= 32000000)
-	if      (clock >= (F_CPU / 2))   { control |= 0;                                            }
-	else if (clock >= (F_CPU / 4))   { control |= (SPI_CR1_BR_0);                               }
-	else if (clock >= (F_CPU / 8))   { control |= (SPI_CR1_BR_1);                               }
-	else if (clock >= (F_CPU / 16))  { control |= (SPI_CR1_BR_0 | SPI_CR1_BR_1);                }
-	else if (clock >= (F_CPU / 32))  { control |= (SPI_CR1_BR_2);                               }
-	else if (clock >= (F_CPU / 64))  { control |= (SPI_CR1_BR_0 | SPI_CR1_BR_2);                }
-	else if (clock >= (F_CPU / 128)) { control |= (SPI_CR1_BR_1 | SPI_CR1_BR_2);                }
-	else                             { control |= (SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_BR_2); }
-#else
-	if      (clock >= (F_CPU / 4))   { control |= 0;                                            }
-	else if (clock >= (F_CPU / 8))   { control |= (SPI_CR1_BR_0);                               }
-	else if (clock >= (F_CPU / 16))  { control |= (SPI_CR1_BR_1);                               }
-	else if (clock >= (F_CPU / 32))  { control |= (SPI_CR1_BR_0 | SPI_CR1_BR_1);                }
-	else if (clock >= (F_CPU / 64))  { control |= (SPI_CR1_BR_2);                               }
-	else if (clock >= (F_CPU / 128)) { control |= (SPI_CR1_BR_0 | SPI_CR1_BR_2);                }
-	else if (clock >= (F_CPU / 256)) { control |= (SPI_CR1_BR_1 | SPI_CR1_BR_2);                }
-	else                             { control |= (SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_BR_2); }
-#endif
-
-	this->_control = control;
-    }
-
-    uint32_t _control;
+    uint32_t _clock;
+    uint8_t  _bitOrder;
+    uint8_t  _dataMode;
 
     friend class SPIClass;
 };
@@ -119,25 +81,27 @@ class SPIClass {
     void setDataMode(uint8_t dataMode);
     void setClockDivider(uint8_t divider);
 
-    // STM32L4 EXTENSTION: synchronous inline read/write
+    // STM32L4 EXTENSTION: synchronous inline read/write, transfer with separate read/write buffer
     inline uint8_t read(void) { return exchange8(0xff); }
     inline void read(void *buffer, size_t count) { return exchange(NULL, static_cast<uint8_t*>(buffer), count); }
     inline void write(uint8_t data) { return (void)exchange8(data); }
     inline void write(const void *buffer, size_t count) { return exchange(static_cast<const uint8_t*>(buffer), NULL, count); }
-
-    // STM32L4 EXTENSTION: synchronous composite transaction
-    void transfer(SPISettings settings, const void *txBuffer, void *rxBuffer, size_t count, bool halfDuplex = false);
+    inline void transfer(const void *txBuffer, void *rxBuffer, size_t count) { return exchange(static_cast<const uint8_t*>(txBuffer), static_cast<uint8_t*>(rxBuffer), count); }
 
     // STM32L4 EXTENSTION: asynchronous composite transaction
-    bool transfer(SPISettings settings, const void *txBuffer, void *rxBuffer, size_t count, void(*callback)(void), bool halfDuplex = false);
+    bool transfer(const void *txBuffer, void *rxBuffer, size_t count, void(*callback)(void), bool halfDuplex = false);
     void flush(void);
     bool done(void);
 
+    // STM32L4 EXTENSTION: isEnabled
+    bool isEnabled(void);
+
   private:
     struct _stm32l4_spi_t *_spi;
+    bool _enabled;
     bool _selected;
     uint32_t _clock;
-    BitOrder _bitOrder;
+    uint8_t _bitOrder;
     uint8_t _dataMode;
     uint32_t _interruptMask;
 
@@ -156,7 +120,7 @@ class SPIClass {
     uint16_t exchange16(uint16_t data) __attribute__((__always_inline__)) {
 	return (*_exchange16Routine)(_spi, data);
     }
-
+    
     static void _exchangeSelect(struct _stm32l4_spi_t *spi, const uint8_t *txData, uint8_t *rxData, size_t count);
     static uint8_t _exchange8Select(struct _stm32l4_spi_t *spi, uint8_t data);
     static uint16_t _exchange16Select(struct _stm32l4_spi_t *spi, uint16_t data);

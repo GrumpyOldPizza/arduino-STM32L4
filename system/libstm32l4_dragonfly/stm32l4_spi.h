@@ -50,27 +50,27 @@
 #define SPI_MODE_RX_DMA_SECONDARY      0x00000004
 #define SPI_MODE_TX_DMA_SECONDARY      0x00000008
 
-#define SPI_CONTROL_MODE_MASK          0x00000003
-#define SPI_CONTROL_MODE_SHIFT         0
-#define SPI_CONTROL_MODE_0             0x00000000
-#define SPI_CONTROL_MODE_1             0x00000001
-#define SPI_CONTROL_MODE_2             0x00000002
-#define SPI_CONTROL_MODE_3             0x00000003
-#define SPI_CONTROL_DIV_MASK           0x00000038
-#define SPI_CONTROL_DIV_SHIFT          3
-#define SPI_CONTROL_DIV_2              0x00000000
-#define SPI_CONTROL_DIV_4              0x00000008
-#define SPI_CONTROL_DIV_8              0x00000010
-#define SPI_CONTROL_DIV_16             0x00000018
-#define SPI_CONTROL_DIV_32             0x00000020
-#define SPI_CONTROL_DIV_64             0x00000028
-#define SPI_CONTROL_DIV_128            0x00000030
-#define SPI_CONTROL_DIV_256            0x00000038
-#define SPI_CONTROL_MSB_FIRST          0x00000000
-#define SPI_CONTROL_LSB_FIRST          0x00000080
+#define SPI_OPTION_MODE_MASK           0x00000003
+#define SPI_OPTION_MODE_SHIFT          0
+#define SPI_OPTION_MODE_0              0x00000000
+#define SPI_OPTION_MODE_1              0x00000001
+#define SPI_OPTION_MODE_2              0x00000002
+#define SPI_OPTION_MODE_3              0x00000003
+#define SPI_OPTION_DIV_MASK            0x00000038
+#define SPI_OPTION_DIV_SHIFT           3
+#define SPI_OPTION_DIV_2               0x00000000
+#define SPI_OPTION_DIV_4               0x00000008
+#define SPI_OPTION_DIV_8               0x00000010
+#define SPI_OPTION_DIV_16              0x00000018
+#define SPI_OPTION_DIV_32              0x00000020
+#define SPI_OPTION_DIV_64              0x00000028
+#define SPI_OPTION_DIV_128             0x00000030
+#define SPI_OPTION_DIV_256             0x00000038
+#define SPI_OPTION_MSB_FIRST           0x00000000
+#define SPI_OPTION_LSB_FIRST           0x00000080
 
-#define SPI_CONTROL_HALFDUPLEX         0x40000000
-#define SPI_CONTROL_CRC16              0x80000000
+#define SPI_CONTROL_HALFDUPLEX         0x00000001
+#define SPI_CONTROL_CRC16              0x00000002
 
 #define SPI_EVENT_RECEIVE_DONE         0x20000000
 #define SPI_EVENT_TRANSMIT_DONE        0x40000000
@@ -139,7 +139,7 @@ typedef struct _stm32l4_spi_t {
     stm32l4_spi_pins_t          pins;
     uint8_t                     mode;
     uint8_t                     select;
-    uint32_t                    control;
+    uint32_t                    option;
     uint32_t                    cr1;
     uint32_t                    cr2;
     stm32l4_spi_callback_t      callback;
@@ -165,9 +165,9 @@ extern uint32_t stm32l4_spi_clock(stm32l4_spi_t *spi);
 extern bool stm32l4_spi_enable(stm32l4_spi_t *spi, stm32l4_spi_callback_t callback, void *context, uint32_t events);
 extern bool stm32l4_spi_disable(stm32l4_spi_t *spi);
 extern bool stm32l4_spi_notify(stm32l4_spi_t *spi, stm32l4_spi_callback_t callback, void *context, uint32_t events);
-extern bool stm32l4_spi_select(stm32l4_spi_t *spi, uint32_t control);
+extern bool stm32l4_spi_select(stm32l4_spi_t *spi, uint32_t option);
 extern bool stm32l4_spi_unselect(stm32l4_spi_t *spi);
-extern bool stm32l4_spi_control(stm32l4_spi_t *spi, uint32_t control);
+extern bool stm32l4_spi_configure(stm32l4_spi_t *spi, uint32_t option);
 extern void stm32l4_spi_exchange(stm32l4_spi_t *spi, const uint8_t *tx_data, uint8_t *rx_data, unsigned int count);
 extern uint8_t stm32l4_spi_exchange8(stm32l4_spi_t *spi, uint8_t data);
 extern uint16_t stm32l4_spi_exchange16(stm32l4_spi_t *spi, uint16_t data);

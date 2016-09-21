@@ -25,6 +25,9 @@
 #undef SPI2
 
 #include "stm32l4_gpio.h"
+#include "stm32l4_uart.h"
+#include "stm32l4_i2c.h"
+#include "stm32l4_spi.h"
 
 #ifdef __cplusplus
 extern "C" {

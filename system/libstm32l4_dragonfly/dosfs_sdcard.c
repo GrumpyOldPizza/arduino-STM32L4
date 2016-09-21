@@ -58,7 +58,7 @@ bool stm32l4_sdcard_spi_init(dosfs_sdcard_t *sdcard)
 	divide++;
     }
 
-    sdcard->control = SPI_CONTROL_MODE_3 | (divide << SPI_CONTROL_DIV_SHIFT);
+    sdcard->option = SPI_OPTION_MODE_3 | (divide << SPI_OPTION_DIV_SHIFT);
     sdcard->pin_cs = GPIO_PIN_PD2;
 
     stm32l4_gpio_pin_configure(sdcard->pin_cs, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_OUTPUT));
@@ -126,11 +126,11 @@ uint32_t stm32l4_sdcard_spi_mode(dosfs_sdcard_t *sdcard, int mode)
 	    divide++;
 	}
 	
-	sdcard->control = SPI_CONTROL_MODE_3 | (divide << SPI_CONTROL_DIV_SHIFT);
+	sdcard->option = SPI_OPTION_MODE_3 | (divide << SPI_OPTION_DIV_SHIFT);
 
 	if (mode == DOSFS_SDCARD_MODE_IDENTIFY)
 	{
-	    stm32l4_spi_select(&sdcard->spi, sdcard->control);
+	    stm32l4_spi_select(&sdcard->spi, sdcard->option);
 
 	    stm32l4_gpio_pin_configure(sdcard->spi.pins.mosi, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_OUTPUT));
 	    stm32l4_gpio_pin_write(sdcard->spi.pins.mosi, 1);
@@ -159,7 +159,7 @@ uint32_t stm32l4_sdcard_spi_mode(dosfs_sdcard_t *sdcard, int mode)
 
 void stm32l4_sdcard_spi_select(dosfs_sdcard_t *sdcard)
 {
-    stm32l4_spi_select(&sdcard->spi, sdcard->control);
+    stm32l4_spi_select(&sdcard->spi, sdcard->option);
 
     /* CS output, drive CS to L */
     stm32l4_gpio_pin_write(sdcard->pin_cs, 0);
@@ -200,7 +200,7 @@ uint8_t stm32l4_sdcard_spi_receive(dosfs_sdcard_t *sdcard)
 
 void stm32l4_sdcard_spi_send_block(dosfs_sdcard_t *sdcard, const uint8_t *data)
 {
-    stm32l4_spi_transmit(&sdcard->spi, data, 512, sdcard->control | SPI_CONTROL_CRC16);
+    stm32l4_spi_transmit(&sdcard->spi, data, 512, SPI_CONTROL_CRC16);
 
     while (!stm32l4_spi_done(&sdcard->spi))
     {
@@ -210,7 +210,7 @@ void stm32l4_sdcard_spi_send_block(dosfs_sdcard_t *sdcard, const uint8_t *data)
 
 uint32_t stm32l4_sdcard_spi_receive_block(dosfs_sdcard_t *sdcard, uint8_t *data)
 {
-    stm32l4_spi_receive(&sdcard->spi, data, 512, sdcard->control | SPI_CONTROL_CRC16);
+    stm32l4_spi_receive(&sdcard->spi, data, 512, SPI_CONTROL_CRC16);
   
     while (!stm32l4_spi_done(&sdcard->spi))
     {

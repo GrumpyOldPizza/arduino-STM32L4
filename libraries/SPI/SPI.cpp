@@ -46,6 +46,7 @@ SPIClass::SPIClass(struct _stm32l4_spi_t *spi, unsigned int instance, const stru
 
   stm32l4_spi_create(spi, instance, pins, priority, mode);
 
+  _enabled = false;
   _selected = false;
 
   _clock = 4000000;
@@ -63,7 +64,9 @@ SPIClass::SPIClass(struct _stm32l4_spi_t *spi, unsigned int instance, const stru
 
 void SPIClass::begin()
 {
-  stm32l4_spi_enable(_spi, SPIClass::_eventCallback, (void*)this, (SPI_EVENT_RECEIVE_DONE | SPI_EVENT_TRANSMIT_DONE |SPI_EVENT_TRANSFER_DONE));
+  if (stm32l4_spi_enable(_spi, SPIClass::_eventCallback, (void*)this, (SPI_EVENT_RECEIVE_DONE | SPI_EVENT_TRANSMIT_DONE | SPI_EVENT_TRANSFER_DONE))) {
+    _enabled = true;
+  }
 }
 
 void SPIClass::end()
@@ -79,6 +82,8 @@ void SPIClass::end()
   }
 
   stm32l4_spi_disable(_spi);
+
+  _enabled = false;
 }
 
 void SPIClass::usingInterrupt(uint32_t pin)
@@ -99,8 +104,22 @@ void SPIClass::notUsingInterrupt(uint32_t pin)
 
 void SPIClass::beginTransaction(SPISettings settings)
 {
+  uint32_t option, clock, divide;
+
+  option = settings._dataMode | ((settings._bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
+
+  clock = stm32l4_spi_clock(_spi) / 2;
+  divide = 0;
+
+  while ((clock > settings._clock) && (divide < 7)) {
+    clock /= 2;
+    divide++;
+  }
+
+  option |= (divide << SPI_OPTION_DIV_SHIFT);
+
   if (_selected) {
-    stm32l4_spi_control(_spi, settings._control);
+    stm32l4_spi_configure(_spi, option);
   } else {
     _selected = true;
 
@@ -108,7 +127,7 @@ void SPIClass::beginTransaction(SPISettings settings)
     _exchange8Routine = stm32l4_spi_exchange8;
     _exchange16Routine = stm32l4_spi_exchange16;
     
-    stm32l4_spi_select(_spi, settings._control);
+    stm32l4_spi_select(_spi, option);
   }
 
   if (_interruptMask) {
@@ -142,8 +161,6 @@ void SPIClass::setBitOrder(BitOrder bitOrder)
     
     _selected = false;
   }
-
-  _bitOrder = bitOrder;
 }
 
 void SPIClass::setDataMode(uint8_t dataMode)
@@ -186,45 +203,36 @@ void SPIClass::detachInterrupt() {
   // Should be disableInterrupt()
 }
 
-void SPIClass::transfer(SPISettings settings, const void *txBuffer, void *rxBuffer, size_t count, bool halfDuplex)
+bool SPIClass::transfer(const void *txBuffer, void *rxBuffer, size_t count, void(*callback)(void), bool halfDuplex)
 {
-  if (!stm32l4_spi_done(_spi)) {
-    if (armv7m_core_priority() <= STM32L4_SPI_IRQ_PRIORITY) {
-      do {
-	stm32l4_spi_poll(_spi);
-      } while (!stm32l4_spi_done(_spi));
-    } else {
-      do {
-	armv7m_core_yield();
-      } while (!stm32l4_spi_done(_spi));
+  if (!stm32l4_spi_done(_spi))
+    return false;
+
+  if (!_selected) {
+    uint32_t option, clock, divide;
+
+    option = _dataMode | ((_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
+
+    clock = stm32l4_spi_clock(_spi) / 2;
+    divide = 0;
+
+    while ((clock > _clock) && (divide < 7)) {
+      clock /= 2;
+      divide++;
     }
+
+    option |= (divide << SPI_OPTION_DIV_SHIFT);
+
+    stm32l4_spi_select(_spi, option);
+
+    _selected = true;
+
+    _exchangeRoutine = stm32l4_spi_exchange;
+    _exchange8Routine = stm32l4_spi_exchange8;
+    _exchange16Routine = stm32l4_spi_exchange16;
+    
   }
 
-  if (rxBuffer) {
-    if (txBuffer) {
-      stm32l4_spi_transfer(_spi, static_cast<const uint8_t*>(txBuffer), static_cast<uint8_t*>(rxBuffer), count, settings._control);
-    } else {
-      stm32l4_spi_receive(_spi, static_cast<uint8_t*>(rxBuffer), count, (settings._control | (halfDuplex ? SPI_CONTROL_HALFDUPLEX : 0)));
-    }
-  } else {
-    stm32l4_spi_transmit(_spi, static_cast<const uint8_t*>(txBuffer), count, settings._control);
-  }
-
-  if (!stm32l4_spi_done(_spi)) {
-    if (armv7m_core_priority() <= STM32L4_SPI_IRQ_PRIORITY) {
-      do {
-	stm32l4_spi_poll(_spi);
-      } while (!stm32l4_spi_done(_spi));
-    } else {
-      do {
-	armv7m_core_yield();
-      } while (!stm32l4_spi_done(_spi));
-    }
-  }
-}
-
-bool SPIClass::transfer(SPISettings settings, const void *txBuffer, void *rxBuffer, size_t count, void(*callback)(void), bool halfDuplex)
-{
   if (!stm32l4_spi_done(_spi))
     return false;
 
@@ -232,18 +240,18 @@ bool SPIClass::transfer(SPISettings settings, const void *txBuffer, void *rxBuff
 
   if (rxBuffer) {
     if (txBuffer) {
-      if (!stm32l4_spi_transfer(_spi, static_cast<const uint8_t*>(txBuffer), static_cast<uint8_t*>(rxBuffer), count, settings._control)) {
+      if (!stm32l4_spi_transfer(_spi, static_cast<const uint8_t*>(txBuffer), static_cast<uint8_t*>(rxBuffer), count, 0)) {
 	_completionCallback = NULL;
 	return false;
       }
     } else {
-      if (!stm32l4_spi_receive(_spi, static_cast<uint8_t*>(rxBuffer), count, (settings._control | (halfDuplex ? SPI_CONTROL_HALFDUPLEX : 0)))) {
+      if (!stm32l4_spi_receive(_spi, static_cast<uint8_t*>(rxBuffer), count, (halfDuplex ? SPI_CONTROL_HALFDUPLEX : 0))) {
 	_completionCallback = NULL;
 	return false;
       }
     }
   } else {
-    if (!stm32l4_spi_transmit(_spi, static_cast<const uint8_t*>(txBuffer), count, settings._control)) {
+    if (!stm32l4_spi_transmit(_spi, static_cast<const uint8_t*>(txBuffer), count, 0)) {
       _completionCallback = NULL;
       return false;
     }
@@ -271,18 +279,36 @@ bool SPIClass::done(void)
 {
   return stm32l4_spi_done(_spi);
 }
+
+bool SPIClass::isEnabled(void)
+{
+  return _enabled;
+}
     
 void SPIClass::_exchangeSelect(struct _stm32l4_spi_t *spi, const uint8_t *txData, uint8_t *rxData, size_t count) 
 {
   SPIClass *spi_class = reinterpret_cast<class SPIClass*>(spi->context);
-  const SPISettings settings = SPISettings(spi_class->_clock, spi_class->_bitOrder, spi_class->_dataMode);
+  uint32_t option, clock, divide;
+
+  option = spi_class->_dataMode | ((spi_class->_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
+
+  clock = stm32l4_spi_clock(spi) / 2;
+  divide = 0;
+
+  while ((clock > spi_class->_clock) && (divide < 7)) {
+    clock /= 2;
+    divide++;
+  }
+  
+  option |= (divide << SPI_OPTION_DIV_SHIFT);
+  
+  stm32l4_spi_select(spi, option);
 
   spi_class->_selected = true;
+
   spi_class->_exchangeRoutine = stm32l4_spi_exchange;
   spi_class->_exchange8Routine = stm32l4_spi_exchange8;
   spi_class->_exchange16Routine = stm32l4_spi_exchange16;
-  
-  stm32l4_spi_select(spi, settings._control);
 
   return (*spi_class->_exchangeRoutine)(spi, txData, rxData, count);
 }
@@ -290,14 +316,27 @@ void SPIClass::_exchangeSelect(struct _stm32l4_spi_t *spi, const uint8_t *txData
 uint8_t SPIClass::_exchange8Select(struct _stm32l4_spi_t *spi, uint8_t data)
 {
   SPIClass *spi_class = reinterpret_cast<class SPIClass*>(spi->context);
-  const SPISettings settings = SPISettings(spi_class->_clock, spi_class->_bitOrder, spi_class->_dataMode);
+  uint32_t option, clock, divide;
+
+  option = spi_class->_dataMode | ((spi_class->_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
+
+  clock = stm32l4_spi_clock(spi) / 2;
+  divide = 0;
+
+  while ((clock > spi_class->_clock) && (divide < 7)) {
+    clock /= 2;
+    divide++;
+  }
+  
+  option |= (divide << SPI_OPTION_DIV_SHIFT);
+  
+  stm32l4_spi_select(spi, option);
 
   spi_class->_selected = true;
+
   spi_class->_exchangeRoutine = stm32l4_spi_exchange;
   spi_class->_exchange8Routine = stm32l4_spi_exchange8;
   spi_class->_exchange16Routine = stm32l4_spi_exchange16;
-  
-  stm32l4_spi_select(spi, settings._control);
 
   return (*spi_class->_exchange8Routine)(spi, data);
 }
@@ -305,14 +344,27 @@ uint8_t SPIClass::_exchange8Select(struct _stm32l4_spi_t *spi, uint8_t data)
 uint16_t SPIClass::_exchange16Select(struct _stm32l4_spi_t *spi, uint16_t data)
 {
   SPIClass *spi_class = reinterpret_cast<class SPIClass*>(spi->context);
-  const SPISettings settings = SPISettings(spi_class->_clock, spi_class->_bitOrder, spi_class->_dataMode);
+  uint32_t option, clock, divide;
+
+  option = spi_class->_dataMode | ((spi_class->_bitOrder == MSBFIRST) ? SPI_OPTION_MSB_FIRST : SPI_OPTION_LSB_FIRST);
+
+  clock = stm32l4_spi_clock(spi) / 2;
+  divide = 0;
+
+  while ((clock > spi_class->_clock) && (divide < 7)) {
+    clock /= 2;
+    divide++;
+  }
+  
+  option |= (divide << SPI_OPTION_DIV_SHIFT);
+  
+  stm32l4_spi_select(spi, option);
 
   spi_class->_selected = true;
+
   spi_class->_exchangeRoutine = stm32l4_spi_exchange;
   spi_class->_exchange8Routine = stm32l4_spi_exchange8;
   spi_class->_exchange16Routine = stm32l4_spi_exchange16;
-
-  stm32l4_spi_select(spi, settings._control);
   
   return (*spi_class->_exchange16Routine)(spi, data);
 }

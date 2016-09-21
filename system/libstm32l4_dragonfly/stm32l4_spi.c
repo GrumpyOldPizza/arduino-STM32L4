@@ -239,21 +239,10 @@ static void stm32l4_spi_dma_callback(stm32l4_spi_t *spi, uint32_t events)
 	}
     }
     
-    if (spi->select)
-    {
-	SPI->CR2 = spi->cr2 | (SPI_CR2_DS_8BIT | SPI_CR2_FRXTH);
-	SPI->CR1 = spi->cr1 | (spi->control & (SPI_CONTROL_MODE_MASK | SPI_CONTROL_DIV_MASK | SPI_CONTROL_LSB_FIRST)) | SPI_CR1_SPE;
-	
-	spi->state = SPI_STATE_SELECTED;
-    }
-    else
-    {
-	SPI->CR1 &= ~SPI_CR1_SPE;
-	
-	stm32l4_spi_stop(spi);
-	
-	spi->state = SPI_STATE_READY;
-    }
+    SPI->CR2 = spi->cr2 | (SPI_CR2_DS_8BIT | SPI_CR2_FRXTH);
+    SPI->CR1 = spi->cr1 | (spi->option & (SPI_OPTION_MODE_MASK | SPI_OPTION_DIV_MASK | SPI_OPTION_LSB_FIRST)) | SPI_CR1_SPE;
+    
+    spi->state = SPI_STATE_SELECTED;
     
     if (spi->tx_data)
     {
@@ -285,21 +274,10 @@ static void stm32l4_spi_finish(stm32l4_spi_t *spi, uint32_t events)
 
     NVIC_DisableIRQ(spi->interrupt);
 	
-    if (spi->select)
-    {
-	SPI->CR2 = spi->cr2 | (SPI_CR2_DS_8BIT | SPI_CR2_FRXTH);
-	SPI->CR1 = spi->cr1 | (spi->control & (SPI_CONTROL_MODE_MASK | SPI_CONTROL_DIV_MASK | SPI_CONTROL_LSB_FIRST)) | SPI_CR1_SPE;
-	
-	spi->state = SPI_STATE_SELECTED;
-    }
-    else
-    {
-	SPI->CR1 &= ~SPI_CR1_SPE;
-	
-	stm32l4_spi_stop(spi);
-	
-	spi->state = SPI_STATE_READY;
-    }
+    SPI->CR2 = spi->cr2 | (SPI_CR2_DS_8BIT | SPI_CR2_FRXTH);
+    SPI->CR1 = spi->cr1 | (spi->option & (SPI_OPTION_MODE_MASK | SPI_OPTION_DIV_MASK | SPI_OPTION_LSB_FIRST)) | SPI_CR1_SPE;
+    
+    spi->state = SPI_STATE_SELECTED;
 
     events &= spi->events;
 
@@ -992,7 +970,7 @@ bool stm32l4_spi_notify(stm32l4_spi_t *spi, stm32l4_spi_callback_t callback, voi
     return true;
 }
 
-bool stm32l4_spi_select(stm32l4_spi_t *spi, uint32_t control) 
+bool stm32l4_spi_select(stm32l4_spi_t *spi, uint32_t option) 
 {
     SPI_TypeDef *SPI = spi->SPI;
 
@@ -1002,7 +980,7 @@ bool stm32l4_spi_select(stm32l4_spi_t *spi, uint32_t control)
     }
 
     spi->select++;
-    spi->control = control;
+    spi->option = option;
 
     if (spi->select == 1)
     {
@@ -1012,7 +990,7 @@ bool stm32l4_spi_select(stm32l4_spi_t *spi, uint32_t control)
     }
 
     SPI->CR2 = spi->cr2 | (SPI_CR2_DS_8BIT | SPI_CR2_FRXTH);
-    SPI->CR1 = spi->cr1 | (spi->control & (SPI_CONTROL_MODE_MASK | SPI_CONTROL_DIV_MASK | SPI_CONTROL_LSB_FIRST)) | SPI_CR1_SPE;
+    SPI->CR1 = spi->cr1 | (spi->option & (SPI_OPTION_MODE_MASK | SPI_OPTION_DIV_MASK | SPI_OPTION_LSB_FIRST)) | SPI_CR1_SPE;
     
     return true;
 }
@@ -1030,7 +1008,7 @@ bool stm32l4_spi_unselect(stm32l4_spi_t *spi)
 
     if (spi->select == 0)
     {
-	SPI->CR1 = spi->cr1 | (spi->control & (SPI_CONTROL_MODE_MASK | SPI_CONTROL_DIV_MASK | SPI_CONTROL_LSB_FIRST));
+	SPI->CR1 = spi->cr1 | (spi->option & (SPI_OPTION_MODE_MASK | SPI_OPTION_DIV_MASK | SPI_OPTION_LSB_FIRST));
 
 	while (SPI->SR & SPI_SR_BSY) { }
 
@@ -1042,7 +1020,7 @@ bool stm32l4_spi_unselect(stm32l4_spi_t *spi)
     return true;
 }
 
-bool stm32l4_spi_control(stm32l4_spi_t *spi, uint32_t control)
+bool stm32l4_spi_configure(stm32l4_spi_t *spi, uint32_t option)
 {
     SPI_TypeDef *SPI = spi->SPI;
 
@@ -1050,10 +1028,10 @@ bool stm32l4_spi_control(stm32l4_spi_t *spi, uint32_t control)
     {
 	return false;
     }
+    
+    spi->option = option;
 
-    spi->control = control;
-
-    SPI->CR1 = spi->cr1 | (spi->control & (SPI_CONTROL_MODE_MASK | SPI_CONTROL_DIV_MASK | SPI_CONTROL_LSB_FIRST)) | SPI_CR1_SPE;
+    SPI->CR1 = spi->cr1 | (spi->option & (SPI_OPTION_MODE_MASK | SPI_OPTION_DIV_MASK | SPI_OPTION_LSB_FIRST)) | SPI_CR1_SPE;
 
     return true;
 }
@@ -1291,19 +1269,12 @@ bool stm32l4_spi_receive(stm32l4_spi_t *spi, uint8_t *rx_data, unsigned int rx_c
     uint16_t tx_default = 0xffff;
     unsigned int count;
 
-    if ((spi->state != SPI_STATE_READY) && (spi->state != SPI_STATE_SELECTED))
+    if (spi->state != SPI_STATE_SELECTED)
     {
 	return false;
     }
 
-    if (spi->select == 0)
-    {
-	stm32l4_spi_start(spi);
-    }
-
-    spi->control = control;
-
-    spi_cr1 = spi->cr1 | (spi->control & (SPI_CONTROL_MODE_MASK | SPI_CONTROL_DIV_MASK | SPI_CONTROL_LSB_FIRST));
+    spi_cr1 = spi->cr1 | (spi->option & (SPI_OPTION_MODE_MASK | SPI_OPTION_DIV_MASK | SPI_OPTION_LSB_FIRST));
     spi_cr2 = spi->cr2;
     
     if (control & SPI_CONTROL_HALFDUPLEX)
@@ -1513,19 +1484,12 @@ bool stm32l4_spi_transmit(stm32l4_spi_t *spi, const uint8_t *tx_data, unsigned i
     uint32_t spi_cr1, spi_cr2;
     unsigned int count;
 
-    if ((spi->state != SPI_STATE_READY) && (spi->state != SPI_STATE_SELECTED))
+    if (spi->state != SPI_STATE_SELECTED)
     {
 	return false;
     }
     
-    if (spi->select == 0)
-    {
-	stm32l4_spi_start(spi);
-    }
-
-    spi->control = control;
-
-    spi_cr1 = spi->cr1 | (spi->control & (SPI_CONTROL_MODE_MASK | SPI_CONTROL_DIV_MASK | SPI_CONTROL_LSB_FIRST));
+    spi_cr1 = spi->cr1 | (spi->option & (SPI_OPTION_MODE_MASK | SPI_OPTION_DIV_MASK | SPI_OPTION_LSB_FIRST));
     spi_cr2 = spi->cr2;
 
     spi->xf_count = 0;
@@ -1683,19 +1647,12 @@ bool stm32l4_spi_transfer(stm32l4_spi_t *spi, const uint8_t *tx_data, uint8_t *r
     uint32_t spi_cr1, spi_cr2;
     unsigned int count;
 
-    if ((spi->state != SPI_STATE_READY) && (spi->state != SPI_STATE_SELECTED))
+    if (spi->state != SPI_STATE_SELECTED)
     {
 	return false;
     }
-    
-    if (spi->select == 0)
-    {
-	stm32l4_spi_start(spi);
-    }
 
-    spi->control = control;
-
-    spi_cr1 = spi->cr1 | (spi->control & (SPI_CONTROL_MODE_MASK | SPI_CONTROL_DIV_MASK | SPI_CONTROL_LSB_FIRST));
+    spi_cr1 = spi->cr1 | (spi->option & (SPI_OPTION_MODE_MASK | SPI_OPTION_DIV_MASK | SPI_OPTION_LSB_FIRST));
     spi_cr2 = spi->cr2;
 
     spi->xf_count = 0;

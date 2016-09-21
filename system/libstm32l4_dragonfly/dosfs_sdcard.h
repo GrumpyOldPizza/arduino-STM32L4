@@ -99,7 +99,7 @@ struct _dosfs_sdcard_t {
 #endif /* (DOSFS_CONFIG_STATISTICS == 1) */
 
     uint8_t                 pin_cs;
-    uint32_t                control;
+    uint32_t                option;
     stm32l4_spi_t           spi;
 };
 
