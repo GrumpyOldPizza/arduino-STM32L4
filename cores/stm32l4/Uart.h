@@ -1,31 +1,41 @@
 /*
-  Copyright (c) 2015 Arduino LLC.  All right reserved.
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  See the GNU Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal with the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ *  1. Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimers.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimers in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of Thomas Roell, nor the names of its contributors
+ *     may be used to endorse or promote products derived from this Software
+ *     without specific prior written permission.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * WITH THE SOFTWARE.
+ */
 
 #pragma once
 
 #include "HardwareSerial.h"
 
-#define UART_RX_BUFFER_SIZE 64
-#define UART_TX_BUFFER_SIZE 64
+#define UART_RX_BUFFER_SIZE 128
+#define UART_TX_BUFFER_SIZE 128
 
 class Uart : public HardwareSerial
 {
-  public:
+public:
     Uart(struct _stm32l4_uart_t *uart, unsigned int instance, const struct _stm32l4_uart_pins_t *pins, unsigned int priority, unsigned int mode, bool serialEvent);
     void begin(unsigned long baudRate);
     void begin(unsigned long baudrate, uint16_t config);
@@ -39,33 +49,38 @@ class Uart : public HardwareSerial
     size_t write(const uint8_t *buffer, size_t size);
     using Print::write; // pull in write(str) and write(buf, size) from Print
 
+    operator bool() { return true; }
+
     // STM32L4 EXTENSTION: non-blocking multi-byte read
     size_t read(uint8_t *buffer, size_t size);
 
-    // STM32L4 EXTENSTION: asynchronous write with callback
-    bool write(const uint8_t *buffer, size_t size, void(*callback)(void));
+    // STM32L4 EXTENSTION: asynchronous transmit/receive callbacks
+    void onTransmit(void(*callback)(void));
+    void onReceive(void(*callback)(int));
     bool done(void);
 
-    // STM32L4 EXTENSTION: asynchronous receive callback
-    void onReceive(void(*callback)(int));
+    // STM32L4 EXTENSTION: enable/disabe blocking writes
+    void blockOnOverrun(bool block);
 
-    // STM32L4 EXTENSTION: quick check for empty
-    inline int empty() { return (_rx_read == _rx_write); };
+    // STM32L4 EXTENSTION: isEnabled() check
+    bool isEnabled(void);
 
-    operator bool() { return true; }
-
-  private:
+private:
     struct _stm32l4_uart_t *_uart;
+    bool _blocking;
     uint8_t _rx_fifo[16];
     uint8_t _rx_data[UART_RX_BUFFER_SIZE];
-    volatile uint8_t _rx_write;
-    uint8_t _rx_read;
+    volatile uint16_t _rx_write;
+    volatile uint16_t _rx_read;
+    volatile uint32_t _rx_count;
     uint8_t _tx_data[UART_TX_BUFFER_SIZE];
-    uint8_t _tx_write;
-    volatile uint8_t _tx_read;
-    uint16_t _tx_count;
+    volatile uint16_t _tx_write;
+    volatile uint16_t _tx_read;
+    volatile uint32_t _tx_size;
+    volatile uint32_t _tx_count;
+    volatile uint32_t _tx_total;
 
-    void (*_completionCallback)(void);
+    void (*_transmitCallback)(void);
     void (*_receiveCallback)(int);
 
     static void _event_callback(void *context, uint32_t events);
