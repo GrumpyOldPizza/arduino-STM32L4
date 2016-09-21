@@ -53,6 +53,8 @@ SPIClass::SPIClass(struct _stm32l4_spi_t *spi, unsigned int instance, const stru
   _bitOrder = MSBFIRST;
   _dataMode = SPI_MODE0;
 
+  _reference = 16000000;
+
   _interruptMask = 0;
 
   _exchangeRoutine = SPIClass::_exchangeSelect;
@@ -191,8 +193,13 @@ void SPIClass::setClockDivider(uint8_t divider)
   }
 
   if (divider != 0) {
-    _clock = F_CPU / divider;
+    _clock = _reference / divider;
   }
+}
+
+void SPIClass::setClockDividerReference(uint32_t clock)
+{
+  _reference = clock;
 }
 
 void SPIClass::attachInterrupt() {

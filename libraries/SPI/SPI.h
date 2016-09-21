@@ -81,6 +81,9 @@ class SPIClass {
     void setDataMode(uint8_t dataMode);
     void setClockDivider(uint8_t divider);
 
+    // STM32L4 EXTENSTION: specify the clock divider reference for setClockDivider()
+    void setClockDividerReference(uint32_t clock);
+
     // STM32L4 EXTENSTION: synchronous inline read/write, transfer with separate read/write buffer
     inline uint8_t read(void) { return exchange8(0xff); }
     inline void read(void *buffer, size_t count) { return exchange(NULL, static_cast<uint8_t*>(buffer), count); }
@@ -103,6 +106,7 @@ class SPIClass {
     uint32_t _clock;
     uint8_t _bitOrder;
     uint8_t _dataMode;
+    uint32_t _reference;
     uint32_t _interruptMask;
 
     void (*_exchangeRoutine)(struct _stm32l4_spi_t*, const uint8_t*, uint8_t*, size_t);
@@ -143,12 +147,12 @@ class SPIClass {
 
 // For compatibility with sketches designed for AVR @ 16 MHz
 // New programs should use SPI.beginTransaction to set the SPI clock
-#define SPI_CLOCK_DIV2   (F_CPU / 8000000)
-#define SPI_CLOCK_DIV4   (F_CPU / 4000000)
-#define SPI_CLOCK_DIV8   (F_CPU / 2000000)
-#define SPI_CLOCK_DIV16  (F_CPU / 1000000)
-#define SPI_CLOCK_DIV32  (F_CPU / 500000)
-#define SPI_CLOCK_DIV64  (F_CPU / 250000)
-#define SPI_CLOCK_DIV128 (F_CPU / 125000)
+#define SPI_CLOCK_DIV2   2
+#define SPI_CLOCK_DIV4   4
+#define SPI_CLOCK_DIV8   8
+#define SPI_CLOCK_DIV16  16
+#define SPI_CLOCK_DIV32  32
+#define SPI_CLOCK_DIV64  64
+#define SPI_CLOCK_DIV128 128
 
 #endif
