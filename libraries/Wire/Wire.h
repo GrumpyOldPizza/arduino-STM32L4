@@ -50,7 +50,6 @@ public:
     uint8_t endTransmission(bool stopBit = true);
 
     uint8_t requestFrom(uint8_t address, size_t quantity, bool stopBit = true);
-    uint8_t requestFrom(uint8_t address, size_t quantity, uint32_t iaddress, uint8_t isize, bool stopBit = true);
 
     size_t write(uint8_t data);
     size_t write(const uint8_t *buffer, size_t quantity);
@@ -68,8 +67,11 @@ public:
     inline size_t write(int n) { return write((uint8_t)n); }
     using Print::write;
 
+    // STM32L4 EXTENSTION: synchronous composite transmit/receive 
+    uint8_t transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, bool stopBit = true);
+
     // STM32L4 EXTENSTION: asynchronous composite transmit/receive with callback
-    bool transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, void(*callback)(uint8_t), bool stopBit = true);
+    bool transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, bool stopBit, void(*callback)(uint8_t));
     bool done(void);
     uint8_t status(void);
 

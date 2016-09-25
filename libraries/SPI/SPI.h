@@ -102,7 +102,7 @@ public:
     inline void transfer(const void *txBuffer, void *rxBuffer, size_t count) { return exchange(static_cast<const uint8_t*>(txBuffer), static_cast<uint8_t*>(rxBuffer), count); }
 
     // STM32L4 EXTENSTION: asynchronous composite transaction
-    bool transfer(const void *txBuffer, void *rxBuffer, size_t count, void(*callback)(void), bool halfDuplex = false);
+    bool transfer(const void *txBuffer, void *rxBuffer, size_t count, void(*callback)(void));
     void flush(void);
     bool done(void);
 

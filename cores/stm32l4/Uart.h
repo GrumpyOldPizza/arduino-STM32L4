@@ -30,8 +30,8 @@
 
 #include "HardwareSerial.h"
 
-#define UART_RX_BUFFER_SIZE 128
-#define UART_TX_BUFFER_SIZE 128
+#define UART_RX_BUFFER_SIZE 64
+#define UART_TX_BUFFER_SIZE 64
 
 class Uart : public HardwareSerial
 {
@@ -54,10 +54,12 @@ public:
     // STM32L4 EXTENSTION: non-blocking multi-byte read
     size_t read(uint8_t *buffer, size_t size);
 
-    // STM32L4 EXTENSTION: asynchronous transmit/receive callbacks
-    void onTransmit(void(*callback)(void));
-    void onReceive(void(*callback)(int));
+    // STM32L4 EXTENSTION: asynchronous write with callback
+    bool write(const uint8_t *buffer, size_t size, void(*callback)(void));
     bool done(void);
+
+    // STM32L4 EXTENSTION: asynchronous receive
+    void onReceive(void(*callback)(int));
 
     // STM32L4 EXTENSTION: enable/disabe blocking writes
     void blockOnOverrun(bool block);
@@ -76,11 +78,13 @@ private:
     uint8_t _tx_data[UART_TX_BUFFER_SIZE];
     volatile uint16_t _tx_write;
     volatile uint16_t _tx_read;
-    volatile uint32_t _tx_size;
     volatile uint32_t _tx_count;
-    volatile uint32_t _tx_total;
+    volatile uint32_t _tx_size;
 
-    void (*_transmitCallback)(void);
+    const uint8_t *_tx_data2;
+    volatile uint32_t _tx_size2;
+
+    void (*_completionCallback)(void);
     void (*_receiveCallback)(int);
 
     static void _event_callback(void *context, uint32_t events);

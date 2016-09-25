@@ -43,11 +43,13 @@ Uart::Uart(struct _stm32l4_uart_t *uart, unsigned int instance, const struct _st
     _rx_count = 0;
     _tx_read = 0;
     _tx_write = 0;
-    _tx_size = 0;
     _tx_count = 0;
-    _tx_total = 0;
+    _tx_size = 0;
+
+    _tx_data2 = NULL;
+    _tx_size2 = 0;
   
-    _transmitCallback = NULL;
+    _completionCallback = NULL;
     _receiveCallback = NULL;
 
     stm32l4_uart_create(uart, instance, pins, priority, mode);
@@ -89,6 +91,10 @@ int Uart::availableForWrite()
 {
     if (_uart->state < UART_STATE_READY) {
 	return 0;
+    }
+
+    if (_tx_size2 != 0) {
+      return 0;
     }
 
     return UART_TX_BUFFER_SIZE - _tx_count;
@@ -157,8 +163,24 @@ size_t Uart::read(uint8_t *buffer, size_t size)
 
 void Uart::flush()
 {
-    if (__get_IPSR() == 0) {
+    if (armv7m_core_priority() <= STM32L4_UART_IRQ_PRIORITY) {
 	while (_tx_count != 0) {
+	    stm32l4_uart_poll(_uart);
+	}
+
+	while (_tx_size2 != 0) {
+	    stm32l4_uart_poll(_uart);
+	}
+    
+	while (!stm32l4_uart_done(_uart)) {
+	    stm32l4_uart_poll(_uart);
+	}
+    } else {
+	while (_tx_count != 0) {
+	    armv7m_core_yield();
+	}
+
+	while (_tx_size2 != 0) {
 	    armv7m_core_yield();
 	}
     
@@ -182,17 +204,21 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
 	return 0;
     }
 
-    // Clamp "size" if called from an ISR to avoid blocking
-    if (!_blocking || (__get_IPSR() != 0)) {
-	tx_count = _tx_count;
-
-	if (size > (UART_TX_BUFFER_SIZE - tx_count)) {
-	    size = (UART_TX_BUFFER_SIZE - tx_count);
-	}
+    if (size == 0) {
+	return 0;
     }
 
-    armv7m_atomic_add(&_tx_total, size);
-
+    // If there is an async write pending, wait till it's done
+    if (_tx_size2 != 0) {
+	if (!_blocking || (__get_IPSR() != 0)) {
+	    return 0;
+	}
+	
+	while (_tx_size2 != 0) {
+	    armv7m_core_yield();
+	}
+    }
+      
     count = 0;
 
     while (count < size) {
@@ -200,7 +226,10 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
 	tx_count = UART_TX_BUFFER_SIZE - _tx_count;
 
 	if (tx_count == 0) {
-	    // Here we cannot block from within an ISR because "size" got limited clamped
+
+	    if (!_blocking || (__get_IPSR() != 0)) {
+		break;
+	    }
 
 	    if (stm32l4_uart_done(_uart)) {
 		tx_size = _tx_count;
@@ -244,38 +273,53 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
 	armv7m_atomic_add(&_tx_count, tx_count);
     }
 
-    if (__get_IPSR() == 0) {
-	if (stm32l4_uart_done(_uart)) {
-	    tx_size = _tx_count;
-	    tx_read = _tx_read;
-
-	    if (tx_size) {
-		if (tx_size > (UART_TX_BUFFER_SIZE - tx_read)) {
-		    tx_size = (UART_TX_BUFFER_SIZE - tx_read);
-		}
-	      
-		if (tx_size > UART_TX_PACKET_SIZE) {
-		    tx_size = UART_TX_PACKET_SIZE;
-		}
-	      
-		_tx_size = tx_size;
-	      
-		stm32l4_uart_transmit(_uart, &_tx_data[tx_read], tx_size);
+    if (stm32l4_uart_done(_uart)) {
+	tx_size = _tx_count;
+	tx_read = _tx_read;
+	
+	if (tx_size) {
+	    if (tx_size > (UART_TX_BUFFER_SIZE - tx_read)) {
+		tx_size = (UART_TX_BUFFER_SIZE - tx_read);
 	    }
+	    
+	    if (tx_size > UART_TX_PACKET_SIZE) {
+		tx_size = UART_TX_PACKET_SIZE;
+	    }
+	    
+	    _tx_size = tx_size;
+	    
+	    stm32l4_uart_transmit(_uart, &_tx_data[tx_read], tx_size);
 	}
     }
 
     return count;
 }
 
-void Uart::onTransmit(void(*callback)(void))
+bool Uart::write(const uint8_t *buffer, size_t size, void(*callback)(void))
 {
-    _transmitCallback = callback;
-}
+    if (_uart->state < UART_STATE_READY) {
+	return false;
+    }
 
-void Uart::onReceive(void(*callback)(int))
-{
-    _receiveCallback = callback;
+    if (size == 0) {
+	return false;
+    }
+
+    if (_tx_size2 != 0) {
+	return false;
+    }
+
+    _completionCallback = callback;
+    _tx_data2 = buffer;
+    _tx_size2 = size;
+
+    if (stm32l4_uart_done(_uart)) {
+	if (_tx_size2 != 0) {
+	    stm32l4_uart_transmit(_uart, _tx_data2, _tx_size2);
+	}
+    }
+
+    return true;
 }
 
 bool Uart::done()
@@ -284,11 +328,20 @@ bool Uart::done()
 	return false;
     }
 
+    if (_tx_size2) {
+	return false;
+    }
+
     if (!stm32l4_uart_done(_uart)) {
 	return false;
     }
 
     return true;
+}
+
+void Uart::onReceive(void(*callback)(int))
+{
+    _receiveCallback = callback;
 }
 
 void Uart::blockOnOverrun(bool block)
@@ -306,6 +359,7 @@ void Uart::EventCallback(uint32_t events)
     unsigned int rx_write, rx_count, rx_size, count;
     unsigned int tx_read, tx_size;
     bool empty;
+    void(*callback)(void);
 
     if (events & UART_EVENT_RECEIVE) {
 	while (_rx_count != UART_RX_BUFFER_SIZE) {
@@ -345,33 +399,44 @@ void Uart::EventCallback(uint32_t events)
     if (events & UART_EVENT_TRANSMIT) {
 
 	tx_size = _tx_size;
-      
-	_tx_read = (_tx_read + tx_size) & (UART_TX_BUFFER_SIZE -1);
-      
-	armv7m_atomic_sub(&_tx_count, tx_size);
-	armv7m_atomic_sub(&_tx_total, tx_size);
-      
-	_tx_size = 0;
 
-	if (_tx_count != 0) {
-	    tx_size = _tx_count;
-	    tx_read = _tx_read;
+	if (tx_size != 0) {
+	    _tx_read = (_tx_read + tx_size) & (UART_TX_BUFFER_SIZE -1);
+      
+	    armv7m_atomic_sub(&_tx_count, tx_size);
+      
+	    _tx_size = 0;
 
-	    if (tx_size > (UART_TX_BUFFER_SIZE - tx_read)) {
-		tx_size = (UART_TX_BUFFER_SIZE - tx_read);
+	    if (_tx_count != 0) {
+		tx_size = _tx_count;
+		tx_read = _tx_read;
+
+		if (tx_size > (UART_TX_BUFFER_SIZE - tx_read)) {
+		    tx_size = (UART_TX_BUFFER_SIZE - tx_read);
+		}
+	  
+		if (tx_size > UART_TX_PACKET_SIZE) {
+		    tx_size = UART_TX_PACKET_SIZE;
+		}
+	  
+		_tx_size = tx_size;
+	  
+		stm32l4_uart_transmit(_uart, &_tx_data[tx_read], tx_size);
+	    } else {
+		if (_tx_size2 != 0) {
+		    stm32l4_uart_transmit(_uart, _tx_data2, _tx_size2);
+		}
 	    }
-	  
-	    if (tx_size > UART_TX_PACKET_SIZE) {
-		tx_size = UART_TX_PACKET_SIZE;
-	    }
-	  
-	    _tx_size = tx_size;
-	  
-	    stm32l4_uart_transmit(_uart, &_tx_data[tx_read], tx_size);
-	}
+	} else {
+	    _tx_size2 = 0;
+	    _tx_data2 = NULL;
 
-	if ((_tx_total == 0) &&_transmitCallback) {
-	    (*_transmitCallback)();
+	    callback = _completionCallback;
+	    _completionCallback = NULL;
+
+	    if (callback) {
+		(*callback)();
+	    }
 	}
     }
 }

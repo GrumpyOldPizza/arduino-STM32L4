@@ -83,14 +83,7 @@ void TwoWire::end()
 
 uint8_t TwoWire::requestFrom(uint8_t address, size_t quantity, bool stopBit)
 {
-    return requestFrom(address, quantity, 0, 0, stopBit);
-}
-
-uint8_t TwoWire::requestFrom(uint8_t address, size_t quantity, uint32_t iaddress, uint8_t isize, bool stopBit)
-{
-    uint8_t tx_data[4];
-
-    if (!stm32l4_i2c_done(_i2c) || (__get_IPSR() != 0)) {
+    if (__get_IPSR() != 0) {
 	return 0;
     }
 
@@ -102,24 +95,13 @@ uint8_t TwoWire::requestFrom(uint8_t address, size_t quantity, uint32_t iaddress
 	quantity = BUFFER_LENGTH;
     }
 
-    if (isize != 0) {
-	if (isize > 4) {
-	    isize = 4;
-	}
-
-	tx_data[0] = iaddress >> 0;
-	tx_data[1] = iaddress >> 8;
-	tx_data[2] = iaddress >> 16;
-	tx_data[3] = iaddress >> 24;
-
-	if (!stm32l4_i2c_transfer(_i2c, address, &tx_data[0], isize, &_rx_data[0], quantity, (stopBit ? 0 : I2C_CONTROL_RESTART))) {
-	    return 0;
-	}    
-    } else {
-	if (!stm32l4_i2c_receive(_i2c, address, &_rx_data[0], quantity, (stopBit ? 0 : I2C_CONTROL_RESTART))) {
-	    return 0;
-	}    
+    while (!stm32l4_i2c_done(_i2c)) {
+	armv7m_core_yield();
     }
+
+    if (!stm32l4_i2c_receive(_i2c, address, &_rx_data[0], quantity, (stopBit ? 0 : I2C_CONTROL_RESTART))) {
+	return 0;
+    }    
 
     while (!stm32l4_i2c_done(_i2c)) {
 	armv7m_core_yield();
@@ -137,7 +119,7 @@ uint8_t TwoWire::requestFrom(uint8_t address, size_t quantity, uint32_t iaddress
 
 void TwoWire::beginTransmission(uint8_t address)
 {
-    if (!stm32l4_i2c_done(_i2c) || (__get_IPSR() != 0)) {
+    if (__get_IPSR() != 0) {
 	return;
     }
 
@@ -158,6 +140,10 @@ uint8_t TwoWire::endTransmission(bool stopBit)
 
     if (!_tx_active) {
 	return 4;
+    }
+
+    while (!stm32l4_i2c_done(_i2c)) {
+	armv7m_core_yield();
     }
 
     if (!stm32l4_i2c_transmit(_i2c, _tx_address, &_tx_data[0], _tx_write, (stopBit ? 0 : I2C_CONTROL_RESTART))) {
@@ -250,21 +236,80 @@ int TwoWire::peek(void)
 
 void TwoWire::flush(void)
 {
-    if (__get_IPSR() == 0) {
+    if (armv7m_core_priority() <= STM32L4_I2C_IRQ_PRIORITY) {
+	while (!stm32l4_i2c_done(_i2c)) {
+	    stm32l4_i2c_poll(_i2c);
+	}
+    } else {
 	while (!stm32l4_i2c_done(_i2c)) {
 	    armv7m_core_yield();
 	}
     }
 }
-
-bool TwoWire::transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, void(*callback)(uint8_t), bool stopBit)
+uint8_t TwoWire::transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, bool stopBit)
 {
+    unsigned int status;
+
+    if (__get_IPSR() != 0) {
+	return 4;
+    }
+
     if (_tx_active)  {
+	return 4;
+    }
+
+    if ((txSize > 1024) || (rxSize > 1024))  {
+	return 4;
+    }
+
+    while (!stm32l4_i2c_done(_i2c)) {
+	armv7m_core_yield();
+    }
+
+    if (rxSize) {
+	if (txSize) {
+	    if (!stm32l4_i2c_transfer(_i2c, address, txBuffer, txSize, rxBuffer, rxSize, (stopBit ? 0 : I2C_CONTROL_RESTART)))
+		return 4;
+	} else {
+	    if (!stm32l4_i2c_receive(_i2c, address, rxBuffer, rxSize, (stopBit ? 0 : I2C_CONTROL_RESTART)))
+		return 4;
+	}
+    } else {
+	if (!stm32l4_i2c_transmit(_i2c, address, txBuffer, txSize, (stopBit ? 0 : I2C_CONTROL_RESTART)))
+	    return 4;
+    }
+
+    while (!stm32l4_i2c_done(_i2c)) {
+	armv7m_core_yield();
+    }
+
+    status = stm32l4_i2c_status(_i2c);
+
+    if (status == 0) {
+	return 0;
+    }
+
+    if (status & I2C_STATUS_ADDRESS_NACK) {
+	return 2;
+    }
+
+    else if (status & I2C_STATUS_DATA_NACK) {
+	return 3;
+    }
+
+    else {
+	return 4;
+    }
+}
+
+bool TwoWire::transfer(uint8_t address, const uint8_t *txBuffer, size_t txSize, uint8_t *rxBuffer, size_t rxSize, bool stopBit, void(*callback)(uint8_t))
+{
+    if (_tx_active) {
 	return false;
     }
 
     if ((txSize > 1024) || (rxSize > 1024)) {
-	return 4;
+	return false;
     }
 
     if (!stm32l4_i2c_done(_i2c)) {

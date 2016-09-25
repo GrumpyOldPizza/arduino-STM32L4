@@ -49,11 +49,13 @@ CDC::CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc, bool serialEvent)
     _rx_count = 0;
     _tx_read = 0;
     _tx_write = 0;
-    _tx_size = 0;
     _tx_count = 0;
-    _tx_total = 0;
+    _tx_size = 0;
+
+    _tx_data2 = NULL;
+    _tx_size2 = 0;
   
-    _transmitCallback = NULL;
+    _completionCallback = NULL;
     _receiveCallback = NULL;
 
     stm32l4_usbd_cdc_create(usbd_cdc);
@@ -95,8 +97,13 @@ int CDC::available()
 
 int CDC::availableForWrite(void)
 {
-    if (_usbd_cdc->state < USBD_CDC_STATE_READY)
+    if (_usbd_cdc->state < USBD_CDC_STATE_READY) {
 	return 0;
+    }
+
+    if (_tx_size2 != 0) {
+      return 0;
+    }
 
     return CDC_TX_BUFFER_SIZE - _tx_count;
 }
@@ -164,8 +171,24 @@ size_t CDC::read(uint8_t *buffer, size_t size)
 
 void CDC::flush()
 {
-    if (__get_IPSR() == 0) {
+    if (armv7m_core_priority() <= STM32L4_USB_IRQ_PRIORITY) {
 	while (_tx_count != 0) {
+	    stm32l4_usbd_cdc_poll(_usbd_cdc);
+	}
+
+	while (_tx_size2 != 0) {
+	    stm32l4_usbd_cdc_poll(_usbd_cdc);
+	}
+    
+	while (!stm32l4_usbd_cdc_done(_usbd_cdc)) {
+	    stm32l4_usbd_cdc_poll(_usbd_cdc);
+	}
+    } else {
+	while (_tx_count != 0) {
+	    armv7m_core_yield();
+	}
+
+	while (_tx_size2 != 0) {
 	    armv7m_core_yield();
 	}
     
@@ -185,21 +208,25 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
     unsigned int tx_read, tx_write, tx_count, tx_size;
     size_t count;
 
-    if ((_usbd_cdc->state < USBD_CDC_STATE_READY) || !(stm32l4_usbd_cdc_info.lineState & 2)) {
+    if (_usbd_cdc->state < USBD_CDC_STATE_READY) {
 	return 0;
     }
 
-    // Clamp "size" if called from an ISR to avoid blocking
-    if (!_blocking || (__get_IPSR() != 0)) {
-	tx_count = _tx_count;
-
-	if (size > (CDC_TX_BUFFER_SIZE - tx_count)) {
-	    size = (CDC_TX_BUFFER_SIZE - tx_count);
-	}
+    if (size == 0) {
+	return 0;
     }
 
-    armv7m_atomic_add(&_tx_total, size);
-
+    // If there is an async write pending, wait till it's done
+    if (_tx_size2 != 0) {
+	if (!_blocking || (__get_IPSR() != 0)) {
+	    return 0;
+	}
+	
+	while (_tx_size2 != 0) {
+	    armv7m_core_yield();
+	}
+    }
+      
     count = 0;
 
     while (count < size) {
@@ -207,7 +234,10 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
 	tx_count = CDC_TX_BUFFER_SIZE - _tx_count;
 
 	if (tx_count == 0) {
-	    // Here we cannot block from within an ISR because "size" got limited clamped
+
+	    if (!_blocking || (__get_IPSR() != 0)) {
+		break;
+	    }
 
 	    if (stm32l4_usbd_cdc_done(_usbd_cdc)) {
 		tx_size = _tx_count;
@@ -251,38 +281,53 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
 	armv7m_atomic_add(&_tx_count, tx_count);
     }
 
-    if (__get_IPSR() == 0) {
-	if (stm32l4_usbd_cdc_done(_usbd_cdc)) {
-	    tx_size = _tx_count;
-	    tx_read = _tx_read;
-
-	    if (tx_size) {
-		if (tx_size > (CDC_TX_BUFFER_SIZE - tx_read)) {
-		    tx_size = (CDC_TX_BUFFER_SIZE - tx_read);
-		}
-	      
-		if (tx_size > CDC_TX_PACKET_SIZE) {
-		    tx_size = CDC_TX_PACKET_SIZE;
-		}
-	      
-		_tx_size = tx_size;
-	      
-		stm32l4_usbd_cdc_transmit(_usbd_cdc, &_tx_data[tx_read], tx_size);
+    if (stm32l4_usbd_cdc_done(_usbd_cdc)) {
+	tx_size = _tx_count;
+	tx_read = _tx_read;
+	
+	if (tx_size) {
+	    if (tx_size > (CDC_TX_BUFFER_SIZE - tx_read)) {
+		tx_size = (CDC_TX_BUFFER_SIZE - tx_read);
 	    }
+	    
+	    if (tx_size > CDC_TX_PACKET_SIZE) {
+		tx_size = CDC_TX_PACKET_SIZE;
+	    }
+	    
+	    _tx_size = tx_size;
+	    
+	    stm32l4_usbd_cdc_transmit(_usbd_cdc, &_tx_data[tx_read], tx_size);
 	}
     }
 
     return count;
 }
 
-void CDC::onTransmit(void(*callback)(void))
+bool CDC::write(const uint8_t *buffer, size_t size, void(*callback)(void))
 {
-    _transmitCallback = callback;
-}
+    if (_usbd_cdc->state < USBD_CDC_STATE_READY) {
+	return false;
+    }
 
-void CDC::onReceive(void(*callback)(int))
-{
-    _receiveCallback = callback;
+    if (size == 0) {
+	return false;
+    }
+
+    if (_tx_size2 != 0) {
+	return false;
+    }
+
+    _completionCallback = callback;
+    _tx_data2 = buffer;
+    _tx_size2 = size;
+
+    if (stm32l4_usbd_cdc_done(_usbd_cdc)) {
+	if (_tx_size2 != 0) {
+	    stm32l4_usbd_cdc_transmit(_usbd_cdc, _tx_data2, _tx_size2);
+	}
+    }
+
+    return true;
 }
 
 bool CDC::done()
@@ -291,11 +336,20 @@ bool CDC::done()
 	return false;
     }
 
+    if (_tx_size2) {
+	return false;
+    }
+
     if (!stm32l4_usbd_cdc_done(_usbd_cdc)) {
 	return false;
     }
 
     return true;
+}
+
+void CDC::onReceive(void(*callback)(int))
+{
+    _receiveCallback = callback;
 }
 
 void CDC::blockOnOverrun(bool block)
@@ -313,6 +367,7 @@ void CDC::EventCallback(uint32_t events)
     unsigned int rx_write, rx_count, rx_size, count;
     unsigned int tx_read, tx_size;
     bool empty;
+    void(*callback)(void);
 
     if (events & USBD_CDC_EVENT_RECEIVE) {
 	while (_rx_count != CDC_RX_BUFFER_SIZE) {
@@ -350,34 +405,46 @@ void CDC::EventCallback(uint32_t events)
     }
 
     if (events & USBD_CDC_EVENT_TRANSMIT) {
+
 	tx_size = _tx_size;
-      
-	_tx_read = (_tx_read + tx_size) & (CDC_TX_BUFFER_SIZE -1);
-      
-	armv7m_atomic_sub(&_tx_count, tx_size);
-	armv7m_atomic_sub(&_tx_total, tx_size);
-      
-	_tx_size = 0;
 
-	if (_tx_count != 0) {
-	    tx_size = _tx_count;
-	    tx_read = _tx_read;
+	if (tx_size != 0) {
+	    _tx_read = (_tx_read + tx_size) & (CDC_TX_BUFFER_SIZE -1);
+      
+	    armv7m_atomic_sub(&_tx_count, tx_size);
+      
+	    _tx_size = 0;
 
-	    if (tx_size > (CDC_TX_BUFFER_SIZE - tx_read)) {
-		tx_size = (CDC_TX_BUFFER_SIZE - tx_read);
+	    if (_tx_count != 0) {
+		tx_size = _tx_count;
+		tx_read = _tx_read;
+
+		if (tx_size > (CDC_TX_BUFFER_SIZE - tx_read)) {
+		    tx_size = (CDC_TX_BUFFER_SIZE - tx_read);
+		}
+	  
+		if (tx_size > CDC_TX_PACKET_SIZE) {
+		    tx_size = CDC_TX_PACKET_SIZE;
+		}
+	  
+		_tx_size = tx_size;
+	  
+		stm32l4_usbd_cdc_transmit(_usbd_cdc, &_tx_data[tx_read], tx_size);
+	    } else {
+		if (_tx_size2 != 0) {
+		    stm32l4_usbd_cdc_transmit(_usbd_cdc, _tx_data2, _tx_size2);
+		}
 	    }
-	  
-	    if (tx_size > CDC_TX_PACKET_SIZE) {
-		tx_size = CDC_TX_PACKET_SIZE;
-	    }
-	  
-	    _tx_size = tx_size;
-	  
-	    stm32l4_usbd_cdc_transmit(_usbd_cdc, &_tx_data[tx_read], tx_size);
-	}
+	} else {
+	    _tx_size2 = 0;
+	    _tx_data2 = NULL;
 
-	if ((_tx_total == 0) &&_transmitCallback) {
-	    (*_transmitCallback)();
+	    callback = _completionCallback;
+	    _completionCallback = NULL;
+
+	    if (callback) {
+		(*callback)();
+	    }
 	}
     }
 }

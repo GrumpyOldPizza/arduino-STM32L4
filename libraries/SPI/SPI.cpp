@@ -209,7 +209,7 @@ void SPIClass::detachInterrupt()
   // Should be disableInterrupt()
 }
 
-bool SPIClass::transfer(const void *txBuffer, void *rxBuffer, size_t count, void(*callback)(void), bool halfDuplex)
+bool SPIClass::transfer(const void *txBuffer, void *rxBuffer, size_t count, void(*callback)(void))
 {
     if (!stm32l4_spi_done(_spi)) {
 	return false;
@@ -250,7 +250,7 @@ bool SPIClass::transfer(const void *txBuffer, void *rxBuffer, size_t count, void
 		return false;
 	    }
 	} else {
-	    if (!stm32l4_spi_receive(_spi, static_cast<uint8_t*>(rxBuffer), count, (halfDuplex ? SPI_CONTROL_HALFDUPLEX : 0))) {
+	    if (!stm32l4_spi_receive(_spi, static_cast<uint8_t*>(rxBuffer), count, 0)) {
 		_completionCallback = NULL;
 
 		return false;
@@ -269,7 +269,11 @@ bool SPIClass::transfer(const void *txBuffer, void *rxBuffer, size_t count, void
 
 void SPIClass::flush(void)
 {
-    if (__get_IPSR() == 0) {
+    if (armv7m_core_priority() <= STM32L4_SPI_IRQ_PRIORITY) {
+	while (!stm32l4_spi_done(_spi)) {
+	    stm32l4_spi_poll(_spi);
+	}
+    } else {
 	while (!stm32l4_spi_done(_spi)) {
 	    armv7m_core_yield();
 	}
