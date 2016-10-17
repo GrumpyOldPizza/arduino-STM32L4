@@ -16,39 +16,20 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _WIRING_INTERRUPTS_
-#define _WIRING_INTERRUPTS_
-
-#include <stdint.h>
+#pragma once
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"{
 #endif
 
-//      LOW 0
-//      HIGH 1
-#define CHANGE 2
-#define FALLING 3
-#define RISING 4
+//extern void itoa( int n, char s[] ) ;
 
-#define DEFAULT 1
-#define EXTERNAL 0
-
-typedef void (*voidFuncPtr)(void);
-
-/*
- * \brief Specifies a named Interrupt Service Routine (ISR) to call when an interrupt occurs.
- *        Replaces any previous function that was attached to the interrupt.
- */
-void attachInterrupt(uint32_t pin, voidFuncPtr callback, uint32_t mode);
-
-/*
- * \brief Turns off the given interrupt.
- */
-void detachInterrupt(uint32_t pin);
+extern char* itoa( int value, char *string, int radix ) ;
+extern char* ltoa( long value, char *string, int radix ) ;
+extern char* utoa( unsigned long value, char *string, int radix ) ;
+extern char* ultoa( unsigned long value, char *string, int radix ) ;
 
 #ifdef __cplusplus
-}
+} // extern "C"
 #endif
 
-#endif

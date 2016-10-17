@@ -1,9 +1,7 @@
-/* 
-  stdlib_noniso.h - nonstandard (but usefull) conversion functions
+/*
+  dtostrf - Emulation for dtostrf function from avr-libc
+  Copyright (c) 2015 Arduino LLC.  All rights reserved.
 
-  Copyright (c) 2014 Ivan Grokhotkov. All rights reserved.
-  This file is part of the esp8266 core for Arduino environment.
- 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -19,32 +17,14 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef STDLIB_NONISO_H
-#define STDLIB_NONISO_H
+#pragma once
 
 #ifdef __cplusplus
-extern "C"{
+extern "C" {
 #endif
 
-int atoi(const char *s);
-
-long atol(const char* s);
-
-double atof(const char* s);
-
-char* itoa (int val, char *s, int radix);
-
-char* ltoa (long val, char *s, int radix);
-
-char* utoa (unsigned int val, char *s, int radix);
-
-char* ultoa (unsigned long val, char *s, int radix);
- 
-char* dtostrf (double val, signed char width, unsigned char prec, char *s);
+char *dtostrf(double val, signed char width, unsigned char prec, char *sout);
 
 #ifdef __cplusplus
-} // extern "C"
-#endif
-
-
+}
 #endif
