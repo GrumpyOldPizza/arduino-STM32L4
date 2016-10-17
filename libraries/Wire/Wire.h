@@ -113,8 +113,8 @@ class TwoWireEx : public TwoWire
 {
 public:
     using TwoWire::TwoWire;
-    void begin(TwoWireExPins pins);
-    void begin(uint8_t address, TwoWireExPins pins);
+    void begin(TwoWireExPins pins = TWI_PINS_20_21);
+    void begin(uint8_t address, TwoWireExPins pins = TWI_PINS_20_21);
 };
 
 #if WIRE_INTERFACES_COUNT > 0
