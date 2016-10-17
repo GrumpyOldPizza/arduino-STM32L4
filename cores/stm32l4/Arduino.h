@@ -79,12 +79,6 @@ void loop( void ) ;
   #include "HardwareSerial.h"
   #include "STM32.h"
 #endif
-#ifdef __cplusplus
-#if defined(STM32L4_CONFIG_USBD_CDC)
-  #include "CDC.h"
-#endif /* STM32L4_CONFIG_USBD_CDC */
-  #include "Uart.h"
-#endif
 
 // Include board variant
 #include "variant.h"

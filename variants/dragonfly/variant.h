@@ -50,6 +50,7 @@
 #include "WVariant.h"
 
 #ifdef __cplusplus
+#include "CDC.h"
 #include "Uart.h"
 #endif // __cplusplus
 
