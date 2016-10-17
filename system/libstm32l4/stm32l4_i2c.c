@@ -854,7 +854,7 @@ bool stm32l4_i2c_disable(stm32l4_i2c_t *i2c)
 bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
 {
     I2C_TypeDef *I2C = i2c->I2C;
-    uint32_t pin_scl, pin_sda, i2c_cr1, i2c_cr2, i2c_oar1, i2c_oar2, i2c_timingr, syscfg_cfgr1, count;
+    uint32_t pin_scl, pin_sda, i2c_cr1, i2c_cr2, i2c_oar1, i2c_oar2, i2c_timingr, syscfg_cfgr1;
 
     if ((i2c->state != I2C_STATE_READY) && (i2c->state != I2C_STATE_BUSY))
     {
@@ -1016,7 +1016,6 @@ bool stm32l4_i2c_notify(stm32l4_i2c_t *i2c, stm32l4_i2c_callback_t callback, voi
 
 bool stm32l4_i2c_reset(stm32l4_i2c_t *i2c)
 {
-    I2C_TypeDef *I2C = i2c->I2C;
     uint32_t pin_scl, pin_sda, count;
 
     if ((i2c->state != I2C_STATE_READY) && (i2c->state != I2C_STATE_BUSY))

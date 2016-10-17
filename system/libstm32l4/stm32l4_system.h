@@ -95,7 +95,7 @@ extern void     stm32l4_system_periph_cond_disable(unsigned int periph, volatile
 extern void     stm32l4_system_periph_cond_wake(unsigned int periph, volatile uint32_t *p_mask, uint32_t mask);
 extern void     stm32l4_system_periph_cond_sleep(unsigned int periph, volatile uint32_t *p_mask, uint32_t mask);
 extern void     stm32l4_system_bootloader(void);
-extern bool     stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, uint32_t pclk2, bool clk48);
+extern bool     stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2);
 extern bool     stm32l4_system_clk48_enable(void);
 extern bool     stm32l4_system_clk48_disable(void);
 extern uint32_t stm32l4_system_sysclk(void);

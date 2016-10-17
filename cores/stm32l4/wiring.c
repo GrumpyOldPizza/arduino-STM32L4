@@ -1,24 +1,35 @@
 /*
-  Copyright (c) 2015 Arduino LLC.  All right reserved.
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  See the GNU Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal with the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ *  1. Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimers.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimers in the
+ *     documentation and/or other materials provided with the distribution.
+ *  3. Neither the name of Thomas Roell, nor the names of its contributors
+ *     may be used to endorse or promote products derived from this Software
+ *     without specific prior written permission.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * WITH THE SOFTWARE.
+ */
 
 #include "Arduino.h"
 
 #include "wiring_private.h"
+#include "dosfs_api.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,7 +42,9 @@ void HardFault_Handler(void)
 {
     while (1)
     {
+#if defined(STM32L4_CONFIG_USBD_CDC)
 	OTG_FS_IRQHandler();
+#endif
     }
 }
 
@@ -39,7 +52,9 @@ void BusFault_Handler(void)
 {
     while (1)
     {
+#if defined(STM32L4_CONFIG_USBD_CDC)
 	OTG_FS_IRQHandler();
+#endif
     }
 }
 
@@ -47,33 +62,52 @@ void UsageFault_Handler(void)
 {
     while (1)
     {
+#if defined(STM32L4_CONFIG_USBD_CDC)
 	OTG_FS_IRQHandler();
+#endif
     }
 }
 
 void init( void )
 {
-#if (F_CPU <= 32000000)
-  stm32l4_system_configure(F_CPU, F_CPU, F_CPU, F_CPU, true);
-#else
-  stm32l4_system_configure(F_CPU, F_CPU, F_CPU/2, F_CPU/2, true);
+#if defined(STM32L4_CONFIG_USBD_CDC)
+    stm32l4_gpio_pin_configure(GPIO_PIN_PA9, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
+
+    armv7m_clock_spin(2000);
+
+    if ((_SYSTEM_CORE_CLOCK_ < 16000000) && stm32l4_gpio_pin_read(GPIO_PIN_PA9))
+    {
+	stm32l4_system_configure(16000000, 8000000, 8000000);
+    }
+    else
 #endif
+    {
+	stm32l4_system_configure(_SYSTEM_CORE_CLOCK_, _SYSTEM_CORE_CLOCK_/2, _SYSTEM_CORE_CLOCK_/2);
+    }
 
-  armv7m_svcall_initialize();
-  armv7m_pendsv_initialize();
-  armv7m_systick_initialize(STM32L4_SYSTICK_IRQ_PRIORITY);
-  armv7m_timer_initialize();
+    armv7m_svcall_initialize();
+    armv7m_pendsv_initialize();
+    armv7m_systick_initialize(STM32L4_SYSTICK_IRQ_PRIORITY);
+    armv7m_timer_initialize();
 
-  stm32l4_exti_create(&stm32l4_exti, STM32L4_EXTI_IRQ_PRIORITY);
-  stm32l4_exti_enable(&stm32l4_exti);
+    stm32l4_exti_create(&stm32l4_exti, STM32L4_EXTI_IRQ_PRIORITY);
+    stm32l4_exti_enable(&stm32l4_exti);
 
-#if 0
-  // Setup all pins (digital and analog) in INPUT mode (default is nothing)
-  for ( pin = 0 ; pin < NUM_TOTAL_PINS ; pin++ )
-  {
-      pinMode( pin, INPUT ) ;
-  }
-#endif
+#if defined(STM32L4_CONFIG_USBD_CDC)
+    if (stm32l4_system_hclk() >= 16000000)
+    {
+	USBD_Attach(STM32L4_USB_IRQ_PRIORITY);
+    }
+#endif /* STM32L4_CONFIG_USBD_CDC */
+
+#if defined(STM32L4_CONFIG_DOSFS_SDCARD)
+    f_initvolume(&dosfs_sdcard_init, 0);
+    f_checkvolume();
+#endif /* STM32L4_CONFIG_DOSFS_SDCARD */
+#if defined(STM32L4_CONFIG_DOSFS_SFLASH)
+    f_initvolume(&dosfs_sflash_init, 0);
+    f_checkvolume();
+#endif /* STM32L4_CONFIG_DOSFS_SFLASH */
 }
 
 #ifdef __cplusplus

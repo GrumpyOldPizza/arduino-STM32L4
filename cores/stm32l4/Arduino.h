@@ -35,9 +35,10 @@ typedef uint16_t word;
 //
 #include "avr/pgmspace.h"
 #include "avr/interrupt.h"
+#include "avr/io.h"
 
 #include "binary.h"
-#include "stdlib_noniso.h"
+#include "itoa.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -48,6 +49,8 @@ extern "C"{
 #undef DAC1
 #undef SPI1
 #undef SPI2
+
+#define F_CPU SystemCoreClock
 
 #include "wiring_constants.h"
 
@@ -77,7 +80,9 @@ void loop( void ) ;
   #include "STM32.h"
 #endif
 #ifdef __cplusplus
+#if defined(STM32L4_CONFIG_USBD_CDC)
   #include "CDC.h"
+#endif /* STM32L4_CONFIG_USBD_CDC */
   #include "Uart.h"
 #endif
 
@@ -87,9 +92,9 @@ void loop( void ) ;
 #include "wiring.h"
 #include "wiring_analog.h"
 #include "wiring_digital.h"
+#include "wiring_interrupts.h"
 #include "wiring_pulse.h"
 #include "wiring_shift.h"
-#include "WInterrupts.h"
 
 // undefine stdlib's abs if encountered
 #ifdef abs

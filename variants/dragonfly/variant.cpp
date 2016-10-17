@@ -28,9 +28,6 @@
 
 #include "variant.h"
 #include "wiring_private.h"
-#include "dosfs_api.h"
-
-//#define ARDUINO_STM32L4_DOSFS_SDCARD
 
 /*
  * Pins descriptions
@@ -48,17 +45,17 @@ const PinDescription g_APinDescription[NUM_TOTAL_PINS] =
     { GPIOC, GPIO_PIN_MASK(GPIO_PIN_PC8),  GPIO_PIN_PC8_TIM3_CH3,   (PIN_ATTR_PWM | PIN_ATTR_EXTI),                PWM_INSTANCE_TIM3, PWM_CHANNEL_3,    ADC_INPUT_NONE },
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA3),  GPIO_PIN_PA3_TIM5_CH4,   (PIN_ATTR_PWM | PIN_ATTR_EXTI),                PWM_INSTANCE_TIM5, PWM_CHANNEL_4,    ADC_INPUT_NONE },
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA2),  GPIO_PIN_PA2_TIM5_CH3,   (PIN_ATTR_PWM | PIN_ATTR_EXTI),                PWM_INSTANCE_TIM5, PWM_CHANNEL_3,    ADC_INPUT_NONE },
-#if defined(ARDUINO_STM32L4_DOSFS_SDCARD)
+#if defined(STM32L4_CONFIG_DOSFS_SDCARD)
     { NULL,  GPIO_PIN_MASK(GPIO_PIN_PD2),  GPIO_PIN_PD2,            0,                                             PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { NULL,  GPIO_PIN_MASK(GPIO_PIN_PC12), GPIO_PIN_PC12,           0,                                             PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { NULL,  GPIO_PIN_MASK(GPIO_PIN_PC11), GPIO_PIN_PC11,           0,                                             PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { NULL,  GPIO_PIN_MASK(GPIO_PIN_PC10), GPIO_PIN_PC10,           0,                                             PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_NONE },
-#else /* ARDUINO_STM32L4_DOSFS_SDCARD */
+#else /* STM32L4_CONFIG_DOSFS_SDCARD */
     { GPIOD, GPIO_PIN_MASK(GPIO_PIN_PD2),  GPIO_PIN_PD2,            (PIN_ATTR_EXTI),                               PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { GPIOC, GPIO_PIN_MASK(GPIO_PIN_PC12), GPIO_PIN_PC12,           (PIN_ATTR_EXTI),                               PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { GPIOC, GPIO_PIN_MASK(GPIO_PIN_PC11), GPIO_PIN_PC11,           (PIN_ATTR_EXTI),                               PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { GPIOC, GPIO_PIN_MASK(GPIO_PIN_PC10), GPIO_PIN_PC10,           (PIN_ATTR_EXTI),                               PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_NONE },
-#endif /* ARDUINO_STM32L4_DOSFS_SDCARD */
+#endif /* STM32L4_CONFIG_DOSFS_SDCARD */
 
     // 14..19 - Analog pins
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA4),  GPIO_PIN_PA4,            (PIN_ATTR_ADC | PIN_ATTR_DAC | PIN_ATTR_EXTI), PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_9    },
@@ -111,15 +108,3 @@ const PinDescription g_APinDescription[NUM_TOTAL_PINS] =
     // 44 - Button 
     { GPIOC, GPIO_PIN_MASK(GPIO_PIN_PC13), GPIO_PIN_PC13,           (PIN_ATTR_EXTI),                               PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_NONE },
 };
-
-void initVariant(void)
-{
-  USBD_Attach(STM32L4_USB_IRQ_PRIORITY);
-
-#if defined(ARDUINO_STM32L4_DOSFS_SDCARD)
-  f_initvolume(&dosfs_sdcard_init, 0);
-#else /* ARDUINO_STM32L4_DOSFS_SDCARD */
-  f_initvolume(&dosfs_sflash_init, 0);
-#endif /* ARDUINO_STM32L4_DOSFS_SDCARD */
-  f_checkvolume();
-}

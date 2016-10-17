@@ -29,8 +29,8 @@ dragonfly.build.core=stm32l4
 dragonfly.build.extra_flags=-DSTM32L476xx  -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
 dragonfly.build.ldscript=linker_scripts/flash.ld
 dragonfly.build.variant=dragonfly
-dragonfly.build.variant_system_lib=stm32l4_dragonfly
-dragonfly.build.variant_system_include="-I{runtime.platform.path}/system/libstm32l4_dragonfly/CMSIS/Include" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/USB/HAL/Inc" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/USB/Core/Inc" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/USB/Class/CDC/Inc" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/USB/Class/MSC/Inc" "-I{runtime.platform.path}/system/libstm32l4_dragonfly/USB" "-I{runtime.platform.path}/system/libstm32l4_dragonfly" 
+dragonfly.build.variant_system_libs="-L{runtime.platform.path}/system/libstm32l4" "-L{runtime.platform.path}/system/libstm32l4/CMSIS/Lib" -lstm32l4 -larm_cortexM4lf_math
+dragonfly.build.variant_system_include="-I{runtime.platform.path}/system/libstm32l4/CMSIS/Include" "-I{runtime.platform.path}/system/libstm32l4/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/libstm32l4/USB/HAL/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Core/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/CDC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/MSC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB" "-I{runtime.platform.path}/system/libstm32l4" 
 dragonfly.build.vid=0x1209
 dragonfly.build.pid=0x6667
 
@@ -48,3 +48,11 @@ dragonfly.menu.CpuFrequency.24=24 MHz
 dragonfly.menu.CpuFrequency.24.build.f_cpu=24000000L
 dragonfly.menu.CpuFrequency.16=16 MHz
 dragonfly.menu.CpuFrequency.16.build.f_cpu=16000000L
+dragonfly.menu.CpuFrequency.8=8 MHz
+dragonfly.menu.CpuFrequency.8.build.f_cpu=8000000L
+dragonfly.menu.CpuFrequency.4=4 MHz
+dragonfly.menu.CpuFrequency.4.build.f_cpu=4000000L
+dragonfly.menu.CpuFrequency.2=2 MHz
+dragonfly.menu.CpuFrequency.2.build.f_cpu=2000000L
+dragonfly.menu.CpuFrequency.1=1 MHz
+dragonfly.menu.CpuFrequency.1.build.f_cpu=1000000L

@@ -36,6 +36,10 @@
  *        Definitions
  *----------------------------------------------------------------------------*/
 
+#define STM32L4_CONFIG_USBD_CDC           1
+#define STM32L4_CONFIG_USBD_MSC           1
+#define STM32L4_CONFIG_DOSFS_SFLASH       1
+
 /** Master clock frequency */
 #define VARIANT_MCK			  F_CPU
 

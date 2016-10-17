@@ -440,7 +440,7 @@ static void stm32l4_system_msi4_sysclk(void)
     {
 	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
     }
-    
+
     if (PWR->CR1 & PWR_CR1_LPR)
     {
 	PWR->CR1 &= ~PWR_CR1_LPR;
@@ -492,7 +492,7 @@ static void stm32l4_system_msi4_sysclk(void)
 
     RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_MSI;
     
-    /* Wait till the main HSI is used as system clock source */
+    /* Wait till the main MSI is used as system clock source */
     while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_MSI)
     {
     }
@@ -591,20 +591,15 @@ void stm32l4_system_bootloader(void)
 #endif
 }
 
-bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, uint32_t pclk2, bool clk48)
+bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 {
-    uint32_t fclk, fvco, fpll, fpllout, mout, nout, rout, n, r;
+    uint32_t sysclk, fclk, fvco, fpll, fpllout, mout, nout, rout, qout, n, r;
     uint32_t count, msirange, hpre, ppre1, ppre2, latency;
     uint32_t apb1enr1;
 
-    if (!clk48 && ((sysclk <= 24000000) && stm32l4_system_device.clk48))
-    {
-	return false;
-    }
-
-    /* Unlock SYSCFG (and leave it unlocked for EXTI use.
+    /* Unlock SYSCFG (and leave it unlocked for EXTI use).
      */
-
+    
     RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
     /* Detect LSE/HSE on the first pass.
@@ -722,46 +717,49 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	}
     }
 
-    /* Dummies to make the compiler happy */
-    msirange = RCC_CR_MSIRANGE_6;
-    mout = 2;
-    nout = 8;
-    rout = 2;
-
-    if (!clk48 && (sysclk <= 24000000))
+    if (hclk <= 24000000)
     {
-	/* Range 2, use MSI */
+	/* Range 2, use MSI. To allow USB operation, limit MSI down to 4MHz, and use a SYSCLK divider to get to 
+	 * the target frequency.
+	 */
+	
+	if      (hclk >= 24000000) { hclk = 24000000; msirange = RCC_CR_MSIRANGE_9; mout = 3; }
+	else if (hclk >= 16000000) { hclk = 16000000; msirange = RCC_CR_MSIRANGE_8; mout = 2; }
+	else if (hclk >=  8000000) { hclk =  8000000; msirange = RCC_CR_MSIRANGE_7; mout = 1; }
+	else if (hclk >=  4000000) { hclk =  4000000; msirange = RCC_CR_MSIRANGE_6; mout = 1; }
+	else if (hclk >=  2000000) { hclk =  2000000; msirange = RCC_CR_MSIRANGE_5; mout = 1; }
+	else                       { hclk =  1000000; msirange = RCC_CR_MSIRANGE_4; mout = 1; }
 
-	if      (sysclk >= 24000000) { sysclk = 24000000; msirange = RCC_CR_MSIRANGE_9; }
-	else if (sysclk >= 16000000) { sysclk = 16000000; msirange = RCC_CR_MSIRANGE_8; }
-	else if (sysclk >=  8000000) { sysclk =  8000000; msirange = RCC_CR_MSIRANGE_7; }
-	else if (sysclk >=  4000000) { sysclk =  4000000; msirange = RCC_CR_MSIRANGE_6; }
-	else if (sysclk >=  2000000) { sysclk =  2000000; msirange = RCC_CR_MSIRANGE_5; }
-	else if (sysclk >=  1000000) { sysclk =  1000000; msirange = RCC_CR_MSIRANGE_4; }
-	else if (sysclk >=   800000) { sysclk =   800000; msirange = RCC_CR_MSIRANGE_3; }
-	else if (sysclk >=   400000) { sysclk =   400000; msirange = RCC_CR_MSIRANGE_2; }
-	else if (sysclk >=   200000) { sysclk =   200000; msirange = RCC_CR_MSIRANGE_1; }
-	else                         { sysclk =   100000; msirange = RCC_CR_MSIRANGE_0; }
+	sysclk = hclk;
+
+	
+	/* PLLM is setup so that fclk = 8000000 into N/Q for USB. fvco is 96MHz to work around errata via
+	 * PLLN set to 12, and then divided down to 48MHz via PLLQ set to 2.
+	 */
+	
+	fclk = 8000000;
+	nout = 12;
+	rout = 2;
+	qout = 2;
     }
     else
     {
 	/* Range 1, use HSE/PLL or MSI/PLL */
-
-	if (sysclk < 16000000)
+	
+	if (hclk < 16000000)
 	{
-	    sysclk = 16000000;
+	    hclk = 16000000;
 	}
-
-	if (sysclk > 80000000)
+	
+	if (hclk > 80000000)
 	{
-	    sysclk = 80000000;
+	    hclk = 80000000;
 	}
-
-	/* Use fclk = 8000000, so that PLLSAI1/PLLSAI2 can
-	 * assume a common clock, not matter whether MSI or HSE
-	 * is driving the PLL.
-	 */
-
+	
+	sysclk = hclk;
+	
+	msirange = RCC_CR_MSIRANGE_11;
+	
 	if (stm32l4_system_device.hseclk <= 48000000)
 	{
 	    mout = stm32l4_system_device.hseclk / 8000000; 
@@ -769,6 +767,7 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	else
 	{
 	    /* MSI with 48MHz */
+	    
 	    mout = 6;
 	}
 	
@@ -776,6 +775,7 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	fpllout = 0;
 	nout    = 0;
 	rout    = 0;
+	qout    = 2;
 	
 	for (r = 2; r <= 8; r += 2)
 	{
@@ -816,13 +816,13 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
     else if (pclk1 >= (hclk / 4)) { pclk1 = (hclk / 4);  ppre1 = RCC_CFGR_PPRE1_DIV4;  }
     else if (pclk1 >= (hclk / 8)) { pclk1 = (hclk / 8);  ppre1 = RCC_CFGR_PPRE1_DIV8;  }
     else                          { pclk1 = (hclk / 16); ppre1 = RCC_CFGR_PPRE1_DIV16; }
-
+    
     if      (pclk2 >= hclk)       { pclk2 = hclk;        ppre2 = RCC_CFGR_PPRE2_DIV1;  }
     else if (pclk2 >= (hclk / 2)) { pclk2 = (hclk / 2);  ppre2 = RCC_CFGR_PPRE2_DIV2;  }
     else if (pclk2 >= (hclk / 4)) { pclk2 = (hclk / 4);  ppre2 = RCC_CFGR_PPRE2_DIV4;  }
     else if (pclk2 >= (hclk / 8)) { pclk2 = (hclk / 8);  ppre2 = RCC_CFGR_PPRE2_DIV8;  }
     else                          { pclk2 = (hclk / 16); ppre2 = RCC_CFGR_PPRE2_DIV16; }
-
+    
     /* #### Add code to prepare the clock switch, and if it fails cancel it.
      */
 
@@ -835,9 +835,9 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
     {
 	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
     }
-
+    
     /* Select Range 1 to switch clocks */
-
+    
     if (PWR->CR1 & PWR_CR1_LPR)
     {
 	PWR->CR1 &= ~PWR_CR1_LPR;
@@ -846,22 +846,22 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	{
 	}
     }
-
+    
     PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_0;
-
+    
     while (PWR->SR2 & PWR_SR2_VOSF)
     {
     }
-
+    
     FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_LATENCY_4WS;
-      
+    
     /* Make sure HSI is on, switch to HSI as clock source */
     RCC->CR |= RCC_CR_HSION;
     
     while (!(RCC->CR & RCC_CR_HSIRDY))
     {
     }
-
+    
     /* Select the HSI as system clock source */
     RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_HSI;
     
@@ -869,35 +869,35 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
     while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_HSI)
     {
     }
-
+    
     SystemCoreClock = 16000000;
-
-
+    
+    
     /* Disable PLL/PLLSAI1/PLLSAI2 */
     RCC->CR &= ~(RCC_CR_PLLON | RCC_CR_PLLSAI1ON | RCC_CR_PLLSAI2ON);
-
+    
     while (RCC->CR & (RCC_CR_PLLRDY | RCC_CR_PLLSAI1RDY | RCC_CR_PLLSAI2RDY))
     {
     }
-
+    
     /* Set HCLK/PCLK1/PCLK2 prescalers */
     RCC->CFGR = (RCC->CFGR & ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2)) | (hpre | ppre1 | ppre2);
-
-
-    if (!clk48 && (sysclk <= 24000000))
+    
+    
+    if (hclk <= 24000000)
     {
 	/* Range 2, use MSI */
-
+	
 	/* Disable HSE */
 	if (stm32l4_system_device.hseclk <= 48000000)
 	{
 	    RCC->CR &= ~RCC_CR_HSEON;
-
+	    
 	    while (RCC->CR & RCC_CR_HSERDY)
 	    {
 	    }
 	}
-
+	
 	if (!(RCC->CR & RCC_CR_MSION))
 	{
 	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | msirange | RCC_CR_MSIRGSEL | RCC_CR_MSION;
@@ -905,7 +905,7 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	    while (!(RCC->CR & RCC_CR_MSIRDY))
 	    {
 	    }
-
+	    
 	    if (stm32l4_system_device.lseclk == 32768)
 	    {
 		/* Enable the MSI PLL */
@@ -915,7 +915,7 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	else
 	{
 	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | msirange | RCC_CR_MSIRGSEL;
-
+	    
 	    armv7m_clock_spin(500);
 	}
 	
@@ -925,30 +925,51 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_MSI)
 	{
 	}
-
-	SystemCoreClock = sysclk;
-
-
-	PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_1;
-
-	while (PWR->SR2 & PWR_SR2_VOSF)
-	{
-	}
-
-	/* Entry LPRUN is sysclk is low enough */
-	if (sysclk <= 2000000)
-	{
-	    PWR->CR1 |= PWR_CR1_LPR;
 	
-	    while (!(PWR->SR2 & PWR_SR2_REGLPF))
+	/* Configure the main PLL */
+	RCC->PLLCFGR = (((mout -1) << 4) |
+			(nout << 8) |
+			(((rout >> 1) -1) << 25) |
+			(((qout >> 1) -1) << 21) |
+			RCC_PLLCFGR_PLLSRC_MSI |
+			RCC_PLLCFGR_PLLQEN);
+	
+	if (stm32l4_system_device.clk48)
+	{
+	    /* Enable the main PLL */
+	    RCC->CR |= RCC_CR_PLLON;
+	    
+	    /* Wait till the main PLL is ready */
+	    while((RCC->CR & RCC_CR_PLLRDY) == 0)
 	    {
 	    }
 	}
+	else
+	{
+	    PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_1;
+	    
+	    while (PWR->SR2 & PWR_SR2_VOSF)
+	    {
+	    }
+
+	    /* Entry LPRUN is sysclk is low enough */
+	    if (sysclk <= 2000000)
+	    {
+		PWR->CR1 |= PWR_CR1_LPR;
+		
+		while (!(PWR->SR2 & PWR_SR2_REGLPF))
+		{
+		}
+	    }
+	}
+
+	/* Switch CLK48SEL to PLL48M1CLK */
+	RCC->CCIPR = (RCC->CCIPR & ~RCC_CCIPR_CLK48SEL) | (RCC_CCIPR_CLK48SEL_1);
     }
     else
     {
 	/* Range 1, use HSE/PLL or MSI/PLL */
-
+	
 	/* Be careful not to change HSE/MSI settings which might be shared
 	 * with PLLSAI1/PLLSAI2.
 	 */
@@ -957,13 +978,13 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	    if (!(RCC->CR & RCC_CR_HSEON))
 	    {
 		RCC->CR |= RCC_CR_HSEON;
-	    
+		
 		while (!(RCC->CR & RCC_CR_HSERDY))
 		{
 		}
 	    }
 	}
-
+	
 	if (!(RCC->CR & RCC_CR_HSEON) || stm32l4_system_device.clk48)
 	{
 	    if (!((RCC->CR & (RCC_CR_MSION | RCC_CR_MSIRANGE)) == (RCC_CR_MSION | RCC_CR_MSIRANGE_11)))
@@ -994,11 +1015,11 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	{
 	    /* ERRATA 2.1.15. WAR: Switch MSI to <= 16MHz before turing off */
 	    RCC->CR = (RCC->CR & ~(RCC_CR_MSIRANGE | RCC_CR_MSIPLLEN)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL;
-
+	    
 	    armv7m_clock_spin(500);
-
+	    
 	    RCC->CR &= ~RCC_CR_MSION;
-		    
+	    
 	    while (RCC->CR & RCC_CR_MSIRDY)
 	    {
 	    }
@@ -1008,6 +1029,7 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	RCC->PLLCFGR = (((mout -1) << 4) |
 			(nout << 8) |
 			(((rout >> 1) -1) << 25) |
+			(((qout >> 1) -1) << 21) |
 			((RCC->CR & RCC_CR_HSEON) ? RCC_PLLCFGR_PLLSRC_HSE : RCC_PLLCFGR_PLLSRC_MSI) |
 			RCC_PLLCFGR_PLLREN);
 	
@@ -1027,17 +1049,18 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	{
 	}
 
-	SystemCoreClock = sysclk;
+	/* Switch CLK48SEL to MSI */
+	RCC->CCIPR = (RCC->CCIPR & ~RCC_CCIPR_CLK48SEL) | (RCC_CCIPR_CLK48SEL_0 | RCC_CCIPR_CLK48SEL_1);
     }
 
-    if (!clk48 && (sysclk <= 24000000))
+    SystemCoreClock = hclk;
+
+    if (!stm32l4_system_device.clk48 && (hclk <= 24000000))
     {
 	if      (hclk <=  6000000) { latency = FLASH_ACR_LATENCY_0WS; }
 	else if (hclk <= 12000000) { latency = FLASH_ACR_LATENCY_1WS; }
 	else if (hclk <= 18000000) { latency = FLASH_ACR_LATENCY_2WS; }
 	else                       { latency = FLASH_ACR_LATENCY_3WS; }
-
-	FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
     }
     else
     {
@@ -1046,7 +1069,14 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 	else if (hclk <= 48000000) { latency = FLASH_ACR_LATENCY_2WS; }
 	else if (hclk <= 64000000) { latency = FLASH_ACR_LATENCY_3WS; }
 	else                       { latency = FLASH_ACR_LATENCY_4WS; }
+    }
 
+    if (hclk <= 24000000)
+    {
+	FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
+    }
+    else
+    {
 	FLASH->ACR = FLASH_ACR_PRFTEN | FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
     }
 
@@ -1067,68 +1097,147 @@ bool stm32l4_system_configure(uint32_t sysclk, uint32_t hclk, uint32_t pclk1, ui
 
 bool stm32l4_system_clk48_enable(void)
 {
-    if (((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL) || (stm32l4_system_device.lseclk != 32768))
+    uint32_t apb1enr1, latency;
+
+    if ((stm32l4_system_device.lseclk != 32768) || (stm32l4_system_device.hclk < 16000000))
     {
 	return false;
     }
 
-    if (RCC->CR & RCC_CR_HSEON)
+    if (!stm32l4_system_device.clk48)
     {
-	if (!(RCC->CR & RCC_CR_MSION))
+	if (stm32l4_system_device.hclk <= 24000000)
 	{
-	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
+	    /* Switch to Range 1 */
+
+	    apb1enr1 = RCC->APB1ENR1;
 	    
-	    while (!(RCC->CR & RCC_CR_MSIRDY))
+	    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+	    {
+		armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+	    }
+
+	    PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_0;
+    
+	    while (PWR->SR2 & PWR_SR2_VOSF)
 	    {
 	    }
-	    
-	    if (stm32l4_system_device.lseclk == 32768)
+
+	    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
 	    {
-		/* Enable the MSI PLL */
-		RCC->CR |= RCC_CR_MSIPLLEN;
+		armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
+	    }
+
+	    /* Adjust FLASH latency */
+	    if   (stm32l4_system_device.hclk <= 16000000) { latency = FLASH_ACR_LATENCY_0WS; }
+	    else                                          { latency = FLASH_ACR_LATENCY_1WS; }
+
+	    FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
+
+	    /* Enable main PLL to produce PLL48M1CLK */
+	    RCC->CR |= RCC_CR_PLLON;
+	
+	    /* Wait till the main PLL is ready */
+	    while((RCC->CR & RCC_CR_PLLRDY) == 0)
+	    {
 	    }
 	}
 	else
 	{
-	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL;
+	    if (RCC->CR & RCC_CR_HSEON)
+	    {
+		if (!(RCC->CR & RCC_CR_MSION))
+		{
+		    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
 	    
-	    armv7m_clock_spin(500);
+		    while (!(RCC->CR & RCC_CR_MSIRDY))
+		    {
+		    }
+	    
+		    /* Enable the MSI PLL */
+		    RCC->CR |= RCC_CR_MSIPLLEN;
+		}
+		else
+		{
+		    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL;
+	    
+		    armv7m_clock_spin(500);
+		}
+	    }
 	}
+
+	stm32l4_system_device.clk48 = true;
     }
-
-    /* Switch CLK48 to MSI */
-    RCC->CCIPR |= RCC_CCIPR_CLK48SEL;
-
-    stm32l4_system_device.clk48 = true;
 
     return true;
 }
 
 bool stm32l4_system_clk48_disable(void)
 {
-    if (((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL) || (stm32l4_system_device.lseclk != 32768))
+    uint32_t apb1enr1, latency;
+
+    if ((stm32l4_system_device.lseclk != 32768) || (stm32l4_system_device.hclk < 16000000))
     {
 	return false;
     }
 
-    if (RCC->CR & RCC_CR_HSEON)
+    if (stm32l4_system_device.clk48)
     {
-	/* ERRATA 2.1.15. WAR: Switch MSI to <= 16MHz before turing off */
-	RCC->CR = (RCC->CR & ~(RCC_CR_MSIRANGE | RCC_CR_MSIPLLEN)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL;
-
-	armv7m_clock_spin(500);
-
-	RCC->CR &= ~RCC_CR_MSION;
-		    
-	while (RCC->CR & RCC_CR_MSIRDY)
+	if (stm32l4_system_device.hclk <= 24000000)
 	{
+	    /* Disable PLL */
+	    RCC->CR &= ~RCC_CR_PLLON;
+    
+	    while (RCC->CR & RCC_CR_PLLRDY)
+	    {
+	    }
+	    
+	    /* Adjust FLASH latency */
+	    if      (stm32l4_system_device.hclk <=  6000000) { latency = FLASH_ACR_LATENCY_0WS; }
+	    else if (stm32l4_system_device.hclk <= 12000000) { latency = FLASH_ACR_LATENCY_1WS; }
+	    else if (stm32l4_system_device.hclk <= 18000000) { latency = FLASH_ACR_LATENCY_2WS; }
+	    else                                             { latency = FLASH_ACR_LATENCY_3WS; }
+
+	    FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
+
+	    /* Switch to Range 2 */
+	    apb1enr1 = RCC->APB1ENR1;
+	    
+	    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+	    {
+		armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+	    }
+
+	    PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_1;
+	    
+	    while (PWR->SR2 & PWR_SR2_VOSF)
+	    {
+	    }
+
+	    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+	    {
+		armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
+	    }
 	}
+	else
+	{
+	    if (RCC->CR & RCC_CR_HSEON)
+	    {
+		/* ERRATA 2.1.15. WAR: Switch MSI to <= 16MHz before turing off */
+		RCC->CR = (RCC->CR & ~(RCC_CR_MSIRANGE | RCC_CR_MSIPLLEN)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL;
+		
+		armv7m_clock_spin(500);
+		
+		RCC->CR &= ~RCC_CR_MSION;
+		
+		while (RCC->CR & RCC_CR_MSIRDY)
+		{
+		}
+	    }
+	}
+
+	stm32l4_system_device.clk48 = false;
     }
-
-    /* Switch CLK48 to off */
-    RCC->CCIPR &= ~RCC_CCIPR_CLK48SEL;
-
-    stm32l4_system_device.clk48 = false;
 
     return true;
 }
@@ -1162,9 +1271,9 @@ bool stm32l4_system_suspend(void)
     /* Disable FLASH in sleep/deepsleep */
     FLASH->ACR |= FLASH_ACR_SLEEP_PD;
 
-    if (stm32l4_system_device.sysclk <= 24000000)
+    if (stm32l4_system_device.hclk <= 24000000)
     {
-	/* Select HSI as wakeup clock */
+	/* Select MSI as wakeup clock */
 
 	RCC->CR |= RCC_CR_HSIASFS;
 	RCC->CFGR &= ~RCC_CFGR_STOPWUCK;
@@ -1241,7 +1350,7 @@ bool stm32l4_system_suspend(void)
 
 bool stm32l4_system_restore(void)
 {
-    if (stm32l4_system_device.sysclk <= 24000000)
+    if (stm32l4_system_device.hclk <= 24000000)
     {
     }
     else

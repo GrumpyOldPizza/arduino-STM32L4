@@ -11,7 +11,7 @@ ASFLAGS  = -c -g -x assembler-with-cpp $(EXTRAS) $(DEFINES) $(INCLUDES)
 LDFLAGS  = -L../../variants/dragonfly -Os -Wl,--gc-sections -save-temps $(EXTRAS) -T../../variants/dragonfly/linker_scripts/flash.ld --specs=nano.specs -mcpu=cortex-m4 -mthumb -Wl,--cref -Wl,--check-sections -Wl,--gc-sections -Wl,--unresolved-symbols=report-all -Wl,--warn-common -Wl,--warn-section-align
 WARNINGS = -Wall -Wextra -Wno-unused-parameter
 EXTRAS   = -DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mabi=aapcs -mslow-flash-data
-DEFINES  = -DF_CPU=80000000L -DARDUINO=10606 -D_ARDUINO_STM32L4_DRAGONFLY -DARDUINO_ARCH_STM32L4
+DEFINES  = -D_SYSTEM_CORE_CLOCK_=80000000L -DARDUINO=10606 -D_ARDUINO_STM32L4_DRAGONFLY -DARDUINO_ARCH_STM32L4
 INCLUDES = -I../../system/libstm32l4_dragonfly/CMSIS/Include -I../../system/libstm32l4_dragonfly/CMSIS/Device/ST/STM32L4xx/Include -I../../system/libstm32l4_dragonfly/USB/HAL/Inc -I../../system/libstm32l4_dragonfly/USB/Core/Inc -I../../system/libstm32l4_dragonfly/USB/Class/CDC/Inc -I../../system/libstm32l4_dragonfly/USB/Class/MSC/Inc -I../../system/libstm32l4_dragonfly/USB -I../../system/libstm32l4_dragonfly/ -I../../variants/dragonfly -I../../libraries/SPI/ -I../../libraries/Wire/ -I../../libraries/Servo/src/ -I. 
 
 SRCS = \
@@ -19,29 +19,30 @@ SRCS = \
 	../../libraries/SPI/SPI.cpp \
 	../../libraries/Wire/Wire.cpp \
 	../../variants/dragonfly/variant.cpp \
+	avr/dtostrf.c \
 	avr/eeprom.c \
+	avr/fdevopen.c \
 	CDC.cpp \
 	FS.cpp \
 	HardwareSerial.cpp \
 	IPAddress.cpp \
 	Print.cpp \
-	Reset.cpp \
 	RingBuffer.cpp \
 	STM32.cpp \
 	Stream.cpp \
 	Tone.cpp \
 	Uart.cpp \
-	WInterrupts.c \
 	WMath.cpp \
 	WString.cpp \
 	abi.cpp \
 	hooks.c \
+	itoa.c \
 	main.cpp \
 	new.cpp \
-	stdlib_noniso.c \
 	wiring.c \
 	wiring_analog.c \
 	wiring_digital.c \
+	wiring_interrupts.c \
 	wiring_pulse.c \
 	wiring_shift.c
 
@@ -50,29 +51,30 @@ OBJS = \
 	../../libraries/SPI/SPI.o \
 	../../libraries/Wire/Wire.o \
 	../../variants/dragonfly/variant.o \
+	avr/dtostrf.o \
 	avr/eeprom.o \
+	avr/fdevopen.o \
 	CDC.o \
 	FS.o \
 	HardwareSerial.o \
 	IPAddress.o \
 	Print.o \
-	Reset.o \
 	RingBuffer.o \
 	STM32.o \
 	Stream.o \
 	Tone.o \
 	Uart.o \
-	WInterrupts.o \
 	WMath.o \
 	WString.o \
 	abi.o \
 	hooks.o \
+	itoa.o \
 	main.o \
 	new.o \
-	stdlib_noniso.o \
 	wiring.o \
 	wiring_analog.o \
 	wiring_digital.o \
+	wiring_interrupts.o \
 	wiring_pulse.o \
 	wiring_shift.o
 

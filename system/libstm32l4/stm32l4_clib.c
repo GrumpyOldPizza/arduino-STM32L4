@@ -172,6 +172,7 @@ int _write(int file, char *buf, int nbytes)
 		}
 		while (nbytes != 0);
 	    }
+#if 0
 	    else
 	    {
 		if (stm32l4_usbd_cdc.state == USBD_CDC_STATE_NONE)
@@ -224,6 +225,7 @@ int _write(int file, char *buf, int nbytes)
 
 		n = nbytes;
 	    }
+#endif
 	}
 	return n;
 

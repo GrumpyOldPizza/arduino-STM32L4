@@ -10,8 +10,8 @@ CXXFLAGS = -mcpu=cortex-m4 -mthumb -c -g -Os $(WARNINGS) -std=gnu++11 -ffunction
 ASFLAGS  = -c -g -x assembler-with-cpp $(EXTRAS) $(DEFINES) $(INCLUDES)
 WARNINGS = -Wall -Wextra -Wno-unused-parameter
 EXTRAS   = -DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mabi=aapcs -mslow-flash-data
-DEFINES  = -F_CPU=80000000L -DARDUINO=10606 -D_ARDUINO_STM32L4_DRAGONFLY -DARDUINO_ARCH_STM32L4
-INCLUDES = -I../../system/libstm32l4_dragonfly/CMSIS/Include -I../../system/libstm32l4_dragonfly/CMSIS/Device/ST/STM32L4xx/Include -I../../system/libstm32l4_dragonfly/USB/HAL/Inc -I../../system/libstm32l4_dragonfly/USB/Core/Inc -I../../system/libstm32l4_dragonfly/USB/Class/CDC/Inc -I../../system/libstm32l4_dragonfly/USB/Class/MSC/Inc -I../../system/libstm32l4_dragonfly/USB -I../../system/libstm32l4_dragonfly/ -I../../variants/dragonfly -I. 
+DEFINES  = -DARDUINO=10606 -D_ARDUINO_STM32L4_DRAGONFLY -DARDUINO_ARCH_STM32L4
+INCLUDES = -I../../system/libstm32l4/CMSIS/Include -I../../system/libstm32l4/CMSIS/Device/ST/STM32L4xx/Include -I../../system/libstm32l4/USB/HAL/Inc -I../../system/libstm32l4/USB/Core/Inc -I../../system/libstm32l4/USB/Class/CDC/Inc -I../../system/libstm32l4/USB/Class/MSC/Inc -I../../system/libstm32l4/USB -I../../system/libstm32l4/ -I../../variants/dragonfly -I. 
 
 SRCS = \
 	./USB/Class/CDC/Src/usbd_cdc.c \
@@ -107,9 +107,9 @@ OBJS = \
 	system_stm32l4xx.o \
 	startup_stm32l476xx.o
 
-all:: libstm32l4_dragonfly.a
+all:: libstm32l4.a
 
-libstm32l4_dragonfly.a:: $(OBJS)
+libstm32l4.a:: $(OBJS)
 	$(AR) rcs $@ $^
 
 %.o: %.c
@@ -119,7 +119,10 @@ libstm32l4_dragonfly.a:: $(OBJS)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
 clean::
-	rm -f libstm32l4_dragonfly.a *~ $(OBJS) $(OBJS:.o=.d)
+	rm -f *~ $(OBJS) $(OBJS:.o=.d)
+
+clobber::
+	rm -f libstm32l4.a *~ $(OBJS) $(OBJS:.o=.d)
 
 -include $(OBJS:.o=.d)
 
