@@ -905,18 +905,18 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 	    while (!(RCC->CR & RCC_CR_MSIRDY))
 	    {
 	    }
-	    
-	    if (stm32l4_system_device.lseclk == 32768)
-	    {
-		/* Enable the MSI PLL */
-		RCC->CR |= RCC_CR_MSIPLLEN;
-	    }
 	}
 	else
 	{
 	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | msirange | RCC_CR_MSIRGSEL;
 	    
 	    armv7m_clock_spin(500);
+	}
+
+	if (stm32l4_system_device.lseclk == 32768)
+	{
+	    /* Enable the MSI PLL */
+	    RCC->CR |= RCC_CR_MSIPLLEN;
 	}
 	
 	RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_MSI;
@@ -996,18 +996,18 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 		    while (!(RCC->CR & RCC_CR_MSIRDY))
 		    {
 		    }
-		    
-		    if (stm32l4_system_device.lseclk == 32768)
-		    {
-			/* Enable the MSI PLL */
-			RCC->CR |= RCC_CR_MSIPLLEN;
-		    }
 		}
 		else
 		{
 		    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL;
 		    
 		    armv7m_clock_spin(500);
+		}
+
+		if (stm32l4_system_device.lseclk == 32768)
+		{
+		    /* Enable the MSI PLL */
+		    RCC->CR |= RCC_CR_MSIPLLEN;
 		}
 	    }
 	}
@@ -1153,15 +1153,18 @@ bool stm32l4_system_clk48_enable(void)
 		    while (!(RCC->CR & RCC_CR_MSIRDY))
 		    {
 		    }
-	    
-		    /* Enable the MSI PLL */
-		    RCC->CR |= RCC_CR_MSIPLLEN;
 		}
 		else
 		{
 		    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL;
 	    
 		    armv7m_clock_spin(500);
+		}
+
+		if (stm32l4_system_device.lseclk == 32768)
+		{
+		    /* Enable the MSI PLL */
+		    RCC->CR |= RCC_CR_MSIPLLEN;
 		}
 	    }
 	}
