@@ -26,11 +26,11 @@ dragonfly.build.f_cpu=80000000L
 dragonfly.build.board=STM32L4_DRAGONFLY
 dragonfly.build.arch=STM32L4
 dragonfly.build.core=stm32l4
-dragonfly.build.extra_flags=-DSTM32L476xx  -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
+dragonfly.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
 dragonfly.build.ldscript=linker_scripts/flash.ld
 dragonfly.build.variant=dragonfly
-dragonfly.build.variant_system_libs="-L{runtime.platform.path}/system/libstm32l4" "-L{runtime.platform.path}/system/libstm32l4/CMSIS/Lib" -lstm32l4 -larm_cortexM4lf_math
-dragonfly.build.variant_system_include="-I{runtime.platform.path}/system/libstm32l4/CMSIS/Include" "-I{runtime.platform.path}/system/libstm32l4/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/libstm32l4/USB/HAL/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Core/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/CDC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/MSC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB" "-I{runtime.platform.path}/system/libstm32l4" 
+dragonfly.build.variant_system_libs="-L{runtime.platform.path}/system/stm32l4" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l4 -larm_cortexM4lf_math
+dragonfly.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/stm32l4/USB/HAL/Inc" "-I{runtime.platform.path}/system/stm32l4/USB/Core/Inc" "-I{runtime.platform.path}/system/stm32l4/USB/Class/CDC/Inc" "-I{runtime.platform.path}/system/stm32l4/USB/Class/MSC/Inc" "-I{runtime.platform.path}/system/stm32l4/USB" "-I{runtime.platform.path}/system/stm32l4" 
 dragonfly.build.vid=0x1209
 dragonfly.build.pid=0x6667
 
