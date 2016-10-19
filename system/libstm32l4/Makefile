@@ -11,7 +11,7 @@ ASFLAGS  = -c -g -x assembler-with-cpp $(EXTRAS) $(DEFINES) $(INCLUDES)
 WARNINGS = -Wall -Wextra -Wno-unused-parameter
 EXTRAS   = -DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mabi=aapcs -mslow-flash-data
 DEFINES  = 
-INCLUDES = -I../../system/CMSIS/Include -I../../system/CMSIS/Device/ST/STM32L4xx/Include -I../../system/stm32l4/USB/HAL/Inc -I../../system/stm32l4/USB/Core/Inc -I../../system/stm32l4/USB/Class/CDC/Inc -I../../system/stm32l4/USB/Class/MSC/Inc -I../../system/stm32l4/USB -I../../system/stm32l4/ -I. 
+INCLUDES = -I../../system/CMSIS/Include -I../../system/CMSIS/Device/ST/STM32L4xx/Include -I../../system/libstm32l4/USB/HAL/Inc -I../../system/libstm32l4/USB/Core/Inc -I../../system/libstm32l4/USB/Class/CDC/Inc -I../../system/libstm32l4/USB/Class/MSC/Inc -I../../system/libstm32l4/USB -I../../system/libstm32l4/ -I. 
 
 SRCS = \
 	./USB/Class/CDC/Src/usbd_cdc.c \
@@ -107,9 +107,9 @@ OBJS = \
 	system_stm32l4xx.o \
 	startup_stm32l476xx.o
 
-all:: libstm32l4.a
+all:: libstm32l476.a
 
-libstm32l4.a:: $(OBJS)
+libstm32l476.a:: $(OBJS)
 	$(AR) rcs $@ $^
 
 %.o: %.c
@@ -119,10 +119,7 @@ libstm32l4.a:: $(OBJS)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
 clean::
-	rm -f *~ $(OBJS) $(OBJS:.o=.d)
-
-clobber::
-	rm -f libstm32l4.a *~ $(OBJS) $(OBJS:.o=.d)
+	rm -f libstm32l476.a *~ $(OBJS) $(OBJS:.o=.d)
 
 -include $(OBJS:.o=.d)
 
