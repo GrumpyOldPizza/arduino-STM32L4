@@ -393,6 +393,10 @@ void Uart::EventCallback(uint32_t events)
 	    if (empty && _receiveCallback) {
 		(*_receiveCallback)(count);
 	    }
+
+	    if (!rx_size) {
+		break;
+	    }
 	}
     }
 
