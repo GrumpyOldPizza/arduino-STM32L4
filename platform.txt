@@ -124,7 +124,7 @@ tools.stm32l4_upload.bootloader.pattern="{path}/{cmd}" "{runtime.platform.path}/
 tools.openocd.path={runtime.platform.path}/tools/windows/openocd/bin
 tools.openocd.path.macosx={runtime.platform.path}/tools/macosx/openocd/bin
 tools.openocd.path.linux={runtime.platform.path}/tools/linux/openocd/bin
-tools.openocd.cmd=/openocd
+tools.openocd.cmd=openocd
 tools.openocd.cmd.windows=openocd.exe
 
 tools.openocd.upload.params.verbose=-d2
