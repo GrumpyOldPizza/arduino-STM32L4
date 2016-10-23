@@ -33,6 +33,9 @@
 
 class STM32Class {
 public:
+    uint32_t readBackup(unsigned int idx);
+    void writeBackup(unsigned int idx, uint32_t val);
+    
     uint64_t getSerial();
 
     float getVBAT();

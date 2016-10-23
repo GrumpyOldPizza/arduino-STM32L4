@@ -29,6 +29,8 @@
 #if !defined(_DOSFS_PORT_h)
 #define _DOSFS_PORT_h
 
+#include "stm32l4_rtc.h"
+
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -43,6 +45,16 @@ extern uint8_t  stm32l4_sdcard_spi_receive(dosfs_sdcard_t *sdcard);
 extern void     stm32l4_sdcard_spi_send_block(dosfs_sdcard_t *sdcard, const uint8_t *data);
 extern uint32_t stm32l4_sdcard_spi_receive_block(dosfs_sdcard_t *sdcard, uint8_t *data);
 
+static inline void stm32l4_system_timedate(uint16_t *p_time, uint16_t *p_date)
+{
+    stm32l4_rtc_time_t rtc_time;
+
+    stm32l4_rtc_get_time(&rtc_time);
+
+    *p_time = ((rtc_time.second >> 1) | (rtc_time.minute << 5) | (rtc_time.hour << 11));
+    *p_date = ((rtc_time.day << 0) | (rtc_time.month << 5) | ((rtc_time.year + 20) << 9));
+}
+
 #define DOSFS_PORT_SDCARD_SPI_INIT(_sdcard)                  stm32l4_sdcard_spi_init((_sdcard))
 #define DOSFS_PORT_SDCARD_SPI_PRESENT(_sdcard)               stm32l4_sdcard_spi_present((_sdcard))
 #define DOSFS_PORT_SDCARD_SPI_MODE(_sdcard, _mode)           stm32l4_sdcard_spi_mode((_sdcard), (_mode))
@@ -53,6 +65,8 @@ extern uint32_t stm32l4_sdcard_spi_receive_block(dosfs_sdcard_t *sdcard, uint8_t
 
 #define DOSFS_PORT_SDCARD_SPI_SEND_BLOCK(_sdcard, _data)     stm32l4_sdcard_spi_send_block((_sdcard), (_data))
 #define DOSFS_PORT_SDCARD_SPI_RECEIVE_BLOCK(_sdcard, _data)  stm32l4_sdcard_spi_receive_block((_sdcard), (_data))
+
+#define DOSFS_PORT_CORE_TIMEDATE(_ctime, _cdata)             stm32l4_rtc_timedate((_ctime),(_cdate))
 
 #ifdef __cplusplus
 }

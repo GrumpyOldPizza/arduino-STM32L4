@@ -49,6 +49,7 @@ extern "C"{
 #undef DAC1
 #undef SPI1
 #undef SPI2
+#undef RTC
 
 #define F_CPU SystemCoreClock
 

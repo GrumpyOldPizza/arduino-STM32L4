@@ -51,6 +51,7 @@ SRCS = \
 	stm32l4_gpio.c \
 	stm32l4_nvic.c \
 	stm32l4_qspi.c \
+	stm32l4_rtc.c \
 	stm32l4_spi.c \
 	stm32l4_servo.c \
 	stm32l4_system.c \
@@ -98,6 +99,7 @@ OBJS = \
 	stm32l4_gpio.o \
 	stm32l4_nvic.o \
 	stm32l4_qspi.o \
+	stm32l4_rtc.o \
 	stm32l4_servo.o \
 	stm32l4_spi.o \
 	stm32l4_system.o \

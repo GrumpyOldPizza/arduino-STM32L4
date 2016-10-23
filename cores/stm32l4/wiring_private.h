@@ -49,6 +49,7 @@ extern "C" {
 #include "stm32l4_spi.h"
 #include "stm32l4_usbd_cdc.h"
 #include "stm32l4_system.h"
+#include "stm32l4_rtc.h"
 
 #include "wiring_constants.h"
 
@@ -60,9 +61,10 @@ extern "C" {
 #define STM32L4_PWM_IRQ_PRIORITY     15
 
 #define STM32L4_USB_IRQ_PRIORITY     14
-#define STM32L4_I2C_IRQ_PRIORITY     13
-#define STM32L4_UART_IRQ_PRIORITY    12
-#define STM32L4_SPI_IRQ_PRIORITY     11
+#define STM32L4_RTC_IRQ_PRIORITY     13
+#define STM32L4_I2C_IRQ_PRIORITY     12
+#define STM32L4_UART_IRQ_PRIORITY    11
+#define STM32L4_SPI_IRQ_PRIORITY     10
 
 #define STM32L4_EXTI_IRQ_PRIORITY    4
 #define STM32L4_SYSTICK_IRQ_PRIORITY 3

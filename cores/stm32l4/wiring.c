@@ -90,6 +90,8 @@ void init( void )
     armv7m_systick_initialize(STM32L4_SYSTICK_IRQ_PRIORITY);
     armv7m_timer_initialize();
 
+    stm32l4_rtc_configure(STM32L4_RTC_IRQ_PRIORITY);
+
     stm32l4_exti_create(&stm32l4_exti, STM32L4_EXTI_IRQ_PRIORITY);
     stm32l4_exti_enable(&stm32l4_exti);
 

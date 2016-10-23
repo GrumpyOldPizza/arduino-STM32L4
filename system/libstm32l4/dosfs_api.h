@@ -109,7 +109,7 @@
 #define F_CTIME_HOUR_MASK	     0xf800   /* 0-23 */
 
 #define F_CDATE_DAY_SHIFT	     0
-#define F_CDATE_DAY_MASK	     0x001f   /* 0-31 */
+#define F_CDATE_DAY_MASK	     0x001f   /* 1-31 */
 #define F_CDATE_MONTH_SHIFT	     5
 #define F_CDATE_MONTH_MASK	     0x01e0   /* 1-12 */
 #define F_CDATE_YEAR_SHIFT	     9

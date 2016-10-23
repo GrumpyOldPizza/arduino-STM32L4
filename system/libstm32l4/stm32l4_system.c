@@ -521,74 +521,19 @@ static void stm32l4_system_msi4_sysclk(void)
     FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_LATENCY_0WS;
 }
 
-/* This code below looks a tad more complicated that just going throu reset
- * and finding a way to tell whether a jump to the bootloader was requested.
- * However that involves sacrificing some of the battery backed up registers.
- * Hence this coded implements the officially recommended way of calling
- * the bootloader by disabling most of the device, reseting the clocks
- * and such.
- */
+
 void stm32l4_system_bootloader(void)
 {
     __disable_irq();
 
-    RTC->BKP31R = 0xdeadbeef;
+    /* Set the BCK bit to flag a reboot into the booloader */
+    RTC->WPR = 0xca;
+    RTC->WPR = 0x53;
+    RTC->CR |= RTC_CR_BCK;
 
     NVIC_SystemReset();
     
     while (1) { }
-#if 0
-    /* Disable all Peripheral clocks (reset to default)
-     */
-
-    RCC->AHB1ENR = RCC_AHB1ENR_FLASHEN;
-    RCC->AHB2ENR = 0;
-    RCC->AHB3ENR = 0;
-    RCC->APB1ENR1 = 0;
-    RCC->APB1ENR2 = 0;
-    RCC->APB2ENR = RCC_APB2ENR_SYSCFGEN;
-    RCC->CCIPR = 0;
-
-
-    /* Switch to System Memory @ 0x00000000.
-     */
-    SYSCFG->MEMRMP = (SYSCFG->MEMRMP & ~SYSCFG_MEMRMP_MEM_MODE) | SYSCFG_MEMRMP_MEM_MODE_0;
-    RCC->APB2ENR &= ~RCC_APB2ENR_SYSCFGEN;
-
-    /* Switch to MSI and disable LSE/HSE/PLL.
-     */
-
-    stm32l4_system_msi4_sysclk();
-    
-    /* Disable and clear pending interrupts (80 vectors).
-     */
-    SysTick->CTRL = 0;
-
-    NVIC->ICER[0] = 0xffffffff;
-    NVIC->ICER[1] = 0xffffffff;
-    NVIC->ICER[2] = 0xffffffff;
-
-    NVIC->ICPR[0] = 0xffffffff;
-    NVIC->ICPR[1] = 0xffffffff;
-    NVIC->ICPR[2] = 0xffffffff;
-
-    SCB->ICSR = (SCB_ICSR_PENDSVCLR_Msk | SCB_ICSR_PENDSTCLR_Msk);
-    SCB->VTOR = 0;
-
-    /* This needs to be assembly code as GCC catches NULL 
-     * dereferences ...
-     */
-    __asm__ volatile (
-	"   mrs     r2, CONTROL                    \n"
-	"   bic     r2, r2, #0x00000002            \n"
-	"   msr     CONTROL, r2                    \n"
-	"   mov     r2, #0x00000000                \n"
-	"   ldr     r0, [r2, #0]                   \n"
-	"   ldr     r1, [r2, #4]                   \n"
-	"   msr     MSP, r0                        \n"
-	"   isb                                    \n"
-	"   bx      r1                             \n");
-#endif
 }
 
 bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
@@ -618,10 +563,19 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 	while (!(PWR->CR1 & PWR_CR1_DBP))
 	{
 	}
-	    
-	if (RTC->BKP31R == 0xdeadbeef)
+
+	if (!(RCC->BDCR & RCC_BDCR_RTCEN))
 	{
-	    RTC->BKP31R = 0x00000000;
+	    RCC->BDCR |= RCC_BDCR_BDRST;
+
+	    RCC->BDCR &= ~RCC_BDCR_BDRST;
+	}
+	    
+	if (RTC->CR & RTC_CR_BCK)
+	{
+	    RTC->WPR = 0xca;
+	    RTC->WPR = 0x53;
+	    RTC->CR &= ~RTC_CR_BCK;
 
 	    /* Switch to System Memory @ 0x00000000.
 	     */
@@ -662,12 +616,6 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 		    break;
 		}
 	    }
-
-	    if (RCC->BDCR & RCC_BDCR_LSEON)
-	    {
-		/* Use LSE as source for RTC */
-		RCC->BDCR |= RCC_BDCR_RTCSEL_0;
-	    }
 	}
 	    
 	if (RCC->BDCR & RCC_BDCR_LSEON)
@@ -678,6 +626,30 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 	{
 	    stm32l4_system_device.lseclk = ~0ul;
 	}
+
+	/* Enable RTC properly and write protect it. */
+	if (!(RCC->BDCR & RCC_BDCR_RTCEN))
+	{
+	    /* Use LSE as source for RTC */
+	    RCC->BDCR = (RCC->BDCR & ~RCC_BDCR_RTCSEL) | (RCC_BDCR_RTCSEL_0 | RCC_BDCR_RTCEN);
+
+	    RTC->WPR = 0xca;
+	    RTC->WPR = 0x53;
+
+	    RTC->ISR |= RTC_ISR_INIT;
+	    
+	    while (!(RTC->ISR & RTC_ISR_INITF))
+	    {
+	    }
+
+	    RTC->CR = RTC_CR_BYPSHAD;
+	    RTC->PRER = 0x007f00ff;
+
+	    RTC->ISR &= ~RTC_ISR_INIT;
+	}
+
+	RTC->WPR = 0x00;
+	RTC->WPR = 0x00;
 
 	/* Enable VBAT charging.
 	 */
