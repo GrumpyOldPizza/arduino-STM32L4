@@ -28,6 +28,7 @@ dragonfly.build.arch=STM32L4
 dragonfly.build.core=stm32l4
 dragonfly.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
 dragonfly.build.ldscript=linker_scripts/STM32L476RE_FLASH.ld
+dragonfly.build.openocdscript=openocd_scripts/stm32l476re_dragonfly.cfg
 dragonfly.build.variant=STM32L476RE-Dragonfly
 dragonfly.build.variant_system_libs="-L{build.variant.path}" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l476 -larm_cortexM4lf_math
 dragonfly.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/libstm32l4/USB/HAL/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Core/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/CDC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/MSC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB" "-I{runtime.platform.path}/system/libstm32l4" 

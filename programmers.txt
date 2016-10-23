@@ -4,3 +4,10 @@ dfu.protocol=dfu
 dfu.program.protocol=
 dfu.program.tool=stm32l4_upload
 dfu.program.extra_params=
+
+stlink.name=ST-Link V2
+stlink.communication=USB
+stlink.protocol=
+stlink.program.protocol=
+stlink.program.tool=openocd
+stlink.program.extra_params=

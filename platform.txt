@@ -121,3 +121,24 @@ tools.stm32l4_upload.bootloader.params.verbose=-v
 tools.stm32l4_upload.bootloader.params.quiet=
 tools.stm32l4_upload.bootloader.pattern="{path}/{cmd}" "{runtime.platform.path}/bootloaders/{bootloader.file}"
 
+tools.openocd.path={runtime.platform.path}/tools/windows
+tools.openocd.path.macosx={runtime.platform.path}/tools/macosx
+tools.openocd.path.linux={runtime.platform.path}/tools/linux/openocd
+tools.openocd.cmd=bin/openocd
+tools.openocd.cmd.windows=bin/openocd.exe
+
+tools.openocd.upload.params.verbose=-d2
+tools.openocd.upload.params.quiet=-d0
+tools.openocd.upload.pattern="{path}/{cmd}" {upload.verbose} -s "{runtime.platform.path}/tools/share/openocd/scripts/" -f "{runtime.platform.path}/variants/{build.variant}/{build.openocdscript}" -c "telnet_port disabled; program {{{build.path}/{build.project_name}.bin}} verify reset; shutdown"
+
+tools.openocd.program.params.verbose=-d2
+tools.openocd.program.params.quiet=-d0
+tools.openocd.program.pattern="{path}/{cmd}" {program.verbose} -s "{runtime.platform.path}/tools/share/openocd/scripts/" -f "{runtime.platform.path}/variants/{build.variant}/{build.openocdscript}" -c "telnet_port disabled; program {{{build.path}/{build.project_name}.elf}} verify reset; shutdown"
+
+tools.openocd.erase.params.verbose=-d3
+tools.openocd.erase.params.quiet=-d0
+tools.openocd.erase.pattern=
+
+tools.openocd.bootloader.params.verbose=-d2
+tools.openocd.bootloader.params.quiet=-d0
+tools.openocd.bootloader.pattern="{path}/{cmd}" {program.verbose} -s "{runtime.platform.path}/tools/share/openocd/scripts/" -f "{runtime.platform.path}/variants/{build.variant}/{build.openocdscript}" -c "telnet_port disabled; program {{{build.path}/{build.project_name}.elf}} verify reset; shutdown"
