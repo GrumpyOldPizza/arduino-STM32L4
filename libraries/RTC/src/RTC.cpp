@@ -319,7 +319,7 @@ uint32_t RTCClass::getY2kEpoch()
 void RTCClass::setEpoch(uint32_t ts)
 {
     stm32l4_rtc_time_t rtc_time;
-    time_t t = t;
+    time_t t = ts;
     struct tm tm;
 
     if (ts < EPOCH_TIME_OFF) {

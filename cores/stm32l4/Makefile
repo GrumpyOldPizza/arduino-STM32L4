@@ -12,13 +12,14 @@ LDFLAGS  = -L../../system/libstm32l4 -Os -Wl,--gc-sections -save-temps $(EXTRAS)
 WARNINGS = -Wall -Wextra -Wno-unused-parameter
 EXTRAS   = -DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mabi=aapcs -mslow-flash-data
 DEFINES  = -D_SYSTEM_CORE_CLOCK_=80000000L -DARDUINO=10606 -D_ARDUINO_STM32L4 -DARDUINO_ARCH_STM32L4
-INCLUDES = -I../../system/libstm32l4/CMSIS/Include -I../../system/libstm32l4/CMSIS/Device/ST/STM32L4xx/Include -I../../system/libstm32l4/USB/HAL/Inc -I../../system/libstm32l4/USB/Core/Inc -I../../system/libstm32l4/USB/Class/CDC/Inc -I../../system/libstm32l4/USB/Class/MSC/Inc -I../../system/libstm32l4/USB -I../../system/libstm32l4/ -I../../variants/dragonfly -I../../libraries/SPI/ -I../../libraries/Wire/ -I../../libraries/Servo/src/ -I. 
+INCLUDES = -I../../system/CMSIS/Include -I../../system/CMSIS/Device/ST/STM32L4xx/Include -I../../system/libstm32l4/USB/HAL/Inc -I../../system/libstm32l4/USB/Core/Inc -I../../system/libstm32l4/USB/Class/CDC/Inc -I../../system/libstm32l4/USB/Class/MSC/Inc -I../../system/libstm32l4/USB -I../../system/libstm32l4/ -I../../variants/STM32L476RE-Dragonfly -I../../libraries/RTC/src -I../../libraries/SPI/ -I../../libraries/Wire/ -I../../libraries/Servo/src/ -I. 
 
 SRCS = \
+	../../libraries/RTC/src/RTC.cpp \
 	../../libraries/Servo/src/Servo.cpp \
 	../../libraries/SPI/SPI.cpp \
 	../../libraries/Wire/Wire.cpp \
-	../../variants/dragonfly/variant.cpp \
+	../../variants/STM32L476RE-Dragonfly/variant.cpp \
 	avr/dtostrf.c \
 	avr/eeprom.c \
 	avr/fdevopen.c \
@@ -47,10 +48,11 @@ SRCS = \
 	wiring_shift.c
 
 OBJS = \
+	../../libraries/RTC/src/RTC.o \
 	../../libraries/Servo/src/Servo.o \
 	../../libraries/SPI/SPI.o \
 	../../libraries/Wire/Wire.o \
-	../../variants/dragonfly/variant.o \
+	../../variants/STM32L476RE-Dragonfly/variant.o \
 	avr/dtostrf.o \
 	avr/eeprom.o \
 	avr/fdevopen.o \

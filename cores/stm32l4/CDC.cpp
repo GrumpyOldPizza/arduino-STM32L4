@@ -378,6 +378,7 @@ void CDC::EventCallback(uint32_t events)
 	    count = 0;
 
 	    do {
+		rx_size = 0;
 		rx_count = CDC_RX_BUFFER_SIZE - _rx_count;
 
 		if (rx_count == 0) {
