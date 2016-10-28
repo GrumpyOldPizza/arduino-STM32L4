@@ -26,7 +26,7 @@
  * WITH THE SOFTWARE.
  */
 
-#include "Arduino.h"
+#include "wiring_private.h"
 
 #ifdef __cplusplus
  extern "C" {

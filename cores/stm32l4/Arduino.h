@@ -44,12 +44,7 @@ typedef uint16_t word;
 extern "C"{
 #endif // __cplusplus
 
-// Include ST headers
-#include "stm32l4xx.h"
-#undef DAC1
-#undef SPI1
-#undef SPI2
-#undef RTC
+extern uint32_t SystemCoreClock;
 
 #define F_CPU SystemCoreClock
 
@@ -105,8 +100,15 @@ void loop( void ) ;
 #define degrees(rad) ((rad)*RAD_TO_DEG)
 #define sq(x) ((x)*(x))
 
-#define interrupts() __enable_irq()
-#define noInterrupts() __disable_irq()
+static inline void interrupts(void)
+{
+    __asm__ volatile ("cpsie i" : : : "memory");
+}
+
+static inline  void noInterrupts(void)
+{
+    __asm__ volatile ("cpsid i" : : : "memory");
+}
 
 #define lowByte(w) ((uint8_t) ((w) & 0xff))
 #define highByte(w) ((uint8_t) ((w) >> 8))

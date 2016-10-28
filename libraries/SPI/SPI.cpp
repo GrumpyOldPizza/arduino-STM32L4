@@ -26,9 +26,10 @@
  * WITH THE SOFTWARE.
  */
 
-#include "SPI.h"
-#include <Arduino.h>
 #include <wiring_private.h>
+#undef SPI1
+#undef SPI2
+#include "SPI.h"
 
 /* The code below deserves some explanation. The SPIClass has really 2 modes of operation.
  * One is the beginTransaction()/endTransaction() which locally braces every atomic transaction,
@@ -393,30 +394,36 @@ void SPIClass::_eventCallback(void *context, uint32_t events)
 
 #if SPI_INTERFACES_COUNT > 0
 
-static stm32l4_spi_t stm32l4_spi3;
+extern const stm32l4_spi_pins_t g_SPIPins;
+extern const unsigned int g_SPIInstance;
+extern const unsigned int g_SPIMode;
 
-static const stm32l4_spi_pins_t stm32l4_spi3_pins = { GPIO_PIN_PC12_SPI3_MOSI, GPIO_PIN_PC11_SPI3_MISO, GPIO_PIN_PC10_SPI3_SCK, GPIO_PIN_NONE };
+static stm32l4_spi_t _SPI;
 
-SPIClass __attribute__((weak)) SPI(&stm32l4_spi3, SPI_INSTANCE_SPI3, &stm32l4_spi3_pins, STM32L4_SPI_IRQ_PRIORITY, SPI_MODE_RX_DMA | SPI_MODE_TX_DMA | SPI_MODE_RX_DMA_SECONDARY | SPI_MODE_TX_DMA_SECONDARY);
+SPIClass SPI(&_SPI, g_SPIInstance, &g_SPIPins, STM32L4_SPI_IRQ_PRIORITY, g_SPIMode);
 
 #endif
 
 #if SPI_INTERFACES_COUNT > 1
 
-static stm32l4_spi_t stm32l4_spi1;
+extern const stm32l4_spi_pins_t g_SPI1Pins;
+extern const unsigned int g_SPI1Instance;
+extern const unsigned int g_SPI1Mode;
 
-static const stm32l4_spi_pins_t stm32l4_spi1_pins = { GPIO_PIN_PB5_SPI1_MOSI, GPIO_PIN_PB4_SPI1_MISO, GPIO_PIN_PB3_SPI1_SCK, GPIO_PIN_NONE };
+static stm32l4_spi_t _SPI1;
 
-SPIClass __attribute__((weak)) SPI1(&stm32l4_spi1, SPI_INSTANCE_SPI1, &stm32l4_spi1_pins, STM32L4_SPI_IRQ_PRIORITY, SPI_MODE_RX_DMA | SPI_MODE_TX_DMA | SPI_MODE_RX_DMA_SECONDARY | SPI_MODE_TX_DMA_SECONDARY);
+SPIClass SPI1(&_SPI1, g_SPI1Instance, &g_SPI1Pins, STM32L4_SPI_IRQ_PRIORITY, g_SPI1Mode);
 
 #endif
 
 #if SPI_INTERFACES_COUNT > 2
 
-static stm32l4_spi_t stm32l4_spi2;
+extern const stm32l4_spi_pins_t g_SPI2Pins;
+extern const unsigned int g_SPI2Instance;
+extern const unsigned int g_SPI2Mode;
 
-static const stm32l4_spi_pins_t stm32l4_spi2_pins = { GPIO_PIN_PB15_SPI2_MOSI, GPIO_PIN_PB14_SPI2_MISO, GPIO_PIN_PB13_SPI2_SCK, GPIO_PIN_NONE };
+static stm32l4_spi_t _SPI2;
 
-SPIClass __attribute__((weak)) SPI2(&stm32l4_spi2, SPI_INSTANCE_SPI2, &stm32l4_spi2_pins, STM32L4_SPI_IRQ_PRIORITY, SPI_MODE_RX_DMA | SPI_MODE_TX_DMA);
+SPIClass SPI2(&_SPI2, g_SPI2Instance, &g_SPI2Pins, STM32L4_SPI_IRQ_PRIORITY, g_SPI2Mode);
 
 #endif

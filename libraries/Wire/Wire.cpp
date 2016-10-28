@@ -26,13 +26,7 @@
  * WITH THE SOFTWARE.
  */
 
-extern "C" {
-#include <string.h>
-}
-
-#include <Arduino.h>
 #include <wiring_private.h>
-
 #include "Wire.h"
 
 TwoWire::TwoWire(struct _stm32l4_i2c_t *i2c, unsigned int instance, const struct _stm32l4_i2c_pins_t *pins, unsigned int priority, unsigned int mode)
@@ -469,30 +463,36 @@ void TwoWireEx::begin(uint8_t address, TwoWireExPins pins)
 
 #if WIRE_INTERFACES_COUNT > 0
 
-static stm32l4_i2c_t stm32l4_i2c1;
+extern const stm32l4_i2c_pins_t g_WirePins;
+extern const unsigned int g_WireInstance;
+extern const unsigned int g_WireMode;
 
-static const stm32l4_i2c_pins_t stm32l4_i2c1_pins = { GPIO_PIN_PB8_I2C1_SCL, GPIO_PIN_PB9_I2C1_SDA };
+static stm32l4_i2c_t _Wire;
 
-TwoWireEx __attribute__((weak)) Wire(&stm32l4_i2c1, I2C_INSTANCE_I2C1, &stm32l4_i2c1_pins, STM32L4_I2C_IRQ_PRIORITY, I2C_MODE_RX_DMA);
+TwoWireEx Wire(&_Wire, g_WireInstance, &g_WirePins, STM32L4_I2C_IRQ_PRIORITY, g_WireMode);
 
 #endif
 
 #if WIRE_INTERFACES_COUNT > 1
 
-static stm32l4_i2c_t stm32l4_i2c3;
+extern const stm32l4_i2c_pins_t g_Wire1Pins;
+extern const unsigned int g_Wire1Instance;
+extern const unsigned int g_Wire1Mode;
 
-static const stm32l4_i2c_pins_t stm32l4_i2c3_pins = { GPIO_PIN_PC0_I2C3_SCL, GPIO_PIN_PC1_I2C3_SDA };
+static stm32l4_i2c_t _Wire1;
 
-TwoWire __attribute__((weak)) Wire1(&stm32l4_i2c3, I2C_INSTANCE_I2C3, &stm32l4_i2c3_pins, STM32L4_I2C_IRQ_PRIORITY, 0);
+TwoWire Wire1(&_Wire1, g_Wire1Instance, &g_Wire1Pins, STM32L4_I2C_IRQ_PRIORITY, g_Wire1Mode);
 
 #endif
 
 #if WIRE_INTERFACES_COUNT > 2
 
-static stm32l4_i2c_t stm32l4_i2c2;
+extern const stm32l4_i2c_pins_t g_Wire2Pins;
+extern const unsigned int g_Wire2Instance;
+extern const unsigned int g_Wire2Mode;
 
-static const stm32l4_i2c_pins_t stm32l4_i2c2_pins = { GPIO_PIN_PB13_I2C2_SCL, GPIO_PIN_PB14_I2C2_SDA };
+static stm32l4_i2c_t _Wire2;
 
-TwoWire __attribute__((weak)) Wire2(&stm32l4_i2c2, I2C_INSTANCE_I2C2, &stm32l4_i2c2_pins, STM32L4_I2C_IRQ_PRIORITY, 0);
+TwoWire Wire2(&_Wire2, g_Wire2Instance, &g_Wire2Pins, STM32L4_I2C_IRQ_PRIORITY, g_Wire2Mode);
 
 #endif

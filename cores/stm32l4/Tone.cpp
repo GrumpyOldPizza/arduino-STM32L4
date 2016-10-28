@@ -62,7 +62,7 @@ void tone (uint32_t pin, uint32_t frequency, uint32_t duration)
     stm32l4_timer_create(&stm32l4_tone, TIMER_INSTANCE_TIM7, STM32L4_TONE_IRQ_PRIORITY, 0);
   }
 
-  GPIO_TypeDef *GPIO = g_APinDescription[pin].GPIO;
+  GPIO_TypeDef *GPIO = (GPIO_TypeDef *)g_APinDescription[pin].GPIO;
   uint32_t bit = g_APinDescription[pin].bit;
 
   if ((toneGPIO != GPIO) || (toneBit != bit)) {

@@ -42,7 +42,7 @@ public:
     float getVREF();
     float getTemperature();
 
-    inline uint32_t getCycleCount() { return DWT->CYCCNT; }
+    inline uint32_t getCycleCount() { return *((volatile uint32_t*)0xe0001004); } // DWT->CYCCNT
 };
 
 extern STM32Class STM32;

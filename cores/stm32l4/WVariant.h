@@ -19,15 +19,6 @@
 #pragma once
 
 #include <stdint.h>
-#include "stm32l476xx.h"
-#undef DAC1
-#undef SPI1
-#undef SPI2
-
-#include "stm32l4_gpio.h"
-#include "stm32l4_uart.h"
-#include "stm32l4_i2c.h"
-#include "stm32l4_spi.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,11 +29,6 @@ extern "C" {
 #define PIN_ATTR_PWM           (1UL<<2)
 #define PIN_ATTR_EXTI          (1UL<<3)
 
-#define PWM_INSTANCE_TIM1      0
-#define PWM_INSTANCE_TIM3      1
-#define PWM_INSTANCE_TIM4      2
-#define PWM_INSTANCE_TIM5      3
-#define PWM_INSTANCE_COUNT     4
 #define PWM_INSTANCE_NONE      255
 
 #define PWM_CHANNEL_1          0
@@ -73,7 +59,7 @@ extern "C" {
 /* Types used for the table below */
 typedef struct _PinDescription
 {
-  GPIO_TypeDef            *GPIO;
+  void                    *GPIO;
   uint16_t                bit;
   uint16_t                pin;
   uint8_t                 attr;
@@ -84,6 +70,16 @@ typedef struct _PinDescription
 
 /* Pins table to be instantiated into variant.cpp */
 extern const PinDescription g_APinDescription[] ;
+
+extern const unsigned int g_PWMInstances[] ;
+
+#define digitalPinToPort(P)        ( g_APinDescription[P].GPIO )
+#define digitalPinToBitMask(P)     ( g_APinDescription[P].bit )
+#define portInputRegister(port)    ( (volatile uint32_t*)((volatile uint8_t*)(port) + 0x10) ) // IDR
+#define portOutputRegister(port)   ( (volatile uint32_t*)((volatile uint8_t*)(port) + 0x14) ) // ODR
+#define portSetRegister(port)      ( (volatile uint32_t*)((volatile uint8_t*)(port) + 0x18) ) // BSRR
+#define portClearRegister(port)    ( (volatile uint32_t*)((volatile uint8_t*)(port) + 0x28) ) // BRR
+#define digitalPinHasPWM(P)        ( g_APinDescription[P].attr & PIN_ATTR_PWM )
 
 #ifdef __cplusplus
 } // extern "C"

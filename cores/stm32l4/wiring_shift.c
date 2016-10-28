@@ -26,10 +26,9 @@
  * WITH THE SOFTWARE.
  */
 
-#include <stdint.h>
+#include "wiring_private.h"
 #include "wiring_shift.h"
 #include "wiring_digital.h"
-#include "wiring_private.h"
 
 #ifdef __cplusplus
 extern "C"{

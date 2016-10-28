@@ -6,54 +6,83 @@ menu.CpuFrequency=CPU Frequency
 
 # Tlera Dragonfly
 # ---------------------------------------
-dragonfly.name=Dragonfly
-dragonfly.vid.0=0x1209
-dragonfly.pid.0=0x6667
+Dragonfly-L476RE.name=Dragonfly-L476RE
+Dragonfly-L476RE.vid.0=0x1209
+Dragonfly-L476RE.pid.0=0x6667
 
-dragonfly.upload.tool=stm32l4_upload
-dragonfly.upload.protocol=dfu
-dragonfly.upload.maximum_size=507904
-dragonfly.upload.use_1200bps_touch=true
-dragonfly.upload.wait_for_upload_port=false
-dragonfly.upload.native_usb=false
+Dragonfly-L476RE.upload.tool=stm32l4_dfu
+Dragonfly-L476RE.upload.protocol=dfu
+Dragonfly-L476RE.upload.maximum_size=507904
+Dragonfly-L476RE.upload.use_1200bps_touch=true
+Dragonfly-L476RE.upload.wait_for_upload_port=false
+Dragonfly-L476RE.upload.native_usb=false
 
-dragonfly.bootloader.tool=stm32l4_upload
-dragonfly.bootloader.protocol=dfu
-dragonfly.bootloader.file=dragonfly.bin
+Dragonfly-L476RE.bootloader.tool=stm32l4_dfu
+Dragonfly-L476RE.bootloader.protocol=dfu
+Dragonfly-L476RE.bootloader.file=dragonfly.bin
 
-dragonfly.build.mcu=cortex-m4
-dragonfly.build.f_cpu=80000000L
-dragonfly.build.board=STM32L476RE_DRAGONFLY
-dragonfly.build.arch=STM32L4
-dragonfly.build.core=stm32l4
-dragonfly.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
-dragonfly.build.ldscript=linker_scripts/STM32L476RE_FLASH.ld
-dragonfly.build.openocdscript=openocd_scripts/stm32l476re_dragonfly.cfg
-dragonfly.build.variant=STM32L476RE-Dragonfly
-dragonfly.build.variant_system_libs="-L{build.variant.path}" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l476 -larm_cortexM4lf_math
-dragonfly.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/libstm32l4/USB/HAL/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Core/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/CDC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/MSC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB" "-I{runtime.platform.path}/system/libstm32l4" 
-dragonfly.build.vid=0x1209
-dragonfly.build.pid=0x6667
+Dragonfly-L476RE.build.mcu=cortex-m4
+Dragonfly-L476RE.build.f_cpu=80000000L
+Dragonfly-L476RE.build.board=Dragonfly-L476RE
+Dragonfly-L476RE.build.arch=STM32L4
+Dragonfly-L476RE.build.core=stm32l4
+Dragonfly-L476RE.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
+Dragonfly-L476RE.build.ldscript=linker_scripts/STM32L476RE_FLASH.ld
+Dragonfly-L476RE.build.openocdscript=openocd_scripts/stm32l476re_dragonfly.cfg
+Dragonfly-L476RE.build.variant=STM32L476RE-Dragonfly
+Dragonfly-L476RE.build.variant_system_libs="-L{build.variant.path}" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l476 -larm_cortexM4lf_math
+Dragonfly-L476RE.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/libstm32l4/USB/HAL/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Core/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/CDC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/MSC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB" "-I{runtime.platform.path}/system/libstm32l4" 
 
-dragonfly.menu.CpuFrequency.80=80 MHz
-dragonfly.menu.CpuFrequency.80.build.f_cpu=80000000L
-dragonfly.menu.CpuFrequency.72=72 MHz
-dragonfly.menu.CpuFrequency.72.build.f_cpu=72000000L
-dragonfly.menu.CpuFrequency.64=64 MHz
-dragonfly.menu.CpuFrequency.64.build.f_cpu=64000000L
-dragonfly.menu.CpuFrequency.48=48 MHz
-dragonfly.menu.CpuFrequency.48.build.f_cpu=48000000L
-dragonfly.menu.CpuFrequency.32=32 MHz
-dragonfly.menu.CpuFrequency.32.build.f_cpu=32000000L
-dragonfly.menu.CpuFrequency.24=24 MHz
-dragonfly.menu.CpuFrequency.24.build.f_cpu=24000000L
-dragonfly.menu.CpuFrequency.16=16 MHz
-dragonfly.menu.CpuFrequency.16.build.f_cpu=16000000L
-dragonfly.menu.CpuFrequency.8=8 MHz
-dragonfly.menu.CpuFrequency.8.build.f_cpu=8000000L
-dragonfly.menu.CpuFrequency.4=4 MHz
-dragonfly.menu.CpuFrequency.4.build.f_cpu=4000000L
-dragonfly.menu.CpuFrequency.2=2 MHz
-dragonfly.menu.CpuFrequency.2.build.f_cpu=2000000L
-dragonfly.menu.CpuFrequency.1=1 MHz
-dragonfly.menu.CpuFrequency.1.build.f_cpu=1000000L
+Dragonfly-L476RE.menu.CpuFrequency.80=80 MHz
+Dragonfly-L476RE.menu.CpuFrequency.80.build.f_cpu=80000000L
+Dragonfly-L476RE.menu.CpuFrequency.72=72 MHz
+Dragonfly-L476RE.menu.CpuFrequency.72.build.f_cpu=72000000L
+Dragonfly-L476RE.menu.CpuFrequency.64=64 MHz
+Dragonfly-L476RE.menu.CpuFrequency.64.build.f_cpu=64000000L
+Dragonfly-L476RE.menu.CpuFrequency.48=48 MHz
+Dragonfly-L476RE.menu.CpuFrequency.48.build.f_cpu=48000000L
+Dragonfly-L476RE.menu.CpuFrequency.32=32 MHz
+Dragonfly-L476RE.menu.CpuFrequency.32.build.f_cpu=32000000L
+Dragonfly-L476RE.menu.CpuFrequency.24=24 MHz
+Dragonfly-L476RE.menu.CpuFrequency.24.build.f_cpu=24000000L
+Dragonfly-L476RE.menu.CpuFrequency.16=16 MHz
+Dragonfly-L476RE.menu.CpuFrequency.16.build.f_cpu=16000000L
+Dragonfly-L476RE.menu.CpuFrequency.8=8 MHz
+Dragonfly-L476RE.menu.CpuFrequency.8.build.f_cpu=8000000L
+Dragonfly-L476RE.menu.CpuFrequency.4=4 MHz
+Dragonfly-L476RE.menu.CpuFrequency.4.build.f_cpu=4000000L
+Dragonfly-L476RE.menu.CpuFrequency.2=2 MHz
+Dragonfly-L476RE.menu.CpuFrequency.2.build.f_cpu=2000000L
+Dragonfly-L476RE.menu.CpuFrequency.1=1 MHz
+Dragonfly-L476RE.menu.CpuFrequency.1.build.f_cpu=1000000L
+
+
+# ST NUCLEO-L476RG
+# ---------------------------------------
+NUCLEO-L476RG.name=NUCLEO-L476RG
+NUCLEO-L476RG.vid.0=0x0483
+NUCLEO-L476RG.pid.0=0x374b
+
+NUCLEO-L476RG.upload.tool=stm32l4_openocd
+NUCLEO-L476RG.upload.protocol=stlink
+NUCLEO-L476RG.upload.maximum_size=507904
+NUCLEO-L476RG.upload.use_1200bps_touch=true
+NUCLEO-L476RG.upload.wait_for_upload_port=false
+NUCLEO-L476RG.upload.native_usb=false
+
+NUCLEO-L476RG.build.mcu=cortex-m4
+NUCLEO-L476RG.build.f_cpu=80000000L
+NUCLEO-L476RG.build.board=NUCLEO-L476RG
+NUCLEO-L476RG.build.arch=STM32L4
+NUCLEO-L476RG.build.core=stm32l4
+NUCLEO-L476RG.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
+NUCLEO-L476RG.build.ldscript=linker_scripts/STM32L476RG_FLASH.ld
+NUCLEO-L476RG.build.openocdscript=openocd_scripts/stm32l476rg_nucleo.cfg
+NUCLEO-L476RG.build.variant=STM32L476RG-NUCLEO
+NUCLEO-L476RG.build.variant_system_libs="-L{build.variant.path}" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l476 -larm_cortexM4lf_math
+NUCLEO-L476RG.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/libstm32l4/USB/HAL/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Core/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/CDC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB/Class/MSC/Inc" "-I{runtime.platform.path}/system/libstm32l4/USB" "-I{runtime.platform.path}/system/libstm32l4" 
+
+NUCLEO-L476RG.menu.CpuFrequency.80=80 MHz
+NUCLEO-L476RG.menu.CpuFrequency.80.build.f_cpu=80000000L
+NUCLEO-L476RG.menu.CpuFrequency.64=64 MHz
+NUCLEO-L476RG.menu.CpuFrequency.64.build.f_cpu=64000000L

@@ -25,14 +25,18 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * WITH THE SOFTWARE.
  */
-
 #include "variant.h"
 #include "wiring_private.h"
+
+#define PWM_INSTANCE_TIM1      0
+#define PWM_INSTANCE_TIM3      1
+#define PWM_INSTANCE_TIM4      2
+#define PWM_INSTANCE_TIM5      3
 
 /*
  * Pins descriptions
  */
-const PinDescription g_APinDescription[NUM_TOTAL_PINS] =
+extern const PinDescription g_APinDescription[NUM_TOTAL_PINS] =
 {
     // 0..13 - Digital pins
     { GPIOC, GPIO_PIN_MASK(GPIO_PIN_PC5),  GPIO_PIN_PC5,            (PIN_ATTR_EXTI),                               PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_NONE },
@@ -108,3 +112,58 @@ const PinDescription g_APinDescription[NUM_TOTAL_PINS] =
     // 44 - Button 
     { GPIOC, GPIO_PIN_MASK(GPIO_PIN_PC13), GPIO_PIN_PC13,           (PIN_ATTR_EXTI),                               PWM_INSTANCE_NONE, PWM_CHANNEL_NONE, ADC_INPUT_NONE },
 };
+
+extern const unsigned int g_PWMInstances[PWM_INSTANCE_COUNT] = {
+    TIMER_INSTANCE_TIM1,
+    TIMER_INSTANCE_TIM3,
+    TIMER_INSTANCE_TIM4,
+    TIMER_INSTANCE_TIM5,
+};
+
+extern const stm32l4_uart_pins_t g_Serial1Pins = { GPIO_PIN_PC5_USART3_RX, GPIO_PIN_PC4_USART3_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
+extern const unsigned int g_Serial1Instance = UART_INSTANCE_USART3;
+extern const unsigned int g_Serial1Mode = UART_MODE_RX_DMA | UART_MODE_TX_DMA;
+
+extern const stm32l4_uart_pins_t g_Serial2Pins = { GPIO_PIN_PA1_UART4_RX, GPIO_PIN_PA0_UART4_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
+extern const unsigned int g_Serial2Instance = UART_INSTANCE_UART4;
+extern const unsigned int g_Serial2Mode = UART_MODE_RX_DMA | UART_MODE_RX_DMA_SECONDARY;
+
+extern const stm32l4_uart_pins_t g_Serial3Pins = { GPIO_PIN_PA3_USART2_RX, GPIO_PIN_PA2_USART2_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
+extern const unsigned int g_Serial3Instance = UART_INSTANCE_USART2;
+extern const unsigned int g_Serial3Mode = 0;
+
+extern const stm32l4_uart_pins_t g_Serial4Pins = { GPIO_PIN_PD2_UART5_RX, GPIO_PIN_PC12_UART5_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
+extern const unsigned int g_Serial4Instance = UART_INSTANCE_UART5;
+extern const unsigned int g_Serial4Mode = 0;
+
+extern const stm32l4_uart_pins_t g_Serial5Pins = { GPIO_PIN_PB7_USART1_RX, GPIO_PIN_PB6_USART1_TX, GPIO_PIN_NONE, GPIO_PIN_NONE };
+extern const unsigned int g_Serial5Instance = UART_INSTANCE_USART1;
+extern const unsigned int g_Serial5Mode = 0;
+
+
+extern const stm32l4_spi_pins_t g_SPIPins = { GPIO_PIN_PC12_SPI3_MOSI, GPIO_PIN_PC11_SPI3_MISO, GPIO_PIN_PC10_SPI3_SCK, GPIO_PIN_NONE };
+extern const unsigned int g_SPIInstance = SPI_INSTANCE_SPI3;
+extern const unsigned int g_SPIMode = SPI_MODE_RX_DMA | SPI_MODE_TX_DMA | SPI_MODE_RX_DMA_SECONDARY | SPI_MODE_TX_DMA_SECONDARY;
+
+extern const stm32l4_spi_pins_t g_SPI1Pins = { GPIO_PIN_PB5_SPI1_MOSI, GPIO_PIN_PB4_SPI1_MISO, GPIO_PIN_PB3_SPI1_SCK, GPIO_PIN_NONE };
+extern const unsigned int g_SPI1Instance = SPI_INSTANCE_SPI1;
+extern const unsigned int g_SPI1Mode = SPI_MODE_RX_DMA | SPI_MODE_TX_DMA | SPI_MODE_RX_DMA_SECONDARY | SPI_MODE_TX_DMA_SECONDARY;
+
+extern const stm32l4_spi_pins_t g_SPI2Pins = { GPIO_PIN_PB15_SPI2_MOSI, GPIO_PIN_PB14_SPI2_MISO, GPIO_PIN_PB13_SPI2_SCK, GPIO_PIN_NONE };
+extern const unsigned int g_SPI2Instance = SPI_INSTANCE_SPI2;
+extern const unsigned int g_SPI2Mode = SPI_MODE_RX_DMA | SPI_MODE_TX_DMA;
+
+
+extern const stm32l4_i2c_pins_t g_WirePins = { GPIO_PIN_PB8_I2C1_SCL, GPIO_PIN_PB9_I2C1_SDA };
+extern const unsigned int g_WireInstance = I2C_INSTANCE_I2C1;
+extern const unsigned int g_WireMode = I2C_MODE_RX_DMA;
+
+extern const stm32l4_i2c_pins_t g_Wire1Pins = { GPIO_PIN_PC0_I2C3_SCL, GPIO_PIN_PC1_I2C3_SDA };
+extern const unsigned int g_Wire1Instance = I2C_INSTANCE_I2C3;
+extern const unsigned int g_Wire1Mode = 0;
+
+extern const stm32l4_i2c_pins_t g_Wire2Pins = { GPIO_PIN_PB13_I2C2_SCL, GPIO_PIN_PB14_I2C2_SDA };
+extern const unsigned int g_Wire2Instance = I2C_INSTANCE_I2C2;
+extern const unsigned int g_Wire2Mode = 0;
+
+

@@ -2,8 +2,6 @@
 
 TOOLDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)
 
-echo $TOOLDIR
-
 RETRIES=10
 
 while [ $RETRIES -gt 0 ]

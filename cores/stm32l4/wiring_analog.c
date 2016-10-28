@@ -26,7 +26,6 @@
  * WITH THE SOFTWARE.
  */
 
-#include "Arduino.h"
 #include "wiring_private.h"
 
 #ifdef __cplusplus
@@ -35,13 +34,6 @@ extern "C" {
 
 static stm32l4_dac_t stm32l4_dac;
 static stm32l4_timer_t stm32l4_pwm[PWM_INSTANCE_COUNT];
-
-static const unsigned int stm32l4_pwm_xlate_instance[PWM_INSTANCE_COUNT] = {
-    TIMER_INSTANCE_TIM1,
-    TIMER_INSTANCE_TIM3,
-    TIMER_INSTANCE_TIM4,
-    TIMER_INSTANCE_TIM5,
-};
 
 static int _readResolution = 10;
 static int _writeResolution = 8;
@@ -267,7 +259,7 @@ void analogWrite(uint32_t pin, uint32_t value)
 
 	if (stm32l4_pwm[instance].state == TIMER_STATE_NONE)
 	{
-	    stm32l4_timer_create(&stm32l4_pwm[instance], stm32l4_pwm_xlate_instance[instance], STM32L4_PWM_IRQ_PRIORITY, 0);
+	    stm32l4_timer_create(&stm32l4_pwm[instance], g_PWMInstances[instance], STM32L4_PWM_IRQ_PRIORITY, 0);
 
 	    if (_writeFrequency[instance] && _writeRange[instance])
 	    {

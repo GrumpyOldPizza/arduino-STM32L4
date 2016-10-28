@@ -26,8 +26,6 @@
  * WITH THE SOFTWARE.
  */
 
-#include "Arduino.h"
-
 #include "wiring_private.h"
 #include "dosfs_api.h"
 
