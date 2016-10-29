@@ -107,6 +107,9 @@ static const uint8_t DAC1 = PIN_DAC1;
 #define PIN_ATN              (38ul)
 static const uint8_t ATN = PIN_ATN;
 
+#define PIN_BUTTON           (44l)
+static const uint8_t BUTTON = PIN_BUTTON;
+
 /*
  * Serial interfaces
  */
