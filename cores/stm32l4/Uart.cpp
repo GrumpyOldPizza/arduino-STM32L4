@@ -26,9 +26,9 @@
  * WITH THE SOFTWARE.
  */
 
-#include "Uart.h"
 #include "Arduino.h"
-#include "wiring_private.h"
+#include "stm32l4_wiring_private.h"
+#include "Uart.h"
 
 #define UART_TX_PACKET_SIZE 16
 

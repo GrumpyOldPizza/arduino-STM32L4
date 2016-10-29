@@ -26,8 +26,8 @@
  * WITH THE SOFTWARE.
  */
 
-#ifndef _VARIANT_DRAGONFLY_
-#define _VARIANT_DRAGONFLY_
+#ifndef _VARIANT_DRAGONFLY_STM32L476RE_
+#define _VARIANT_DRAGONFLY_STM32L476RE_
 
 // The definitions here needs a STM32L4 core >=1.6.6
 #define ARDUINO_STM32L4_VARIANT_COMPLIANCE 10606
@@ -46,8 +46,6 @@
 /*----------------------------------------------------------------------------
  *        Headers
  *----------------------------------------------------------------------------*/
-
-#include "WVariant.h"
 
 #ifdef __cplusplus
 #include "CDC.h"
@@ -229,5 +227,5 @@ extern Uart Serial5;
 
 #define Serial SerialUSB
 
-#endif /* _VARIANT_DRAGONFLY_ */
+#endif /* _VARIANT_DRAGONFLY_STM32L476RE_ */
 

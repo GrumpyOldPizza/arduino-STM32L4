@@ -27,7 +27,7 @@
  */
 
 #include "Arduino.h"
-#include "wiring_private.h"
+#include "stm32l4_wiring_private.h"
 
 uint32_t STM32Class::readBackup(unsigned int index)
 {

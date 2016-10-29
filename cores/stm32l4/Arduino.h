@@ -44,23 +44,49 @@ typedef uint16_t word;
 extern "C"{
 #endif // __cplusplus
 
-extern uint32_t SystemCoreClock;
+#define LOW             (0x0)
+#define HIGH            (0x1)
 
-#define F_CPU SystemCoreClock
+#define INPUT           (0x0)
+#define OUTPUT          (0x1)
+#define INPUT_PULLUP    (0x2)
+#define INPUT_PULLDOWN  (0x3)
 
-#include "wiring_constants.h"
+#define PI 3.1415926535897932384626433832795
+#define HALF_PI 1.5707963267948966192313216916398
+#define TWO_PI 6.283185307179586476925286766559
+#define DEG_TO_RAD 0.017453292519943295769236907684886
+#define RAD_TO_DEG 57.295779513082320876798154814105
+#define EULER 2.718281828459045235360287471352
 
-#define clockCyclesPerMicrosecond() ( SystemCoreClock / 1000000L )
-#define clockCyclesToMicroseconds(a) ( ((a) * 1000L) / (SystemCoreClock / 1000L) )
-#define microsecondsToClockCycles(a) ( (a) * (SystemCoreClock / 1000000L) )
+#define SERIAL  0x0
+#define DISPLAY 0x1
+
+enum BitOrder {
+	LSBFIRST = 0,
+	MSBFIRST = 1
+};
+
+//      LOW 0
+//      HIGH 1
+#define CHANGE 2
+#define FALLING 3
+#define RISING 4
+
+#define DEFAULT 1
+#define EXTERNAL 0
+
+#define clockCyclesPerMicrosecond() ( F_CPU / 1000000L )
+#define clockCyclesToMicroseconds(a) ( ((a) * 1000L) / (F_CPU / 1000L) )
+#define microsecondsToClockCycles(a) ( (a) * (F_CPU / 1000000L) )
+
+#include "stm32l4_wiring.h"
 
 void yield( void ) ;
 
 /* sketch */
 void setup( void ) ;
 void loop( void ) ;
-
-#include "WVariant.h"
 
 #ifdef __cplusplus
 } // extern "C"
@@ -70,7 +96,6 @@ void loop( void ) ;
 #ifdef __cplusplus
   #include "WCharacter.h"
   #include "WString.h"
-  #include "Tone.h"
   #include "WMath.h"
   #include "HardwareSerial.h"
   #include "STM32.h"
@@ -78,13 +103,6 @@ void loop( void ) ;
 
 // Include board variant
 #include "variant.h"
-
-#include "wiring.h"
-#include "wiring_analog.h"
-#include "wiring_digital.h"
-#include "wiring_interrupts.h"
-#include "wiring_pulse.h"
-#include "wiring_shift.h"
 
 // undefine stdlib's abs if encountered
 #ifdef abs
@@ -100,16 +118,6 @@ void loop( void ) ;
 #define degrees(rad) ((rad)*RAD_TO_DEG)
 #define sq(x) ((x)*(x))
 
-static inline void interrupts(void)
-{
-    __asm__ volatile ("cpsie i" : : : "memory");
-}
-
-static inline  void noInterrupts(void)
-{
-    __asm__ volatile ("cpsid i" : : : "memory");
-}
-
 #define lowByte(w) ((uint8_t) ((w) & 0xff))
 #define highByte(w) ((uint8_t) ((w) >> 8))
 
@@ -122,7 +130,7 @@ static inline  void noInterrupts(void)
 
 #define _BV(bit) (1 << (bit))
 
-#if (ARDUINO_SAMD_VARIANT_COMPLIANCE >= 10606)
+#if (ARDUINO_STM32L4_VARIANT_COMPLIANCE >= 10606)
 // Interrupts
 #define digitalPinToInterrupt(P)   ( P )
 #endif

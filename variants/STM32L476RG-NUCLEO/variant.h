@@ -43,8 +43,6 @@
  *        Headers
  *----------------------------------------------------------------------------*/
 
-#include "WVariant.h"
-
 #ifdef __cplusplus
 #include "Uart.h"
 #endif // __cplusplus

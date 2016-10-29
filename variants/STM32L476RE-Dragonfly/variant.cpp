@@ -25,8 +25,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * WITH THE SOFTWARE.
  */
-#include "variant.h"
-#include "wiring_private.h"
+
+#include "Arduino.h"
+#include "stm32l4_wiring_private.h"
 
 #define PWM_INSTANCE_TIM1      0
 #define PWM_INSTANCE_TIM3      1

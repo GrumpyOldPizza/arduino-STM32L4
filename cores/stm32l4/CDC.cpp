@@ -27,8 +27,8 @@
  */
 
 #include "Arduino.h"
+#include "stm32l4_wiring_private.h"
 #include "CDC.h"
-#include "wiring_private.h"
 
 #if defined(STM32L4_CONFIG_USBD_CDC)
 
