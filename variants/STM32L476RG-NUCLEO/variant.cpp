@@ -61,7 +61,7 @@ extern const PinDescription g_APinDescription[NUM_TOTAL_PINS] =
     // 16..21 - Analog pins
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA0),  GPIO_PIN_PA0,            (PIN_ATTR_ADC),                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_5    },
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA1),  GPIO_PIN_PA1,            (PIN_ATTR_ADC),                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_6    },
-    { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA4),  GPIO_PIN_PA4,            (PIN_ATTR_ADC | PIN_ATTR_DAC),                 PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_9    },
+    { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA4),  GPIO_PIN_PA4,            (PIN_ATTR_ADC),                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_9    },
     { GPIOB, GPIO_PIN_MASK(GPIO_PIN_PB0),  GPIO_PIN_PB0,            (PIN_ATTR_ADC),                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_15   },
     { GPIOC, GPIO_PIN_MASK(GPIO_PIN_PC1),  GPIO_PIN_PC1,            (PIN_ATTR_ADC),                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_2    },
     { GPIOC, GPIO_PIN_MASK(GPIO_PIN_PC0),  GPIO_PIN_PC0,            (PIN_ATTR_ADC),                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_1    },

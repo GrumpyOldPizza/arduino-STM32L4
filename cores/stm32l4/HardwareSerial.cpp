@@ -25,11 +25,15 @@
 #include "Arduino.h"
 #include "HardwareSerial.h"
 
+void (*serialEventCallback)(void) = NULL;
+
 // SerialEvent functions are weak, so when the user doesn't define them,
 // the linker just sets their address to 0 (which is checked below).
 // The Serialx_available is just a wrapper around Serialx.available(),
 // but we can refer to it weakly so we don't pull in the entire
 // HardwareSerial instance if the user doesn't also refer to it.
+
+#if defined(STM32L4_CONFIG_USBD_CDC)
 
 void serialEvent() __attribute__((weak));
 bool SerialUSB_empty() __attribute__((weak));
@@ -65,26 +69,37 @@ bool Serial5_empty() __attribute__((weak));
 
 #endif
 
-void (*serialEventCallback)(void) = NULL;
+void serialEventDispatch(void)
+{
+    if (serialEvent && SerialUSB_empty && !SerialUSB_empty()) { serialEvent(); }
+
+    if (serialEvent1 && Serial1_empty && !Serial1_empty()) { serialEvent1(); }
+#if SERIAL_INTERFACES_COUNT > 1
+    if (serialEvent2 && Serial2_empty && !Serial2_empty()) { serialEvent2(); }
+#endif
+#if SERIAL_INTERFACES_COUNT > 2
+    if (serialEvent3 && Serial3_empty && !Serial3_empty()) { serialEvent3(); }
+#endif
+#if SERIAL_INTERFACES_COUNT > 3
+    if (serialEvent4 && Serial4_empty && !Serial4_empty()) { serialEvent4(); }
+#endif
+#if SERIAL_INTERFACES_COUNT > 4
+    if (serialEvent5 && Serial5_empty && !Serial5_empty()) { serialEvent5(); }
+#endif
+#if SERIAL_INTERFACES_COUNT > 5
+    if (serialEvent6 && Serial6_empty && !Serial6_empty()) { serialEvent6(); }
+#endif
+}
+
+#else /* STM32L4_CONFIG_USBD_CDC */
+
+void serialEvent() __attribute__((weak));
+bool Serial_empty() __attribute__((weak));
 
 void serialEventDispatch(void)
 {
-  if (serialEvent && SerialUSB_empty && !SerialUSB_empty()) { serialEvent();  }
-
-  if (serialEvent1 && Serial1_empty && !Serial1_empty()) { serialEvent1(); }
-#if SERIAL_INTERFACES_COUNT > 1
-  if (serialEvent2 && Serial2_empty && !Serial2_empty()) { serialEvent2(); }
-#endif
-#if SERIAL_INTERFACES_COUNT > 2
-  if (serialEvent3 && Serial3_empty && !Serial3_empty()) { serialEvent3(); }
-#endif
-#if SERIAL_INTERFACES_COUNT > 3
-  if (serialEvent4 && Serial4_empty && !Serial4_empty()) { serialEvent4(); }
-#endif
-#if SERIAL_INTERFACES_COUNT > 4
-  if (serialEvent5 && Serial5_empty && !Serial5_empty()) { serialEvent5(); }
-#endif
-#if SERIAL_INTERFACES_COUNT > 5
-  if (serialEvent6 && Serial6_empty && !Serial6_empty()) { serialEvent6(); }
-#endif
+    if (serialEvent && Serial_empty && !Serial_empty()) { serialEvent(); }
 }
+
+#endif /* STM32L4_CONFIG_USBD_CDC */
+

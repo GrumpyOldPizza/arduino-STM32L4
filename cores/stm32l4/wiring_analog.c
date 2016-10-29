@@ -32,7 +32,9 @@
 extern "C" {
 #endif
 
+#if defined(PIN_DAC0) || defined(PIN_DAC1)
 static stm32l4_dac_t stm32l4_dac;
+#endif /* defined(PIN_DAC0) || defined(PIN_DAC1) */
 static stm32l4_timer_t stm32l4_pwm[PWM_INSTANCE_COUNT];
 
 static int _readResolution = 10;
@@ -83,9 +85,10 @@ uint32_t analogRead(uint32_t pin)
 	return 0;
     }
   
+#if defined(PIN_DAC0) || defined(PIN_DAC1)
     if ( g_APinDescription[pin].attr & PIN_ATTR_DAC )
     {
-	channel = ((pin == A0) ? DAC_CHANNEL_1 : DAC_CHANNEL_2);
+	channel = ((pin == PIN_DAC0) ? DAC_CHANNEL_1 : DAC_CHANNEL_2);
 
 	if (!(_writeCalibrate & (1ul << channel)))
 	{
@@ -94,6 +97,7 @@ uint32_t analogRead(uint32_t pin)
 	    _writeCalibrate |= (1ul << channel);
 	}
     }
+#endif /* defined(PIN_DAC0) || defined(PIN_DAC1) */
 
     if (stm32l4_adc.state == ADC_STATE_NONE)
     {
@@ -225,6 +229,7 @@ void analogWrite(uint32_t pin, uint32_t value)
 	return;
     }
 
+#if defined(PIN_DAC0) || defined(PIN_DAC1)
     if (g_APinDescription[pin].attr & PIN_ATTR_DAC)
     {
 	if (stm32l4_dac.state == DAC_STATE_NONE)
@@ -237,7 +242,7 @@ void analogWrite(uint32_t pin, uint32_t value)
     
 	value = mapResolution(value, _writeResolution, 12);
 
-	channel = ((pin == A0) ? DAC_CHANNEL_1 : DAC_CHANNEL_2);
+	channel = ((pin == PIN_DAC0) ? DAC_CHANNEL_1 : DAC_CHANNEL_2);
 
 	if (_writeCalibrate & (1ul << channel))
 	{
@@ -252,6 +257,7 @@ void analogWrite(uint32_t pin, uint32_t value)
 
 	return;
     }
+#endif /* defined(PIN_DAC0) || defined(PIN_DAC1) */
 
     if (g_APinDescription[pin].attr & PIN_ATTR_PWM)
     {
