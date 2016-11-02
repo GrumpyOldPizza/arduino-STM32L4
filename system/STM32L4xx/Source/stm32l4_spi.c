@@ -760,10 +760,12 @@ bool stm32l4_spi_create(stm32l4_spi_t *spi, unsigned int instance, const stm32l4
 	spi->interrupt = SPI1_IRQn;
 	break;
 
+#if defined(STM32L433xx) || defined(STM32L476xx)
     case SPI_INSTANCE_SPI2:
 	spi->SPI = SPI2;
 	spi->interrupt = SPI2_IRQn;
 	break;
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
 
     case SPI_INSTANCE_SPI3:
 	spi->SPI = SPI3;
@@ -790,9 +792,11 @@ bool stm32l4_spi_create(stm32l4_spi_t *spi, unsigned int instance, const stm32l4
 		spi->mode |= SPI_MODE_RX_DMA;
 	    }
 	    break;
+#if defined(STM32L433xx) || defined(STM32L476xx)
 	case SPI_INSTANCE_SPI2:
 	    if (stm32l4_dma_create(&spi->rx_dma, DMA_CHANNEL_DMA1_CH4_SPI2_RX, spi->priority)) { spi->mode |= SPI_MODE_RX_DMA; }
 	    break;
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
 	case SPI_INSTANCE_SPI3:
 	    if (stm32l4_dma_create(&spi->rx_dma, DMA_CHANNEL_DMA2_CH1_SPI3_RX, spi->priority)) { spi->mode |= SPI_MODE_RX_DMA; }
 	    break;
@@ -809,9 +813,11 @@ bool stm32l4_spi_create(stm32l4_spi_t *spi, unsigned int instance, const stm32l4
 		spi->mode |= SPI_MODE_TX_DMA;
 	    }
 	    break;
+#if defined(STM32L433xx) || defined(STM32L476xx)
 	case SPI_INSTANCE_SPI2:
 	    if (stm32l4_dma_create(&spi->tx_dma, DMA_CHANNEL_DMA1_CH5_SPI2_TX, spi->priority)) { spi->mode |= SPI_MODE_TX_DMA; }
 	    break;
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
 	case SPI_INSTANCE_SPI3:
 	    if (stm32l4_dma_create(&spi->tx_dma, DMA_CHANNEL_DMA2_CH2_SPI3_TX, spi->priority)) { spi->mode |= SPI_MODE_TX_DMA; }
 	    break;
@@ -1838,10 +1844,14 @@ void SPI1_IRQHandler(void)
     stm32l4_spi_interrupt(stm32l4_spi_driver.instances[SPI_INSTANCE_SPI1]);
 }
 
+#if defined(STM32L433xx) || defined(STM32L476xx)
+
 void SPI2_IRQHandler(void)
 {
     stm32l4_spi_interrupt(stm32l4_spi_driver.instances[SPI_INSTANCE_SPI2]);
 }
+
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
 
 void SPI3_IRQHandler(void)
 {

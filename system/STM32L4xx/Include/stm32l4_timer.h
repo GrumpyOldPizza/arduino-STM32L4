@@ -35,79 +35,29 @@
 #include "stm32l4xx.h"
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
-#define TIMER_INSTANCE_TIM1                      0   /* ADVANCED 16 */
-#define TIMER_INSTANCE_TIM2                      1   /* GENERAL  32 */
-#define TIMER_INSTANCE_TIM3                      2   /* GENERAL  16 */
-#define TIMER_INSTANCE_TIM4                      3   /* GENERAL  16 */
-#define TIMER_INSTANCE_TIM5                      4   /* GENERAL  32 */
-#define TIMER_INSTANCE_TIM6                      5   /* BASIC    16 */
-#define TIMER_INSTANCE_TIM7                      6   /* BASIC    16 */
-#define TIMER_INSTANCE_TIM8                      7   /* ADVANCED 16 */
-#define TIMER_INSTANCE_TIM15                     8   /* GENERAL  16 */
-#define TIMER_INSTANCE_TIM16                     9   /* GENERAL  16 */
-#define TIMER_INSTANCE_TIM17                    10   /* GENERAL  16 */
-#define TIMER_INSTANCE_COUNT                    11
-
-#define TIMER_IS_ADVANCED(_instance)		\
-  ((1ul << (_instance)) &			\
-   ((1ul << TIMER_INSTANCE_TIM1) |		\
-    (1ul << TIMER_INSTANCE_TIM8)))
-
-#define TIMER_IS_GENERAL(_instance)		\
-  ((1ul << (_instance)) &			\
-   ((1ul << TIMER_INSTANCE_TIM2) |		\
-    (1ul << TIMER_INSTANCE_TIM3) |		\
-    (1ul << TIMER_INSTANCE_TIM4) |		\
-    (1ul << TIMER_INSTANCE_TIM5) |		\
-    (1ul << TIMER_INSTANCE_TIM15) |		\
-    (1ul << TIMER_INSTANCE_TIM16) |		\
-    (1ul << TIMER_INSTANCE_TIM17)))
-
-#define TIMER_IS_BASIC(_instance)		\
-  ((1ul << (_instance)) &			\
-   ((1ul << TIMER_INSTANCE_TIM6) |		\
-    (1ul << TIMER_INSTANCE_TIM7)))
-
-#define TIMER_IS_32BIT(_instance)		\
-  ((1ul << (_instance)) &			\
-   ((1ul << TIMER_INSTANCE_TIM2) |		\
-    (1ul << TIMER_INSTANCE_TIM5)))
-
-#define TIMER_IS_16BIT(_instance)		\
-  ((1ul << (_instance)) &			\
-   ((1ul << TIMER_INSTANCE_TIM1) |		\
-    (1ul << TIMER_INSTANCE_TIM3) |		\
-    (1ul << TIMER_INSTANCE_TIM4) |		\
-    (1ul << TIMER_INSTANCE_TIM6) |		\
-    (1ul << TIMER_INSTANCE_TIM7) |		\
-    (1ul << TIMER_INSTANCE_TIM8) |		\
-    (1ul << TIMER_INSTANCE_TIM15) |		\
-    (1ul << TIMER_INSTANCE_TIM16) |		\
-    (1ul << TIMER_INSTANCE_TIM17)))
-
-#define TIMER_IS_6CH(_instance)			\
-  ((1ul << (_instance)) &			\
-   ((1ul << TIMER_INSTANCE_TIM1) |		\
-    (1ul << TIMER_INSTANCE_TIM8)))
-
-#define TIMER_IS_4CH(_instance)			\
-  ((1ul << (_instance)) &			\
-   ((1ul << TIMER_INSTANCE_TIM2) |		\
-    (1ul << TIMER_INSTANCE_TIM3) |		\
-    (1ul << TIMER_INSTANCE_TIM4) |		\
-    (1ul << TIMER_INSTANCE_TIM5)))
-
-#define TIMER_IS_2CH(_instance)			\
-  ((1ul << (_instance)) &			\
-   ((1ul << TIMER_INSTANCE_TIM15)))
-
-#define TIMER_IS_1CH(_instance)			\
-  ((1ul << (_instance)) &			\
-   ((1ul << TIMER_INSTANCE_TIM16) |		\
-    (1ul << TIMER_INSTANCE_TIM17)))
+enum {
+    TIMER_INSTANCE_TIM1 = 0,   /* ADVANCED 16 */
+    TIMER_INSTANCE_TIM2,       /* GENERAL  32 */
+#if defined(STM32L476xx)
+    TIMER_INSTANCE_TIM3,       /* GENERAL  16 */
+    TIMER_INSTANCE_TIM4,       /* GENERAL  16 */
+    TIMER_INSTANCE_TIM5,       /* GENERAL  32 */
+#endif
+    TIMER_INSTANCE_TIM6,       /* BASIC    16 */
+    TIMER_INSTANCE_TIM7,       /* BASIC    16 */
+#if defined(STM32L476xx)
+    TIMER_INSTANCE_TIM8,       /* ADVANCED 16 */
+#endif
+    TIMER_INSTANCE_TIM15,      /* GENERAL  16 */
+    TIMER_INSTANCE_TIM16,      /* GENERAL  16 */
+#if defined(STM32L476xx)
+    TIMER_INSTANCE_TIM17,      /* GENERAL  16 */
+#endif
+    TIMER_INSTANCE_COUNT
+};
 
 #define TIMER_CHANNEL_1                          0
 #define TIMER_CHANNEL_2                          1
@@ -201,9 +151,14 @@ extern uint32_t stm32l4_timer_capture(stm32l4_timer_t *timer, unsigned int chann
 
 extern void TIM1_BRK_TIM15_IRQHandler(void);
 extern void TIM1_UP_TIM16_IRQHandler(void);
+#if defined(STM32L476xx)
 extern void TIM1_TRG_COM_TIM17_IRQHandler(void);
+#else
+extern void TIM1_TRG_COM_IRQHandler(void);
+#endif
 extern void TIM1_CC_IRQHandler(void);
 extern void TIM2_IRQHandler(void);
+#if defined(STM32L476xx)
 extern void TIM3_IRQHandler(void);
 extern void TIM4_IRQHandler(void);
 extern void TIM8_BRK_IRQHandler(void);
@@ -211,6 +166,7 @@ extern void TIM8_UP_IRQHandler(void);
 extern void TIM8_TRG_COM_IRQHandler(void);
 extern void TIM8_CC_IRQHandler(void);
 extern void TIM5_IRQHandler(void);
+#endif
 extern void TIM6_DAC_IRQHandler(void);
 extern void TIM7_IRQHandler(void);
 

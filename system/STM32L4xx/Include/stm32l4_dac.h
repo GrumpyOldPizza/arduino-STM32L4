@@ -38,8 +38,10 @@
  extern "C" {
 #endif
 
-#define DAC_INSTANCE_DAC                         0
-#define DAC_INSTANCE_COUNT                       1
+enum {
+    DAC_INSTANCE_DAC    = 0,
+    DAC_INSTANCE_COUNT
+};
 
 #define DAC_CHANNEL_1                            0
 #define DAC_CHANNEL_2                            1

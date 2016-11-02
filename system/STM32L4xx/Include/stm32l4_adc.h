@@ -35,13 +35,17 @@
 #include "stm32l4xx.h"
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
-#define ADC_INSTANCE_ADC1                        0
-#define ADC_INSTANCE_ADC2                        1
-#define ADC_INSTANCE_ADC3                        2
-#define ADC_INSTANCE_COUNT                       3
+enum {
+     ADC_INSTANCE_ADC1 = 0,
+#if defined(STM32L476xx)
+     ADC_INSTANCE_ADC2,
+     ADC_INSTANCE_ADC3,
+#endif /* defined(STM32L476xx) */
+     ADC_INSTANCE_COUNT
+};
 
 #define ADC_CHANNEL_ADC1_VREFINT                 0
 #define ADC_CHANNEL_ADC123_IN1                   1   /* PC0 */

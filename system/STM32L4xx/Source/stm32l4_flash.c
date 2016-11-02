@@ -165,7 +165,9 @@ void stm32l4_flash_lock(void)
 
 bool stm32l4_flash_erase(uint32_t address, uint32_t count)
 {
-    uint32_t split;
+#if defined(STM32L476xx)
+    const uint32_t split = (FLASH_BASE + (stm32l4_flash_size() >> 1));
+#endif /* defined(STM32L476xx) */
     bool success = true;
 
     if (FLASH->CR & FLASH_CR_LOCK)
@@ -173,17 +175,17 @@ bool stm32l4_flash_erase(uint32_t address, uint32_t count)
 	return false;
     }
 
-    split = FLASH_BASE + (stm32l4_flash_size() >> 1);
-
     do
     {
-	if (address < split)
-	{
-	    FLASH->CR = FLASH_CR_PER | ((((address - FLASH_BASE) / 2048) << 3) & FLASH_CR_PNB);
-	}
-	else
+#if defined(STM32L476xx)
+	if (address >= split)
 	{
 	    FLASH->CR = FLASH_CR_PER | FLASH_CR_BKER | ((((address - split) / 2048) << 3) & FLASH_CR_PNB);
+	}
+	else
+#endif /* defined(STM32L476xx) */
+	{
+	    FLASH->CR = FLASH_CR_PER | ((((address - FLASH_BASE) / 2048) << 3) & FLASH_CR_PNB);
 	}
 	
 	stm32l4_flash_erase_page();

@@ -42,7 +42,11 @@ void HardFault_Handler(void)
     while (1)
     {
 #if defined(STM32L4_CONFIG_USBD_CDC)
+#if defined(STM32L476xx)
 	OTG_FS_IRQHandler();
+#else
+	USB_IRQHandler();
+#endif
 #endif
     }
 }
@@ -52,7 +56,11 @@ void BusFault_Handler(void)
     while (1)
     {
 #if defined(STM32L4_CONFIG_USBD_CDC)
+#if defined(STM32L476xx)
 	OTG_FS_IRQHandler();
+#else
+	USB_IRQHandler();
+#endif
 #endif
     }
 }
@@ -62,19 +70,23 @@ void UsageFault_Handler(void)
     while (1)
     {
 #if defined(STM32L4_CONFIG_USBD_CDC)
+#if defined(STM32L476xx)
 	OTG_FS_IRQHandler();
+#else
+	USB_IRQHandler();
+#endif
 #endif
     }
 }
 
 void init( void )
 {
-#if defined(STM32L4_CONFIG_USBD_CDC)
-    stm32l4_gpio_pin_configure(GPIO_PIN_PA9, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
+#if defined(STM32L4_CONFIG_USBD_CDC) || defined(STM32L4_CONFIG_USBD_MSC)
+    stm32l4_gpio_pin_configure(STM32L4_CONFIG_USBD_VUSB, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
 
     armv7m_clock_spin(2000);
 
-    if ((_SYSTEM_CORE_CLOCK_ < 16000000) && stm32l4_gpio_pin_read(GPIO_PIN_PA9))
+    if ((_SYSTEM_CORE_CLOCK_ < 16000000) && stm32l4_gpio_pin_read(STM32L4_CONFIG_USBD_VUSB))
     {
 	stm32l4_system_configure(16000000, 8000000, 8000000);
     }
@@ -94,10 +106,10 @@ void init( void )
     stm32l4_exti_create(&stm32l4_exti, STM32L4_EXTI_IRQ_PRIORITY);
     stm32l4_exti_enable(&stm32l4_exti);
 
-#if defined(STM32L4_CONFIG_USBD_CDC)
+#if defined(STM32L4_CONFIG_USBD_CDC) || defined(STM32L4_CONFIG_USBD_MSC)
     if (stm32l4_system_hclk() >= 16000000)
     {
-	USBD_Attach(STM32L4_USB_IRQ_PRIORITY);
+	USBD_Attach(STM32L4_CONFIG_USBD_VUSB, STM32L4_USB_IRQ_PRIORITY);
     }
 #endif /* STM32L4_CONFIG_USBD_CDC */
 

@@ -68,6 +68,8 @@ extern "C" {
 #define STM32L4_TONE_IRQ_PRIORITY    2
 #define STM32L4_SERVO_IRQ_PRIORITY   1
 
+extern void USBD_Attach(unsigned int pin_vusb, unsigned int priority);
+
 /************************************************************************
  * DMA map:
  * 

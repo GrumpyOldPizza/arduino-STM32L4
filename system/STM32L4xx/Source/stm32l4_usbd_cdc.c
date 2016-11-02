@@ -310,15 +310,23 @@ bool stm32l4_usbd_cdc_transmit(stm32l4_usbd_cdc_t *usbd_cdc, const uint8_t *tx_d
 	 * WAR is to avoid the race condition by blocking
 	 * the interrupt till the transfer setup is complete.
 	 */
-	NVIC_DisableIRQ(OTG_FS_IRQn);
 
+#if defined(STM32L476xx)
+	NVIC_DisableIRQ(OTG_FS_IRQn);
+#else
+	NVIC_DisableIRQ(USB_IRQn);
+#endif
 	stm32l4_usbd_cdc_device.tx_busy = 1;
 
 	USBD_CDC_SetTxBuffer(stm32l4_usbd_cdc_device.USBD, tx_data, tx_count);
 	
 	status = USBD_CDC_TransmitPacket(stm32l4_usbd_cdc_device.USBD);
 
+#if defined(STM32L476xx)
 	NVIC_EnableIRQ(OTG_FS_IRQn);
+#else
+	NVIC_EnableIRQ(USB_IRQn);
+#endif
 
 	if (status != 0)
 	  {
@@ -338,7 +346,11 @@ void stm32l4_usbd_cdc_poll(stm32l4_usbd_cdc_t *usbd_cdc)
 {
     if (usbd_cdc->state >= USBD_CDC_STATE_READY)
     {
+#if defined(STM32L476xx)
 	OTG_FS_IRQHandler();
+#else
+	USB_IRQHandler();
+#endif
     }
 }
 

@@ -55,10 +55,39 @@
 #define USBD_VID                      0x1209
 #define USBD_LANGID_STRING            1033
 #define USBD_MANUFACTURER_STRING      "Tlera Corporation"
+
+#if defined(STM32L476xx)
 #define USBD_PID                      0x6667
 #define USBD_PRODUCT_FS_STRING        "Dragonfly"
 #define USBD_CONFIGURATION_FS_STRING  "Dragonfly Configuration"
 #define USBD_INTERFACE_FS_STRING      "Dragonfly Interface"
+#define USBD_USR_FS_STRING_6          "Dragonfly Mass Storage"
+#define USBD_USR_FS_STRING_7          "Dragonfly Virtual Serial Port" 
+#define USBD_USR_FS_STRING_8          "Dragonfly Virtual Serial Port CONTROL"
+#define USBD_USR_FS_STRING_9          "Dragonfly Virtual Serial Port DATA"
+#endif
+
+#if defined(STM32L433xx)
+#define USBD_PID                      0x6668
+#define USBD_PRODUCT_FS_STRING        "Butterfly"
+#define USBD_CONFIGURATION_FS_STRING  "Butterfly Configuration"
+#define USBD_INTERFACE_FS_STRING      "Butterfly Interface"
+#define USBD_USR_FS_STRING_6          "Butterfly Mass Storage"
+#define USBD_USR_FS_STRING_7          "Butterfly Virtual Serial Port" 
+#define USBD_USR_FS_STRING_8          "Butterfly Virtual Serial Port CONTROL"
+#define USBD_USR_FS_STRING_9          "Butterfly Virtual Serial Port DATA"
+#endif
+
+#if defined(STM32L432xx)
+#define USBD_PID                      0x6669
+#define USBD_PRODUCT_FS_STRING        "Ladybug"
+#define USBD_CONFIGURATION_FS_STRING  "Ladybug Configuration"
+#define USBD_INTERFACE_FS_STRING      "Ladybug Interface"
+#define USBD_USR_FS_STRING_6          "Ladybug Mass Storage"
+#define USBD_USR_FS_STRING_7          "Ladybug Virtual Serial Port" 
+#define USBD_USR_FS_STRING_8          "Ladybug Virtual Serial Port CONTROL"
+#define USBD_USR_FS_STRING_9          "Ladybug Virtual Serial Port DATA"
+#endif
 
 /* Private macro -------------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -224,22 +253,22 @@ const uint8_t *USBD_CDC_MSC_GetUsrStrDescriptor (USBD_HandleTypeDef *pdev ,uint8
 {
     if (index == 6)
       {
-	USBD_GetString ((const uint8_t*)"Dragonfly Mass Storage", USBD_StrDesc, length);
+	USBD_GetString ((const uint8_t*)USBD_USR_FS_STRING_6, USBD_StrDesc, length);
       }
 
     if (index == 7)
       {
-	USBD_GetString ((const uint8_t*)"Dragonfly Virtual Serial Port", USBD_StrDesc, length);
+	USBD_GetString ((const uint8_t*)USBD_USR_FS_STRING_7, USBD_StrDesc, length);
       }
 
     if (index == 8)
       {
-	USBD_GetString ((const uint8_t*)"Dragonfly Virtual Serial Port CONTROL", USBD_StrDesc, length);
+	USBD_GetString ((const uint8_t*)USBD_USR_FS_STRING_8, USBD_StrDesc, length);
       }
     
     if (index == 9)
       {
-	USBD_GetString ((const uint8_t*)"Dragonfly Virtual Serial Port DATA", USBD_StrDesc, length);
+	USBD_GetString ((const uint8_t*)USBD_USR_FS_STRING_9, USBD_StrDesc, length);
       }
       
   return USBD_StrDesc;  

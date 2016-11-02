@@ -26,6 +26,8 @@
  * WITH THE SOFTWARE.
  */
 
+#if defined(STM32L476xx)
+
 #include "dosfs_sflash.h"
 
 #include <stdio.h>
@@ -2723,3 +2725,5 @@ int dosfs_sflash_init(uint32_t param, const F_INTERFACE **p_interface, void **p_
 
     return status;
 }
+
+#endif

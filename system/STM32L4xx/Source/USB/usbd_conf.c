@@ -66,8 +66,9 @@ static PCD_HandleTypeDef hpcd;
 
 extern stm32l4_exti_t stm32l4_exti;
 
-/* Private functions ---------------------------------------------------------*/
+static unsigned int usbd_pin_vusb = GPIO_PIN_NONE;
 
+/* Private functions ---------------------------------------------------------*/
 
 extern USBD_CDC_ItfTypeDef const stm32l4_usbd_cdc_interface;
 extern USBD_StorageTypeDef const dosfs_storage_interface;
@@ -76,9 +77,9 @@ static USBD_HandleTypeDef USBD_Device;
 
 void USBD_AttachCallback(void *context)
 {
-  if (stm32l4_gpio_pin_read(GPIO_PIN_PA9))
+  if (stm32l4_gpio_pin_read(usbd_pin_vusb))
     {
-      stm32l4_exti_notify(&stm32l4_exti, GPIO_PIN_PA9, EXTI_CONTROL_DISABLE, NULL, NULL);
+      stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vusb, EXTI_CONTROL_DISABLE, NULL, NULL);
 
       USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
       USBD_RegisterClass(&USBD_Device, USBD_CDC_MSC_CLASS);
@@ -90,25 +91,37 @@ void USBD_AttachCallback(void *context)
 
 void USBD_DetachCallback(void *context)
 {
-  if (!stm32l4_gpio_pin_read(GPIO_PIN_PA9))
+  if (!stm32l4_gpio_pin_read(usbd_pin_vusb))
     {
       USBD_DeInit(&USBD_Device);
 
-      stm32l4_exti_notify(&stm32l4_exti, GPIO_PIN_PA9, EXTI_CONTROL_RISING_EDGE, USBD_AttachCallback, NULL);
+      stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vusb, EXTI_CONTROL_RISING_EDGE, USBD_AttachCallback, NULL);
     }
 }
 
-void USBD_Attach(unsigned int priority)
+void USBD_Attach(unsigned int pin_vusb, unsigned int priority)
 {
+  usbd_pin_vusb = pin_vusb;
+
   /* Configure USB FS GPIOs */
-  stm32l4_gpio_pin_configure(GPIO_PIN_PA9, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
+  stm32l4_gpio_pin_configure(usbd_pin_vusb, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
+
+#if defined(STM32L476xx)
   stm32l4_gpio_pin_configure(GPIO_PIN_PA11_USB_OTG_FS_DM, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
   stm32l4_gpio_pin_configure(GPIO_PIN_PA12_USB_OTG_FS_DP, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+#else
+  stm32l4_gpio_pin_configure(GPIO_PIN_PA11_USB_DM, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+  stm32l4_gpio_pin_configure(GPIO_PIN_PA12_USB_DP, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+#endif
 
-  /* Set USB FS Interrupt priority */
+  /* Set USB Interrupt priority */
+#if defined(STM32L476xx)
   NVIC_SetPriority(OTG_FS_IRQn, priority);
-  
-  if (stm32l4_gpio_pin_read(GPIO_PIN_PA9))
+#else
+  NVIC_SetPriority(USB_IRQn, priority);
+#endif  
+
+  if (stm32l4_gpio_pin_read(usbd_pin_vusb))
     {
       USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
       USBD_RegisterClass(&USBD_Device, USBD_CDC_MSC_CLASS);
@@ -118,7 +131,7 @@ void USBD_Attach(unsigned int priority)
     }
   else
     {
-      stm32l4_exti_notify(&stm32l4_exti, GPIO_PIN_PA9, EXTI_CONTROL_RISING_EDGE, USBD_AttachCallback, NULL);
+      stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vusb, EXTI_CONTROL_RISING_EDGE, USBD_AttachCallback, NULL);
     }
 }
   
@@ -126,12 +139,11 @@ void USBD_Attach(unsigned int priority)
                        PCD BSP Routines
 *******************************************************************************/
 
-/**
-  * @brief  This function handles USB-On-The-Go FS global interrupt request.
-  * @param  None
-  * @retval None
-  */
+#if defined(STM32L476xx)
 void OTG_FS_IRQHandler(void)
+#else
+void USB_IRQHandler(void)
+#endif
 {
   HAL_PCD_IRQHandler(&hpcd);
 }
@@ -148,7 +160,11 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
   stm32l4_system_clk48_enable();
   
   /* Peripheral clock enable */
+#if defined(STM32L476xx)
   __HAL_RCC_USB_OTG_FS_CLK_ENABLE();
+#else
+  __HAL_RCC_USB_CLK_ENABLE();
+#endif
 
   /* Enable VUSB */
   apb1enr1 = RCC->APB1ENR1;
@@ -164,7 +180,11 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
   }
   
   /* Enable USB FS Interrupt */
+#if defined(STM32L476xx)
   NVIC_EnableIRQ(OTG_FS_IRQn);
+#else
+  NVIC_EnableIRQ(USB_IRQn);
+#endif
 }
 
 /**
@@ -190,10 +210,18 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef *hpcd)
   }
 
   /* Peripheral clock disable */
+#if defined(STM32L476xx)
   __HAL_RCC_USB_OTG_FS_CLK_DISABLE();
+#else
+  __HAL_RCC_USB_CLK_DISABLE();
+#endif
 
   /* Peripheral interrupt Deinit*/
+#if defined(STM32L476xx)
   NVIC_DisableIRQ(OTG_FS_IRQn);
+#else
+  NVIC_DisableIRQ(USB_IRQn);
+#endif
 
   stm32l4_system_clk48_disable();
 }
@@ -320,15 +348,15 @@ void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
 {
   USBD_LL_DevDisconnected(hpcd->pData);
 
-  if (!stm32l4_gpio_pin_read(GPIO_PIN_PA9))
+  if (!stm32l4_gpio_pin_read(usbd_pin_vusb))
     {
       USBD_DeInit(&USBD_Device);
 
-      stm32l4_exti_notify(&stm32l4_exti, GPIO_PIN_PA9, EXTI_CONTROL_RISING_EDGE, USBD_AttachCallback, NULL);
+      stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vusb, EXTI_CONTROL_RISING_EDGE, USBD_AttachCallback, NULL);
     }
   else
     {
-      stm32l4_exti_notify(&stm32l4_exti, GPIO_PIN_PA9, EXTI_CONTROL_FALLING_EDGE, USBD_DetachCallback, NULL);
+      stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vusb, EXTI_CONTROL_FALLING_EDGE, USBD_DetachCallback, NULL);
     }
 }
 
@@ -345,6 +373,7 @@ void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
   */
 USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
 {
+#if defined(STM32L476xx)
   /* Set LL Driver parameters */
   hpcd.Instance = USB_OTG_FS;
   hpcd.Init.dev_endpoints = 5;
@@ -371,6 +400,35 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   HAL_PCDEx_SetTxFiFo(&hpcd, 1, 0x80); /* 512 bytes EP1/MSC transmit      */ 
   HAL_PCDEx_SetTxFiFo(&hpcd, 2, 0x04); /*  16 bytes EP2/CDC/CTRL transmit */
   HAL_PCDEx_SetTxFiFo(&hpcd, 3, 0x20); /* 128 bytes EP3/CDC/DATA transmit */
+
+#else /* STM32L476xx */
+
+  /* Set LL Driver parameters */
+  hpcd.Instance = USB;
+  hpcd.Init.dev_endpoints = 8;
+  hpcd.Init.speed = PCD_SPEED_FULL;
+  hpcd.Init.ep0_mps = DEP0CTL_MPS_64;
+  hpcd.Init.phy_itface = PCD_PHY_EMBEDDED;
+  hpcd.Init.Sof_enable = 0;
+  hpcd.Init.low_power_enable = 0;
+  hpcd.Init.lpm_enable = 0;
+  hpcd.Init.battery_charging_enable = 0;
+  /* Link The driver to the stack */
+  hpcd.pData = pdev;
+  pdev->pData = &hpcd;
+  /* Initialize LL Driver */
+  HAL_PCD_Init(&hpcd);
+  
+  /* First offset needs to be n * 8, where n is the number of endpoints.
+   */
+  HAL_PCDEx_PMAConfig(&hpcd, 0x00, PCD_SNG_BUF, 0x020); /*  64 bytes EP0/control out  */
+  HAL_PCDEx_PMAConfig(&hpcd, 0x80, PCD_SNG_BUF, 0x060); /*  64 bytes EP0/control in   */
+  HAL_PCDEx_PMAConfig(&hpcd ,0x01, PCD_SNG_BUF, 0x0a0); /*  64 bytes EP1/MSC out      */ 
+  HAL_PCDEx_PMAConfig(&hpcd, 0x81, PCD_SNG_BUF, 0x0e0); /*  64 bytes EP1/MSC in       */ 
+  HAL_PCDEx_PMAConfig(&hpcd, 0x82, PCD_SNG_BUF, 0x120); /*  16 bytes EP2/CDC/CTRL in  */
+  HAL_PCDEx_PMAConfig(&hpcd, 0x03, PCD_SNG_BUF, 0x130); /*  64 bytes EP3/CDC/DATA out */
+  HAL_PCDEx_PMAConfig(&hpcd, 0x83, PCD_SNG_BUF, 0x170); /*  64 bytes EP3/CDC/DATA in  */
+#endif /* STM32L476xx */
   
   return USBD_OK;
 }

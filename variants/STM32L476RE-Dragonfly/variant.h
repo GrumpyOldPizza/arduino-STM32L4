@@ -36,6 +36,7 @@
  *        Definitions
  *----------------------------------------------------------------------------*/
 
+#define STM32L4_CONFIG_USBD_VUSB          GPIO_PIN_PA9
 #define STM32L4_CONFIG_USBD_CDC           1
 #define STM32L4_CONFIG_USBD_MSC           1
 #define STM32L4_CONFIG_DOSFS_SFLASH       1
@@ -174,8 +175,6 @@ static const uint8_t SCL = PIN_WIRE_SCL;
 #define PIN_USB_VBUS        (27ul)
 #define PIN_USB_DM          (28ul)
 #define PIN_USB_DP          (29ul)
-
-extern void USBD_Attach(unsigned int priority);
 
 #define PWM_INSTANCE_COUNT  4
 

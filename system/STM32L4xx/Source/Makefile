@@ -9,7 +9,7 @@ CFLAGS   = -mcpu=cortex-m4 -mthumb -c -g -Os $(WARNINGS) -std=gnu11 -ffunction-s
 CXXFLAGS = -mcpu=cortex-m4 -mthumb -c -g -Os $(WARNINGS) -std=gnu++11 -ffunction-sections -fdata-sections -fno-threadsafe-statics -nostdlib --param max-inline-insns-single=500 -fno-rtti -fno-exceptions -MMD $(EXTRAS) $(DEFINES) $(INCLUDES)
 ASFLAGS  = -c -g -x assembler-with-cpp $(EXTRAS) $(DEFINES) $(INCLUDES)
 WARNINGS = -Wall -Wextra -Wno-unused-parameter
-EXTRAS   = -DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mabi=aapcs -mslow-flash-data
+EXTRAS   = -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mabi=aapcs -mslow-flash-data
 DEFINES  = 
 INCLUDES = -I../../../system/CMSIS/Include -I../../../system/CMSIS/Device/ST/STM32L4xx/Include -I../../../system/STM32L4xx/Source/USB/HAL/Inc -I../../../system/STM32L4xx/Source/USB/Core/Inc -I../../../system/STM32L4xx/Source/USB/Class/CDC/Inc -I../../../system/STM32L4xx/Source/USB/Class/MSC/Inc -I../../../system/STM32L4xx/Source/USB -I../../../system/STM32L4xx/Include -I. 
 
@@ -57,69 +57,57 @@ SRCS = \
 	stm32l4_timer.c \
 	stm32l4_uart.c \
 	stm32l4_usbd_cdc.c \
-	system_stm32l4xx.c \
-	startup_stm32l476xx.S
+	system_stm32l4xx.c
 
-OBJS = \
-	./USB/Class/CDC/Src/usbd_cdc.o \
-	./USB/Class/MSC/Src/usbd_msc.o \
-	./USB/Class/MSC/Src/usbd_msc_bot.o \
-	./USB/Class/MSC/Src/usbd_msc_data.o \
-	./USB/Class/MSC/Src/usbd_msc_scsi.o \
-	./USB/Core/Src/usbd_core.o \
-	./USB/Core/Src/usbd_ctlreq.o \
-	./USB/Core/Src/usbd_ioreq.o \
-	./USB/HAL/Src/stm32l4xx_hal_pcd.o \
-	./USB/HAL/Src/stm32l4xx_hal_pcd_ex.o \
-	./USB/HAL/Src/stm32l4xx_ll_usb.o \
-	./USB/usbd_cdc_msc.o \
-	./USB/usbd_conf.o \
-	./USB/usbd_desc.o \
-	armv7m_atomic.o \
-	armv7m_clock.o \
-	armv7m_core.o \
-	armv7m_orchid.o \
-	armv7m_pendsv.o \
-	armv7m_rtlib.o \
-	armv7m_svcall.o \
-	armv7m_systick.o \
-	armv7m_timer.o \
-	dosfs_core.o \
-	dosfs_sdcard.o \
-	dosfs_sflash.o \
-	dosfs_storage.o \
-	stm32l4_adc.o \
-	stm32l4_dac.o \
-	stm32l4_dma.o \
-	stm32l4_exti.o \
-	stm32l4_flash.o \
-	stm32l4_i2c.o \
-	stm32l4_gpio.o \
-	stm32l4_nvic.o \
-	stm32l4_qspi.o \
-	stm32l4_rtc.o \
-	stm32l4_servo.o \
-	stm32l4_spi.o \
-	stm32l4_system.o \
-	stm32l4_timer.o \
-	stm32l4_uart.o \
-	stm32l4_usbd_cdc.o \
-	system_stm32l4xx.o \
-	startup_stm32l476xx.o
+SRCS_L432 = $(SRCS) startup_stm32l432xx.S
+OBJS_L432 = $(patsubst %.c,_out/stm32l432/%.o,$(filter-out %.S,$(SRCS_L432))) $(patsubst %.S,_out/stm32l432/%.o,$(filter-out %.c,$(SRCS_L432)))
 
-all:: libstm32l476.a
+SRCS_L433 = $(SRCS) startup_stm32l433xx.S
+OBJS_L433 = $(patsubst %.c,_out/stm32l433/%.o,$(filter-out %.S,$(SRCS_L433))) $(patsubst %.S,_out/stm32l433/%.o,$(filter-out %.c,$(SRCS_L433)))
 
-libstm32l476.a:: $(OBJS)
+SRCS_L476 = $(SRCS) startup_stm32l476xx.S
+OBJS_L476 = $(patsubst %.c,_out/stm32l476/%.o,$(filter-out %.S,$(SRCS_L476))) $(patsubst %.S,_out/stm32l476/%.o,$(filter-out %.c,$(SRCS_L476)))
+
+all:: libstm32l432.a libstm32l433.a libstm32l476.a
+
+
+libstm32l432.a:: $(OBJS_L432)
 	$(AR) rcs $@ $^
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+_out/stm32l432/%.o: %.c
+	-@mkdir -p $(dir $@)
+	$(CC) -DSTM32L432xx $(CFLAGS) -c $< -o $@
 
-%.o: %.S
-	$(CC) $(ASFLAGS) -c $< -o $@
+_out/stm32l432/%.o: %.S
+	-@mkdir -p $(dir $@)
+	$(CC) -DSTM32L432xx $(ASFLAGS) -c $< -o $@
+
+
+libstm32l433.a:: $(OBJS_L433)
+	$(AR) rcs $@ $^
+
+_out/stm32l433/%.o: %.c
+	-@mkdir -p $(dir $@)
+	$(CC) -DSTM32L433xx $(CFLAGS) -c $< -o $@
+
+_out/stm32l433/%.o: %.S
+	-@mkdir -p $(dir $@)
+	$(CC) -DSTM32L433xx $(ASFLAGS) -c $< -o $@
+
+
+libstm32l476.a:: $(OBJS_L476)
+	$(AR) rcs $@ $^
+
+_out/stm32l476/%.o: %.c
+	-@mkdir -p $(dir $@)
+	$(CC) -DSTM32L476xx $(CFLAGS) -c $< -o $@
+
+_out/stm32l476/%.o: %.S
+	-@mkdir -p $(dir $@)
+	$(CC) -DSTM32L476xx $(ASFLAGS) -c $< -o $@
 
 clean::
-	rm -f libstm32l476.a *~ $(OBJS) $(OBJS:.o=.d)
+	rm -rf libstm32l432.a libstm32l433.a libstm32l476.a _out
 
 -include $(OBJS:.o=.d)
 

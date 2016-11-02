@@ -231,11 +231,15 @@ void SystemInit(void)
 
   RCC->AHB2SMENR &= ~(RCC_AHB2SMENR_GPIOASMEN |
                       RCC_AHB2SMENR_GPIOBSMEN |
+#if defined(STM32L433xx) || defined(STM32L476xx)
                       RCC_AHB2SMENR_GPIOCSMEN |
 	              RCC_AHB2SMENR_GPIODSMEN |
                       RCC_AHB2SMENR_GPIOESMEN |
+#endif
+#if defined(STM32L476xx)
                       RCC_AHB2SMENR_GPIOFSMEN |
 	              RCC_AHB2SMENR_GPIOGSMEN |
+#endif
 	              RCC_AHB2SMENR_GPIOHSMEN |
                       RCC_AHB2SMENR_SRAM2SMEN);
 

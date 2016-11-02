@@ -37,13 +37,17 @@
 #include "stm32l4_dma.h"
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
-#define I2C_INSTANCE_I2C1              0
-#define I2C_INSTANCE_I2C2              1
-#define I2C_INSTANCE_I2C3              2
-#define I2C_INSTANCE_COUNT             3
+enum {
+    I2C_INSTANCE_I2C1  = 0,
+#if defined(STM32L433xx) || defined(STM32L476xx)
+    I2C_INSTANCE_I2C2,
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+    I2C_INSTANCE_I2C3,
+    I2C_INSTANCE_COUNT
+};
 
 #define I2C_MODE_TX_DMA                0x00000001
 #define I2C_MODE_RX_DMA                0x00000002
@@ -148,8 +152,10 @@ extern void stm32l4_i2c_poll(stm32l4_i2c_t *i2c);
 
 extern void I2C1_EV_IRQHandler(void);
 extern void I2C1_ER_IRQHandler(void);
+#if defined(STM32L433xx) || defined(STM32L476xx)
 extern void I2C2_EV_IRQHandler(void);
 extern void I2C2_ER_IRQHandler(void);
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
 extern void I2C3_EV_IRQHandler(void);
 extern void I2C3_ER_IRQHandler(void);
 

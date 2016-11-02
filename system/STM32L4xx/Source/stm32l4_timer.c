@@ -45,29 +45,41 @@ static stm32l4_timer_driver_t stm32l4_timer_driver;
 static TIM_TypeDef * const stm32l4_timer_xlate_TIM[TIMER_INSTANCE_COUNT] = {
     TIM1,
     TIM2,
+#if defined(STM32L476xx)
     TIM3,
     TIM4,
     TIM5,
+#endif
     TIM6,
     TIM7,
+#if defined(STM32L476xx)
     TIM8,
+#endif
     TIM15,
     TIM16,
+#if defined(STM32L476xx)
     TIM17,
+#endif
 };
 
 static const IRQn_Type stm32l4_timer_xlate_IRQn[TIMER_INSTANCE_COUNT] = {
     TIM1_CC_IRQn,
     TIM2_IRQn,
+#if defined(STM32L476xx)
     TIM3_IRQn,
     TIM4_IRQn,
     TIM5_IRQn,
+#endif
     TIM6_DAC_IRQn,
     TIM7_IRQn,
+#if defined(STM32L476xx)
     TIM8_CC_IRQn,
+#endif
     TIM1_BRK_TIM15_IRQn,
     TIM1_UP_TIM16_IRQn,
+#if defined(STM32L476xx)
     TIM1_TRG_COM_TIM17_IRQn,
+#endif
 };
 
 static void stm32l4_timer_interrupt(stm32l4_timer_t *timer)
@@ -81,53 +93,56 @@ static void stm32l4_timer_interrupt(stm32l4_timer_t *timer)
     // TIM->SR = (TIM_SR_UIF | TIM_SR_CC1IF | TIM_SR_CC2IF | TIM_SR_CC3IF | TIM_SR_CC4IF | TIM_SR_CC1OF | TIM_SR_CC2OF | TIM_SR_CC3OF | TIM_SR_CC4OF);
     TIM->SR = 0;
 
-    if (tim_sr & TIM_SR_UIF)
+    if (timer)
     {
-	events |= TIMER_EVENT_PERIOD;
-    }
-
-    if (tim_sr & (TIM_SR_CC1IF | TIM_SR_CC2IF | TIM_SR_CC3IF | TIM_SR_CC4IF))
-    {
-	if (tim_sr & TIM_SR_CC1IF)
+	if (tim_sr & TIM_SR_UIF)
 	{
-	    events |= TIMER_EVENT_CHANNEL_1;
-
-	    timer->capture[0] = TIM->CCR1;
+	    events |= TIMER_EVENT_PERIOD;
 	}
 
-	if (tim_sr & TIM_SR_CC2IF)
+	if (tim_sr & (TIM_SR_CC1IF | TIM_SR_CC2IF | TIM_SR_CC3IF | TIM_SR_CC4IF))
 	{
-	    events |= TIMER_EVENT_CHANNEL_2;
+	    if (tim_sr & TIM_SR_CC1IF)
+	    {
+		events |= TIMER_EVENT_CHANNEL_1;
 
-	    timer->capture[1] = TIM->CCR2;
+		timer->capture[0] = TIM->CCR1;
+	    }
+
+	    if (tim_sr & TIM_SR_CC2IF)
+	    {
+		events |= TIMER_EVENT_CHANNEL_2;
+
+		timer->capture[1] = TIM->CCR2;
+	    }
+
+	    if (tim_sr & TIM_SR_CC3IF)
+	    {
+		events |= TIMER_EVENT_CHANNEL_3;
+
+		timer->capture[2] = TIM->CCR3;
+	    }
+
+	    if (tim_sr & TIM_SR_CC4IF)
+	    {
+		events |= TIMER_EVENT_CHANNEL_4;
+
+		timer->capture[3] = TIM->CCR4;
+	    }
 	}
-
-	if (tim_sr & TIM_SR_CC3IF)
-	{
-	    events |= TIMER_EVENT_CHANNEL_3;
-
-	    timer->capture[2] = TIM->CCR3;
-	}
-
-	if (tim_sr & TIM_SR_CC4IF)
-	{
-	    events |= TIMER_EVENT_CHANNEL_4;
-
-	    timer->capture[3] = TIM->CCR4;
-	}
-    }
     
-    events &= timer->events;
+	events &= timer->events;
 
-    if (events)
-    {
-	(*timer->callback)(timer->context, events);
+	if (events)
+	{
+	    (*timer->callback)(timer->context, events);
+	}
     }
 }
 
 bool stm32l4_timer_create(stm32l4_timer_t *timer, unsigned int instance, unsigned int priority, unsigned int mode)
 {
-    if (instance > TIMER_INSTANCE_TIM17)
+    if (instance >= TIMER_INSTANCE_COUNT)
     {
 	return false;
     }
@@ -159,21 +174,6 @@ bool stm32l4_timer_destroy(stm32l4_timer_t *timer)
 
     stm32l4_timer_driver.instances[timer->instance] = NULL;
 
-    if (timer->instance == TIMER_INSTANCE_TIM1)
-    {
-	if (stm32l4_timer_driver.instances[TIMER_INSTANCE_TIM16] == NULL)
-	{
-	    NVIC_DisableIRQ(TIM1_UP_TIM16_IRQn);
-	}
-    }
-    else if (timer->instance == TIMER_INSTANCE_TIM16)
-    {
-	if (stm32l4_timer_driver.instances[TIMER_INSTANCE_TIM1] == NULL)
-	{
-	    NVIC_DisableIRQ(TIM1_UP_TIM16_IRQn);
-	}
-    }
-
     timer->state = TIMER_STATE_NONE;
 
     return true;
@@ -185,7 +185,14 @@ uint32_t stm32l4_timer_clock(stm32l4_timer_t *timer)
 
     hclk = stm32l4_system_hclk();
 
-    if ((timer->instance >= TIMER_INSTANCE_TIM2) && (timer->instance <= TIMER_INSTANCE_TIM7))
+    if ((timer->instance == TIMER_INSTANCE_TIM2) ||
+#if defined(STM32L476)
+	(timer->instance == TIMER_INSTANCE_TIM3) ||
+	(timer->instance == TIMER_INSTANCE_TIM4) ||
+	(timer->instance == TIMER_INSTANCE_TIM5) ||
+#endif
+	(timer->instance == TIMER_INSTANCE_TIM6) ||
+	(timer->instance == TIMER_INSTANCE_TIM7))
     {
 	pclk = stm32l4_system_pclk1();
     }
@@ -219,20 +226,38 @@ bool stm32l4_timer_enable(stm32l4_timer_t *timer, uint32_t prescaler, uint32_t p
 
     if (timer->instance == TIMER_INSTANCE_TIM1)
     {
+	NVIC_SetPriority(TIM1_BRK_TIM15_IRQn, timer->priority);
 	NVIC_SetPriority(TIM1_UP_TIM16_IRQn, timer->priority);
+#if defined(STM32L476xx)
+	NVIC_SetPriority(TIM1_TRG_COM_TIM17_IRQn, timer->priority);
+#else
+	NVIC_SetPriority(TIM1_TRG_COM_IRQn, timer->priority);
+#endif
 	NVIC_SetPriority(TIM1_CC_IRQn, timer->priority);
 
+	NVIC_EnableIRQ(TIM1_BRK_TIM15_IRQn);
 	NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
+#if defined(STM32L476xx)
+	NVIC_EnableIRQ(TIM1_TRG_COM_TIM17_IRQn);
+#else
+	NVIC_EnableIRQ(TIM1_TRG_COM_IRQn);
+#endif
 	NVIC_EnableIRQ(TIM1_CC_IRQn);
     }
+#if defined(STM32L476xx)
     else if (timer->instance == TIMER_INSTANCE_TIM8)
     {
+	NVIC_SetPriority(TIM8_BRK_IRQn, timer->priority);
 	NVIC_SetPriority(TIM8_UP_IRQn, timer->priority);
+	NVIC_SetPriority(TIM8_TRG_COM_IRQn, timer->priority);
 	NVIC_SetPriority(TIM8_CC_IRQn, timer->priority);
 
+	NVIC_EnableIRQ(TIM8_BRK_IRQn);
 	NVIC_EnableIRQ(TIM8_UP_IRQn);
+	NVIC_EnableIRQ(TIM8_TRG_COM_IRQn);
 	NVIC_EnableIRQ(TIM8_CC_IRQn);
     }
+#endif
     else
     {
 	NVIC_SetPriority(stm32l4_timer_xlate_IRQn[timer->instance], timer->priority);
@@ -261,6 +286,7 @@ bool stm32l4_timer_disable(stm32l4_timer_t *timer)
     case TIMER_INSTANCE_TIM2:
 	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_TIM2EN);
 	break;
+#if defined(STM32L476xx)
     case TIMER_INSTANCE_TIM3:
 	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_TIM3EN);
 	break;
@@ -270,50 +296,29 @@ bool stm32l4_timer_disable(stm32l4_timer_t *timer)
     case TIMER_INSTANCE_TIM5:
 	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_TIM5EN);
 	break;
+#endif
     case TIMER_INSTANCE_TIM6:
 	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_TIM6EN);
 	break;
     case TIMER_INSTANCE_TIM7:
 	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_TIM7EN);
 	break;
+#if defined(STM32L476xx)
     case TIMER_INSTANCE_TIM8:
 	armv7m_atomic_and(&RCC->APB2ENR, ~RCC_APB2ENR_TIM8EN);
 	break;
+#endif
     case TIMER_INSTANCE_TIM15:
 	armv7m_atomic_and(&RCC->APB2ENR, ~RCC_APB2ENR_TIM15EN);
 	break;
     case TIMER_INSTANCE_TIM16:
 	armv7m_atomic_and(&RCC->APB2ENR, ~RCC_APB2ENR_TIM16EN);
 	break;
+#if defined(STM32L476xx)
     case TIMER_INSTANCE_TIM17:
 	armv7m_atomic_and(&RCC->APB2ENR, ~RCC_APB2ENR_TIM17EN);
 	break;
-    }
-
-    if (timer->instance == TIMER_INSTANCE_TIM1)
-    {
-	if (stm32l4_timer_driver.instances[TIMER_INSTANCE_TIM16] == NULL)
-	{
-	    NVIC_DisableIRQ(TIM1_UP_TIM16_IRQn);
-	}
-
-	NVIC_DisableIRQ(TIM1_CC_IRQn);
-    }
-    else if (timer->instance == TIMER_INSTANCE_TIM8)
-    {
-	NVIC_DisableIRQ(TIM8_UP_IRQn);
-	NVIC_DisableIRQ(TIM8_CC_IRQn);
-    }
-    else if (timer->instance == TIMER_INSTANCE_TIM16)
-    {
-	if (stm32l4_timer_driver.instances[TIMER_INSTANCE_TIM1] == NULL)
-	{
-	    NVIC_DisableIRQ(TIM1_UP_TIM16_IRQn);
-	}
-    }
-    else
-    {
-	NVIC_DisableIRQ(stm32l4_timer_xlate_IRQn[timer->instance]);
+#endif
     }
 
     timer->state = TIMER_STATE_INIT;
@@ -340,6 +345,7 @@ bool stm32l4_timer_configure(stm32l4_timer_t *timer, uint32_t prescaler, uint32_
 	case TIMER_INSTANCE_TIM2:
 	    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_TIM2EN);
 	    break;
+#if defined(STM32L476xx)
 	case TIMER_INSTANCE_TIM3:
 	    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_TIM3EN);
 	    break;
@@ -352,21 +358,26 @@ bool stm32l4_timer_configure(stm32l4_timer_t *timer, uint32_t prescaler, uint32_
 	case TIMER_INSTANCE_TIM6:
 	    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_TIM6EN);
 	    break;
+#endif
 	case TIMER_INSTANCE_TIM7:
 	    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_TIM7EN);
 	    break;
+#if defined(STM32L476xx)
 	case TIMER_INSTANCE_TIM8:
 	    armv7m_atomic_or(&RCC->APB2ENR, RCC_APB2ENR_TIM8EN);
 	    break;
+#endif
 	case TIMER_INSTANCE_TIM15:
 	    armv7m_atomic_or(&RCC->APB2ENR, RCC_APB2ENR_TIM15EN);
 	    break;
 	case TIMER_INSTANCE_TIM16:
 	    armv7m_atomic_or(&RCC->APB2ENR, RCC_APB2ENR_TIM16EN);
 	    break;
+#if defined(STM32L476xx)
 	case TIMER_INSTANCE_TIM17:
 	    armv7m_atomic_or(&RCC->APB2ENR, RCC_APB2ENR_TIM17EN);
 	    break;
+#endif
 	}
     }
 
@@ -414,10 +425,17 @@ bool stm32l4_timer_configure(stm32l4_timer_t *timer, uint32_t prescaler, uint32_
     TIM->ARR  = period;
     TIM->PSC  = prescaler;
 
-    if (TIMER_IS_ADVANCED(timer->instance))
+    if (timer->instance == TIMER_INSTANCE_TIM1)
     {
 	TIM->RCR = 0;
     }
+
+#if defined(STM32L476xx)
+    if (timer->instance == TIMER_INSTANCE_TIM8)
+    {
+	TIM->RCR = 0;
+    }
+#endif
 
     // TIM->EGR = TIM_EGR_UG;
 
@@ -689,6 +707,7 @@ void TIM1_UP_TIM16_IRQHandler(void)
     stm32l4_timer_interrupt(stm32l4_timer_driver.instances[TIMER_INSTANCE_TIM16]);
 }
 
+#if defined(STM32L476xx)
 void TIM1_TRG_COM_TIM17_IRQHandler(void)
 {
     if (TIM1->SR & (TIM_SR_TIF | TIM_SR_COMIF))
@@ -699,10 +718,21 @@ void TIM1_TRG_COM_TIM17_IRQHandler(void)
     stm32l4_timer_interrupt(stm32l4_timer_driver.instances[TIMER_INSTANCE_TIM17]);
 }
 
+#else
+
+void TIM1_TRG_COM_IRQHandler(void)
+{
+    stm32l4_timer_interrupt(stm32l4_timer_driver.instances[TIMER_INSTANCE_TIM1]);
+}
+
+#endif
+
 void TIM1_CC_IRQHandler(void)
 {
     stm32l4_timer_interrupt(stm32l4_timer_driver.instances[TIMER_INSTANCE_TIM1]);
 }
+
+#if defined(STM32L476xx)
 
 void TIM2_IRQHandler(void)
 {
@@ -743,6 +773,8 @@ void TIM5_IRQHandler(void)
 {
     stm32l4_timer_interrupt(stm32l4_timer_driver.instances[TIMER_INSTANCE_TIM5]);
 }
+
+#endif
 
 void TIM6_DAC_IRQHandler(void)
 {

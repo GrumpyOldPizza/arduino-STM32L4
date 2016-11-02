@@ -46,7 +46,9 @@ void stm32l4_gpio_pin_configure(unsigned int pin, unsigned int mode)
     /* First switch the pin back to analog mode */
     armv7m_atomic_or(&GPIO->MODER, (0x00000003 << (index << 1)));
 
+#if defined(STM32L476xx)
     armv7m_atomic_and(&GPIO->ASCR, ~(0x00000001 << index));
+#endif /* defined(STM32L476xx) */
 
     /* Set OPTYPER */
     armv7m_atomic_modify(&GPIO->OTYPER, (0x00000001 << index), (((mode & GPIO_OTYPE_MASK) >> GPIO_OTYPE_SHIFT) << index));
@@ -62,10 +64,12 @@ void stm32l4_gpio_pin_configure(unsigned int pin, unsigned int mode)
 
     if ((mode & GPIO_MODE_MASK) == GPIO_MODE_ANALOG)
     {
+#if defined(STM32L476xx)
 	if (mode & GPIO_ANALOG_SWITCH)
 	{
 	    armv7m_atomic_or(&GPIO->ASCR, (0x00000001 << index));
 	}
+#endif /* defined(STM32L476xx) */
     }
     else
     {

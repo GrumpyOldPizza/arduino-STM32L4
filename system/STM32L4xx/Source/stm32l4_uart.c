@@ -66,18 +66,26 @@ static stm32l4_uart_driver_t stm32l4_uart_driver;
 static USART_TypeDef * const stm32l4_uart_xlate_USART[UART_INSTANCE_COUNT] = {
     USART1,
     USART2,
+#if defined(STM32L433xx) || defined(STM32L476xx)
     USART3,
+#endif
+#if defined(STM32L476xx)
     UART4,
     UART5,
+#endif
     LPUART1,
 };
 
 static const IRQn_Type stm32l4_uart_xlate_IRQn[UART_INSTANCE_COUNT] = {
     USART1_IRQn,
     USART2_IRQn,
+#if defined(STM32L433xx) || defined(STM32L476xx)
     USART3_IRQn,
+#endif
+#if defined(STM32L476xx)
     UART4_IRQn,
     UART5_IRQn,
+#endif
     LPUART1_IRQn,
 };
 
@@ -210,7 +218,7 @@ static void stm32l4_uart_interrupt(stm32l4_uart_t *uart)
 
 bool stm32l4_uart_create(stm32l4_uart_t *uart, unsigned int instance, const stm32l4_uart_pins_t *pins, unsigned int priority, unsigned int mode)
 {
-    if (instance > UART_INSTANCE_LPUART1)
+    if (instance >= UART_INSTANCE_COUNT)
     {
 	return false;
     }
@@ -242,10 +250,13 @@ bool stm32l4_uart_create(stm32l4_uart_t *uart, unsigned int instance, const stm3
 	    if (stm32l4_dma_create(&uart->rx_dma, DMA_CHANNEL_DMA1_CH6_USART2_RX, uart->priority)) { uart->mode |= UART_MODE_RX_DMA; }
 	    break;
 
+#if defined(STM32L433xx) || defined(STM32L476xx)
 	case UART_INSTANCE_USART3:
 	    if (stm32l4_dma_create(&uart->rx_dma, DMA_CHANNEL_DMA1_CH3_USART3_RX, uart->priority)) { uart->mode |= UART_MODE_RX_DMA; }
 	    break;
+#endif
 
+#if defined(STM32L476xx)
 	case UART_INSTANCE_UART4:
 	    if (stm32l4_dma_create(&uart->rx_dma, DMA_CHANNEL_DMA2_CH5_UART4_RX, uart->priority)) { uart->mode |= UART_MODE_RX_DMA; }
 	    break;
@@ -253,7 +264,7 @@ bool stm32l4_uart_create(stm32l4_uart_t *uart, unsigned int instance, const stm3
 	case UART_INSTANCE_UART5:
 	    if (stm32l4_dma_create(&uart->rx_dma, DMA_CHANNEL_DMA2_CH2_UART5_RX, uart->priority)) { uart->mode |= UART_MODE_RX_DMA; }
 	    break;
-
+#endif
 	case UART_INSTANCE_LPUART1:
 	    break;
       
@@ -275,10 +286,13 @@ bool stm32l4_uart_create(stm32l4_uart_t *uart, unsigned int instance, const stm3
 	    if (stm32l4_dma_create(&uart->tx_dma, DMA_CHANNEL_DMA1_CH7_USART2_TX, uart->priority)) { uart->mode |= UART_MODE_TX_DMA; }
 	    break;
 
+#if defined(STM32L433xx) || defined(STM32L476xx)
 	case UART_INSTANCE_USART3:
 	    if (stm32l4_dma_create(&uart->tx_dma, DMA_CHANNEL_DMA1_CH2_USART3_TX, uart->priority)) { uart->mode |= UART_MODE_TX_DMA; }
 	    break;
+#endif
 
+#if defined(STM32L476xx)
 	case UART_INSTANCE_UART4:
 	    if (stm32l4_dma_create(&uart->tx_dma, DMA_CHANNEL_DMA2_CH3_UART4_TX, uart->priority)) { uart->mode |= UART_MODE_TX_DMA; }
 	    break;
@@ -286,6 +300,7 @@ bool stm32l4_uart_create(stm32l4_uart_t *uart, unsigned int instance, const stm3
 	case UART_INSTANCE_UART5:
 	    if (stm32l4_dma_create(&uart->tx_dma, DMA_CHANNEL_DMA2_CH1_UART5_TX, uart->priority)) { uart->mode |= UART_MODE_TX_DMA; }
 	    break;
+#endif
 
 	case UART_INSTANCE_LPUART1:
 	    break;
@@ -377,15 +392,19 @@ bool stm32l4_uart_enable(stm32l4_uart_t *uart, uint8_t *rx_data, uint16_t rx_siz
     case UART_INSTANCE_USART2:
 	armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_USART2SEL, RCC_CCIPR_USART2SEL_1); /* HSI */
 	break;
+#if defined(STM32L433xx) || defined(STM32L476xx)
     case UART_INSTANCE_USART3:
 	armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_USART3SEL, RCC_CCIPR_USART3SEL_1); /* HSI */
 	break;
+#endif
+#if defined(STM32L476xx)
     case UART_INSTANCE_UART4:
 	armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_UART4SEL, RCC_CCIPR_UART4SEL_1);   /* HSI */
 	break;
     case UART_INSTANCE_UART5:
 	armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_UART5SEL, RCC_CCIPR_UART5SEL_1);   /* HSI */
 	break;
+#endif
     case UART_INSTANCE_LPUART1:
 	armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_LPUART1SEL, (RCC_CCIPR_LPUART1SEL_0 | RCC_CCIPR_LPUART1SEL_1)); /* LSE */
 	break;
@@ -933,10 +952,16 @@ void USART2_IRQHandler(void)
     stm32l4_uart_interrupt(stm32l4_uart_driver.instances[UART_INSTANCE_USART2]);
 }
 
+#if defined(STM32L433xx) || defined(STM32L476xx)
+
 void USART3_IRQHandler(void)
 {
     stm32l4_uart_interrupt(stm32l4_uart_driver.instances[UART_INSTANCE_USART3]);
 }
+
+#endif
+
+#if defined(STM32L476xx)
 
 void UART4_IRQHandler(void)
 {
@@ -947,6 +972,8 @@ void UART5_IRQHandler(void)
 {
     stm32l4_uart_interrupt(stm32l4_uart_driver.instances[UART_INSTANCE_UART5]);
 }
+
+#endif
 
 void LPUART1_IRQHandler(void)
 {

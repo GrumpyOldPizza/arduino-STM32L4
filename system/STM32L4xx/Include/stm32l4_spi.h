@@ -37,13 +37,17 @@
 #include "stm32l4_dma.h"
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
-#define SPI_INSTANCE_SPI1              0
-#define SPI_INSTANCE_SPI2              1
-#define SPI_INSTANCE_SPI3              2
-#define SPI_INSTANCE_COUNT             3
+enum {
+    SPI_INSTANCE_SPI1  = 0,
+#if defined(STM32L433xx) || defined(STM32L476xx)
+    SPI_INSTANCE_SPI2,
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+    SPI_INSTANCE_SPI3,
+    SPI_INSTANCE_COUNT
+};
 
 #define SPI_MODE_RX_DMA                0x00000001
 #define SPI_MODE_TX_DMA                0x00000002
@@ -179,7 +183,9 @@ extern uint16_t stm32l4_spi_crc16(stm32l4_spi_t *spi);
 extern void stm32l4_spi_poll(stm32l4_spi_t *spi);
 
 extern void SPI1_IRQHandler(void);
+#if defined(STM32L433xx) || defined(STM32L476xx)
 extern void SPI2_IRQHandler(void);
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
 extern void SPI3_IRQHandler(void);
 
 #ifdef __cplusplus

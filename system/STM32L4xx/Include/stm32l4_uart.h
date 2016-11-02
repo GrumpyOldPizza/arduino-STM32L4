@@ -37,16 +37,22 @@
 #include "stm32l4_dma.h"
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
-#define UART_INSTANCE_USART1         0
-#define UART_INSTANCE_USART2         1
-#define UART_INSTANCE_USART3         2
-#define UART_INSTANCE_UART4          3
-#define UART_INSTANCE_UART5          4
-#define UART_INSTANCE_LPUART1        5
-#define UART_INSTANCE_COUNT          6
+enum {
+    UART_INSTANCE_USART1 = 0,
+    UART_INSTANCE_USART2,
+#if defined(STM32L433xx) || defined(STM32L476xx)
+    UART_INSTANCE_USART3,
+#endif
+#if defined(STM32L476xx)
+    UART_INSTANCE_UART4,
+    UART_INSTANCE_UART5,
+#endif
+    UART_INSTANCE_LPUART1,
+    UART_INSTANCE_COUNT
+};
 
 #define UART_MODE_TX_DMA             0x00000001
 #define UART_MODE_RX_DMA             0x00000002
@@ -141,9 +147,13 @@ extern void stm32l4_uart_poll(stm32l4_uart_t *uart);
 
 extern void USART1_IRQHandler(void);
 extern void USART2_IRQHandler(void);
+#if defined(STM32L433xx) || defined(STM32L476xx)
 extern void USART3_IRQHandler(void);
+#endif
+#if defined(STM32L476xx)
 extern void UART4_IRQHandler(void);
 extern void UART5_IRQHandler(void);
+#endif
 extern void LPUART1_IRQHandler(void);
 
 #ifdef __cplusplus

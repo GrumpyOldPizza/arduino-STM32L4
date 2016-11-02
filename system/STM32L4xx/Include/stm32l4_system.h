@@ -34,56 +34,81 @@
 #include "stm32l4xx.h"
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
-#define SYSTEM_PERIPH_FLASH                0
-#define SYSTEM_PERIPH_SRAM1                1
-#define SYSTEM_PERIPH_SRAM2                2
-#define SYSTEM_PERIPH_DMA1                 3
-#define SYSTEM_PERIPH_DMA2                 4
-#define SYSTEM_PERIPH_GPIOA                5
-#define SYSTEM_PERIPH_GPIOB                6
-#define SYSTEM_PERIPH_GPIOC                7
-#define SYSTEM_PERIPH_GPIOD                8
-#define SYSTEM_PERIPH_GPIOE                9
-#define SYSTEM_PERIPH_GPIOF                10
-#define SYSTEM_PERIPH_GPIOG                11
-#define SYSTEM_PERIPH_GPIOH                12
-#define SYSTEM_PERIPH_USB                  13
-#define SYSTEM_PERIPH_ADC                  14
-#define SYSTEM_PERIPH_QSPI                 15
-#define SYSTEM_PERIPH_USART1               16
-#define SYSTEM_PERIPH_USART2               17
-#define SYSTEM_PERIPH_USART3               18
-#define SYSTEM_PERIPH_UART4                19
-#define SYSTEM_PERIPH_UART5                20
-#define SYSTEM_PERIPH_LPUART1              21
-#define SYSTEM_PERIPH_I2C1                 22
-#define SYSTEM_PERIPH_I2C2                 23
-#define SYSTEM_PERIPH_I2C3                 24
-#define SYSTEM_PERIPH_SPI1                 25
-#define SYSTEM_PERIPH_SPI2                 26
-#define SYSTEM_PERIPH_SPI3                 27
-#define SYSTEM_PERIPH_SDIO                 28
-#define SYSTEM_PERIPH_SAI1                 29
-#define SYSTEM_PERIPH_SAI2                 30
-#define SYSTEM_PERIPH_DFSDM                31
-#define SYSTEM_PERIPH_CAN                  32
-#define SYSTEM_PERIPH_TIM1                 33
-#define SYSTEM_PERIPH_TIM2                 34
-#define SYSTEM_PERIPH_TIM3                 35
-#define SYSTEM_PERIPH_TIM4                 36
-#define SYSTEM_PERIPH_TIM5                 37
-#define SYSTEM_PERIPH_TIM6                 38
-#define SYSTEM_PERIPH_TIM7                 39
-#define SYSTEM_PERIPH_TIM8                 40
-#define SYSTEM_PERIPH_TIM15                41
-#define SYSTEM_PERIPH_TIM16                42
-#define SYSTEM_PERIPH_TIM17                43
-#define SYSTEM_PERIPH_LPTIM1               44
-#define SYSTEM_PERIPH_LPTIM2               45
-#define SYSTEM_PERIPH_DAC                  46
+enum {
+    SYSTEM_PERIPH_FLASH = 0,
+    SYSTEM_PERIPH_SRAM1,
+    SYSTEM_PERIPH_SRAM2,
+    SYSTEM_PERIPH_DMA1,
+    SYSTEM_PERIPH_DMA2,
+    SYSTEM_PERIPH_GPIOA,
+    SYSTEM_PERIPH_GPIOB,
+#if defined(STM32L433xx) || defined(STM32L476xx)
+    SYSTEM_PERIPH_GPIOC,
+    SYSTEM_PERIPH_GPIOD,
+    SYSTEM_PERIPH_GPIOE,
+#endif
+#if defined(STM32L476xx)
+    SYSTEM_PERIPH_GPIOF,
+    SYSTEM_PERIPH_GPIOG,
+#endif
+    SYSTEM_PERIPH_GPIOH,
+    SYSTEM_PERIPH_USB,
+    SYSTEM_PERIPH_ADC,
+    SYSTEM_PERIPH_QSPI,
+    SYSTEM_PERIPH_USART1,
+    SYSTEM_PERIPH_USART2,
+#if defined(STM32L433xx) || defined(STM32L476xx)
+    SYSTEM_PERIPH_USART3,
+#endif
+#if defined(STM32L476xx)
+    SYSTEM_PERIPH_UART4,
+    SYSTEM_PERIPH_UART5,
+#endif
+    SYSTEM_PERIPH_LPUART1,
+    SYSTEM_PERIPH_I2C1,
+#if defined(STM32L433xx) || defined(STM32L476xx)
+    SYSTEM_PERIPH_I2C2,
+#endif
+    SYSTEM_PERIPH_I2C3,
+    SYSTEM_PERIPH_SPI1,
+#if defined(STM32L433xx) || defined(STM32L476xx)
+    SYSTEM_PERIPH_SPI2,
+#endif
+    SYSTEM_PERIPH_SPI3,
+#if defined(STM32L433xx) || defined(STM32L476xx)
+    SYSTEM_PERIPH_SDIO,
+#endif
+    SYSTEM_PERIPH_SAI1,
+#if defined(STM32L476xx)
+    SYSTEM_PERIPH_SAI2,
+    SYSTEM_PERIPH_DFSDM,
+#endif
+    SYSTEM_PERIPH_CAN,
+    SYSTEM_PERIPH_TIM1,
+    SYSTEM_PERIPH_TIM2,
+#if defined(STM32L476xx)
+    SYSTEM_PERIPH_TIM3,
+    SYSTEM_PERIPH_TIM4,
+    SYSTEM_PERIPH_TIM5,
+#endif
+    SYSTEM_PERIPH_TIM6,
+    SYSTEM_PERIPH_TIM7,
+#if defined(STM32L476xx)
+    SYSTEM_PERIPH_TIM8,
+#endif
+    SYSTEM_PERIPH_TIM15,
+    SYSTEM_PERIPH_TIM16,
+#if defined(STM32L476xx)
+    SYSTEM_PERIPH_TIM17,
+#endif
+    SYSTEM_PERIPH_LPTIM1,
+    SYSTEM_PERIPH_LPTIM2,
+    SYSTEM_PERIPH_DAC,
+    SYSTEM_PERIPH_COUNT
+};
 
 extern void     stm32l4_system_periph_reset(unsigned int periph);
 extern void     stm32l4_system_periph_enable(unsigned int periph);
