@@ -106,11 +106,21 @@ public:
     Dir openDir(const char* path);
     Dir openDir(const String& path);
 
+    bool mkdir(const char* path);
+    bool mkdir(const String& path);
+
+    bool rmdir(const char* path);
+    bool rmdir(const String& path);
+
+    bool chdir(const char* path);
+    bool chdir(const String& path);
+
     bool remove(const char* path);
     bool remove(const String& path);
 
     bool rename(const char* pathFrom, const char* pathTo);
     bool rename(const String& pathFrom, const String& pathTo);
+
 };
 
 extern FS DOSFS;

@@ -85,6 +85,7 @@
 #define GPIO_PIN_PB4                    0x14
 #define GPIO_PIN_PB5                    0x15
 #define GPIO_PIN_PB6                    0x16
+#define GPIO_PIN_PB7                    0x17
 #define GPIO_PIN_PC14                   0x2e
 #define GPIO_PIN_PC15                   0x2f
 #define GPIO_PIN_PH3                    0x73
@@ -372,8 +373,8 @@
 #define GPIO_PIN_PA4_SPI3_NSS		0x0604
 #define GPIO_PIN_PA15_SPI3_NSS		0x060f
 #define GPIO_PIN_PB3_SPI3_SCK		0x0613
-#define GPIO_PIN_PB4_SPI3_MOSI		0x0614
-#define GPIO_PIN_PB5_SPI3_MISO		0x0615
+#define GPIO_PIN_PB4_SPI3_MISO		0x0614
+#define GPIO_PIN_PB5_SPI3_MOSI		0x0615
 
 #define GPIO_PIN_PA2_QUADSPI_BK1_NCS	0x0a02
 #define GPIO_PIN_PA3_QUADSPI_CLK	0x0a03
@@ -594,8 +595,8 @@
 #define GPIO_PIN_PA4_SPI3_NSS		0x0604
 #define GPIO_PIN_PA15_SPI3_NSS		0x060f
 #define GPIO_PIN_PB3_SPI3_SCK		0x0613
-#define GPIO_PIN_PB4_SPI3_MOSI		0x0614
-#define GPIO_PIN_PB5_SPI3_MISO		0x0615
+#define GPIO_PIN_PB4_SPI3_MISO		0x0614
+#define GPIO_PIN_PB5_SPI3_MOSI		0x0615
 #define GPIO_PIN_PC10_SPI3_SCK		0x062a
 #define GPIO_PIN_PC11_SPI3_MISO		0x062b
 #define GPIO_PIN_PC12_SPI3_MOSI		0x062c

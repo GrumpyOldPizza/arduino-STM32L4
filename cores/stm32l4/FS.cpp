@@ -207,22 +207,66 @@ File FS::open(const char* path, const char* mode) {
     return File(path, mode);
 }
 
+File FS::open(const String& path, const char* mode) {
+    return open(path.c_str(), mode);
+}
+
 bool FS::exists(const char* path) {
     unsigned char attr;
 
     return (f_getattr(path, &attr) == F_NO_ERROR);
 }
 
+bool FS::exists(const String& path) {
+    return exists(path.c_str());
+}
+
 Dir FS::openDir(const char* path) {
     return Dir(path);
+}
+
+Dir FS::openDir(const String& path) {
+    return openDir(path.c_str());
+}
+
+bool FS::mkdir(const char* path) {
+    return (f_mkdir(path) == F_NO_ERROR);
+}
+
+bool FS::mkdir(const String& path) {
+    return mkdir(path.c_str());
+}
+
+bool FS::rmdir(const char* path) {
+    return (f_rmdir(path) == F_NO_ERROR);
+}
+
+bool FS::rmdir(const String& path) {
+    return rmdir(path.c_str());
+}
+
+bool FS::chdir(const char* path) {
+    return (f_chdir(path) == F_NO_ERROR);
+}
+
+bool FS::chdir(const String& path) {
+    return chdir(path.c_str());
 }
 
 bool FS::rename(const char* pathFrom, const char* pathTo) {
     return (f_move(pathFrom, pathTo) == F_NO_ERROR);
 }
 
+bool FS::rename(const String& pathFrom, const String& pathTo) {
+    return rename(pathFrom.c_str(), pathTo.c_str());
+}
+
 bool FS::remove(const char* path) {
     return (f_delete(path) == F_NO_ERROR);
+}
+
+bool FS::remove(const String& path) {
+    return remove(path.c_str());
 }
 
 FS DOSFS;

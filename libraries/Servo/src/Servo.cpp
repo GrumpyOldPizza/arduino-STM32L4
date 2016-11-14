@@ -42,7 +42,7 @@ static void servo_event_callback(void *context, uint32_t events)
 Servo::Servo()
 {
     if (stm32l4_servo.state == SERVO_STATE_NONE) {
-	stm32l4_servo_create(&stm32l4_servo, TIMER_INSTANCE_TIM15, STM32L4_SERVO_IRQ_PRIORITY);
+	stm32l4_servo_create(&stm32l4_servo, TIMER_INSTANCE_TIM6, STM32L4_SERVO_IRQ_PRIORITY);
     }
 
     if (ServoTable.entries < MAX_SERVOS) {

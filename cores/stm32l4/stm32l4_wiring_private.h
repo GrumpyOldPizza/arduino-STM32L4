@@ -71,7 +71,10 @@ extern "C" {
 extern void USBD_Attach(unsigned int pin_vusb, unsigned int priority);
 
 /************************************************************************
+ *
  * DMA map:
+ *
+ * STM32L476:
  * 
  * DMA_CHANNEL_DMA1_CH1_ADC1
  * DMA_CHANNEL_DMA1_CH2_USART3_TX
@@ -83,10 +86,32 @@ extern void USBD_Attach(unsigned int pin_vusb, unsigned int priority);
  * DMA_CHANNEL_DMA2_CH1_SPI3_RX
  * DMA_CHANNEL_DMA2_CH2_SPI3_TX
  * DMA_CHANNEL_DMA2_CH3_SPI1_RX
- * DMA_CHANNEL_DMA2_CH4_SPI1_TX
+ * DMA_CHANNEL_DMA2_CH4_SPI1_TX / DMA_CHANNEL_DMA2_CH4_SDMMC
  * DMA_CHANNEL_DMA2_CH5_UART4_RX
  * DMA_CHANNEL_DMA2_CH6_SAI1_A
  * DMA_CHANNEL_DMA2_CH7_QUADSPI
+ *
+ * (SDMMC shares PC10/PC11/PC12 with SPI3, hence is SDMMC is in use,
+ * then PB3/PB4/PB5 switch from SPI1 to SPI3 to avoid DMA conflicts)
+ *
+ *
+ * STM32L432/STM32L433:
+ *
+ * DMA_CHANNEL_DMA1_CH1_ADC1
+ * DMA_CHANNEL_DMA1_CH2_USART3_TX
+ * DMA_CHANNEL_DMA1_CH3_USART3_RX
+ * DMA_CHANNEL_DMA1_CH4_USART1_RX
+ * DMA_CHANNEL_DMA1_CH5_USART1_TX
+ * DMA_CHANNEL_DMA1_CH6_USART2_RX
+ * DMA_CHANNEL_DMA1_CH7_I2C1_RX
+ * DMA_CHANNEL_DMA2_CH1_SPI3_RX
+ * DMA_CHANNEL_DMA2_CH2_SPI3_TX
+ * DMA_CHANNEL_DMA2_CH3_SPI1_RX
+ * DMA_CHANNEL_DMA2_CH4_SPI1_TX
+ * DMA_CHANNEL_DMA2_CH5_SDMMC
+ * DMA_CHANNEL_DMA2_CH6_SAI1_A
+ * DMA_CHANNEL_DMA2_CH7_SAI1_B
+ *
  *
  ************************************************************************/
 
@@ -98,12 +123,12 @@ extern void USBD_Attach(unsigned int pin_vusb, unsigned int priority);
  * TIM3    PWM
  * TIM4    PWM
  * TIM5    PWM
- * TIM6    (ADC)
+ * TIM6    SERVO
  * TIM7    TONE
  * TIM8
- * TIM15   SERVO
- * TIM16   IR
- * TIM17   IR
+ * TIM15   
+ * TIM16   
+ * TIM17  
  * 
  ************************************************************************/
 

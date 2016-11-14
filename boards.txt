@@ -56,6 +56,110 @@ Dragonfly-L476RE.menu.CpuFrequency.2.build.f_cpu=2000000L
 Dragonfly-L476RE.menu.CpuFrequency.1=1 MHz
 Dragonfly-L476RE.menu.CpuFrequency.1.build.f_cpu=1000000L
 
+# Tlera Butterfly
+# ---------------------------------------
+Butterfly-L433CC.name=Butterfly-L433CC
+Butterfly-L433CC.vid.0=0x1209
+Butterfly-L433CC.pid.0=0x6668
+
+Butterfly-L433CC.upload.tool=stm32l4_dfu
+Butterfly-L433CC.upload.protocol=dfu
+Butterfly-L433CC.upload.maximum_size=245760
+Butterfly-L433CC.upload.use_1200bps_touch=true
+Butterfly-L433CC.upload.wait_for_upload_port=false
+Butterfly-L433CC.upload.native_usb=false
+
+Butterfly-L433CC.bootloader.tool=stm32l4_dfu
+Butterfly-L433CC.bootloader.protocol=dfu
+Butterfly-L433CC.bootloader.file=butterfly.bin
+
+Butterfly-L433CC.build.mcu=cortex-m4
+Butterfly-L433CC.build.f_cpu=80000000L
+Butterfly-L433CC.build.board=Butterfly-L433CC
+Butterfly-L433CC.build.arch=STM32L4
+Butterfly-L433CC.build.core=stm32l4
+Butterfly-L433CC.build.extra_flags=-DSTM32L433xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
+Butterfly-L433CC.build.ldscript=linker_scripts/STM32L433CC_FLASH.ld
+Butterfly-L433CC.build.openocdscript=openocd_scripts/stm32l433cc_butterfly.cfg
+Butterfly-L433CC.build.variant=STM32L433CC-Butterfly
+Butterfly-L433CC.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l433 -larm_cortexM4lf_math
+Butterfly-L433CC.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/STM32L4xx/Include" 
+
+Butterfly-L433CC.menu.CpuFrequency.80=80 MHz
+Butterfly-L433CC.menu.CpuFrequency.80.build.f_cpu=80000000L
+Butterfly-L433CC.menu.CpuFrequency.72=72 MHz
+Butterfly-L433CC.menu.CpuFrequency.72.build.f_cpu=72000000L
+Butterfly-L433CC.menu.CpuFrequency.64=64 MHz
+Butterfly-L433CC.menu.CpuFrequency.64.build.f_cpu=64000000L
+Butterfly-L433CC.menu.CpuFrequency.48=48 MHz
+Butterfly-L433CC.menu.CpuFrequency.48.build.f_cpu=48000000L
+Butterfly-L433CC.menu.CpuFrequency.32=32 MHz
+Butterfly-L433CC.menu.CpuFrequency.32.build.f_cpu=32000000L
+Butterfly-L433CC.menu.CpuFrequency.24=24 MHz
+Butterfly-L433CC.menu.CpuFrequency.24.build.f_cpu=24000000L
+Butterfly-L433CC.menu.CpuFrequency.16=16 MHz
+Butterfly-L433CC.menu.CpuFrequency.16.build.f_cpu=16000000L
+Butterfly-L433CC.menu.CpuFrequency.8=8 MHz
+Butterfly-L433CC.menu.CpuFrequency.8.build.f_cpu=8000000L
+Butterfly-L433CC.menu.CpuFrequency.4=4 MHz
+Butterfly-L433CC.menu.CpuFrequency.4.build.f_cpu=4000000L
+Butterfly-L433CC.menu.CpuFrequency.2=2 MHz
+Butterfly-L433CC.menu.CpuFrequency.2.build.f_cpu=2000000L
+Butterfly-L433CC.menu.CpuFrequency.1=1 MHz
+Butterfly-L433CC.menu.CpuFrequency.1.build.f_cpu=1000000L
+
+# Tlera Ladybug
+# ---------------------------------------
+Ladybug-L432KC.name=Ladybug-L432KC
+Ladybug-L432KC.vid.0=0x1209
+Ladybug-L432KC.pid.0=0x6669
+
+Ladybug-L432KC.upload.tool=stm32l4_dfu
+Ladybug-L432KC.upload.protocol=dfu
+Ladybug-L432KC.upload.maximum_size=245760
+Ladybug-L432KC.upload.use_1200bps_touch=true
+Ladybug-L432KC.upload.wait_for_upload_port=false
+Ladybug-L432KC.upload.native_usb=false
+
+Ladybug-L432KC.bootloader.tool=stm32l4_dfu
+Ladybug-L432KC.bootloader.protocol=dfu
+Ladybug-L432KC.bootloader.file=butterfly.bin
+
+Ladybug-L432KC.build.mcu=cortex-m4
+Ladybug-L432KC.build.f_cpu=80000000L
+Ladybug-L432KC.build.board=Ladybug-L432KC
+Ladybug-L432KC.build.arch=STM32L4
+Ladybug-L432KC.build.core=stm32l4
+Ladybug-L432KC.build.extra_flags=-DSTM32L432xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
+Ladybug-L432KC.build.ldscript=linker_scripts/STM32L432KC_FLASH.ld
+Ladybug-L432KC.build.openocdscript=openocd_scripts/stm32l432kc_ladybug.cfg
+Ladybug-L432KC.build.variant=STM32L432KC-Ladybug
+Ladybug-L432KC.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l432 -larm_cortexM4lf_math
+Ladybug-L432KC.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/STM32L4xx/Include" 
+
+Ladybug-L432KC.menu.CpuFrequency.80=80 MHz
+Ladybug-L432KC.menu.CpuFrequency.80.build.f_cpu=80000000L
+Ladybug-L432KC.menu.CpuFrequency.72=72 MHz
+Ladybug-L432KC.menu.CpuFrequency.72.build.f_cpu=72000000L
+Ladybug-L432KC.menu.CpuFrequency.64=64 MHz
+Ladybug-L432KC.menu.CpuFrequency.64.build.f_cpu=64000000L
+Ladybug-L432KC.menu.CpuFrequency.48=48 MHz
+Ladybug-L432KC.menu.CpuFrequency.48.build.f_cpu=48000000L
+Ladybug-L432KC.menu.CpuFrequency.32=32 MHz
+Ladybug-L432KC.menu.CpuFrequency.32.build.f_cpu=32000000L
+Ladybug-L432KC.menu.CpuFrequency.24=24 MHz
+Ladybug-L432KC.menu.CpuFrequency.24.build.f_cpu=24000000L
+Ladybug-L432KC.menu.CpuFrequency.16=16 MHz
+Ladybug-L432KC.menu.CpuFrequency.16.build.f_cpu=16000000L
+Ladybug-L432KC.menu.CpuFrequency.8=8 MHz
+Ladybug-L432KC.menu.CpuFrequency.8.build.f_cpu=8000000L
+Ladybug-L432KC.menu.CpuFrequency.4=4 MHz
+Ladybug-L432KC.menu.CpuFrequency.4.build.f_cpu=4000000L
+Ladybug-L432KC.menu.CpuFrequency.2=2 MHz
+Ladybug-L432KC.menu.CpuFrequency.2.build.f_cpu=2000000L
+Ladybug-L432KC.menu.CpuFrequency.1=1 MHz
+Ladybug-L432KC.menu.CpuFrequency.1.build.f_cpu=1000000L
+
 
 # ST NUCLEO-L476RG
 # ---------------------------------------
