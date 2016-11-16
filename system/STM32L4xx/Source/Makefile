@@ -42,6 +42,7 @@ SRCS = \
 	dosfs_sflash.c \
 	dosfs_storage.c \
 	stm32l4_adc.c \
+	stm32l4_clib.c \
 	stm32l4_dac.c \
 	stm32l4_dma.c \
 	stm32l4_exti.c \

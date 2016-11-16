@@ -48,6 +48,8 @@ extern stm32l4_usbd_cdc_t stm32l4_usbd_cdc;
 extern uint32_t __HeapBase[];
 extern uint32_t __StackLimit[];
 
+__attribute__((weak)) int stm32l4_console(char *buf, int nbytes) { return 0; }
+
 void * _sbrk (int nbytes)
 {
     void *p;
@@ -172,60 +174,10 @@ int _write(int file, char *buf, int nbytes)
 		}
 		while (nbytes != 0);
 	    }
-#if defined(STM32L4_CONFIG_USBD_CDC)
 	    else
 	    {
-		if (stm32l4_usbd_cdc.state == USBD_CDC_STATE_NONE)
-		{
-		    stm32l4_usbd_cdc_create(&stm32l4_usbd_cdc);
-		}
-
-		if (stm32l4_usbd_cdc.state == USBD_CDC_STATE_INIT)
-		{
-		    stm32l4_usbd_cdc_enable(&stm32l4_usbd_cdc, 0, NULL, NULL, 0);
-		}
-
-		if (stm32l4_usbd_cdc_connected(&stm32l4_usbd_cdc))
-		{
-		    if (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-		    {
-			if (armv7m_core_priority() <= (int)NVIC_GetPriority(OTG_FS_IRQn))
-			{
-			    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-			    {
-				stm32l4_usbd_cdc_poll(&stm32l4_usbd_cdc);
-			    }
-			}
-			else
-			{
-			    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-			    {
-				armv7m_core_yield();
-			    }
-			}
-		    }
-
-		    stm32l4_usbd_cdc_transmit(&stm32l4_usbd_cdc, (const uint8_t*)buf, nbytes);
-
-		    if (armv7m_core_priority() <= (int)NVIC_GetPriority(OTG_FS_IRQn))
-		    {
-			while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-			{
-			    stm32l4_usbd_cdc_poll(&stm32l4_usbd_cdc);
-			}
-		    }
-		    else
-		    {
-			while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-			{
-			    armv7m_core_yield();
-			}
-		    }
-		}
-
-		n = nbytes;
+		n = stm32l4_console(buf, nbytes);
 	    }
-#endif
 	}
 	return n;
 

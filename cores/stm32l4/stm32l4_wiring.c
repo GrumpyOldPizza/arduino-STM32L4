@@ -121,6 +121,10 @@ void init( void )
     f_initvolume(&dosfs_sflash_init, 0);
     f_checkvolume();
 #endif /* STM32L4_CONFIG_DOSFS_SFLASH */
+
+    /* This is here to work around a linker issue in avr/fdevopen.c */
+    asm(".global stm32l4_stdio_put");
+    asm(".global stm32l4_stdio_get");
 }
 
 #ifdef __cplusplus
