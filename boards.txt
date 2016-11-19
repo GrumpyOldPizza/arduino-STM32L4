@@ -161,6 +161,39 @@ Ladybug-L432KC.menu.CpuFrequency.1=1 MHz
 Ladybug-L432KC.menu.CpuFrequency.1.build.f_cpu=1000000L
 
 
+# ST NUCLEO-L432KC
+# ---------------------------------------
+NUCLEO-L432KC.name=NUCLEO-L432KC
+NUCLEO-L432KC.vid.0=0x0483
+NUCLEO-L432KC.pid.0=0x374b
+
+NUCLEO-L432KC.upload.tool=stm32l4_openocd
+NUCLEO-L432KC.upload.protocol=stlink
+NUCLEO-L432KC.upload.maximum_size=245760
+NUCLEO-L432KC.upload.use_1200bps_touch=true
+NUCLEO-L432KC.upload.wait_for_upload_port=false
+NUCLEO-L432KC.upload.native_usb=false
+
+NUCLEO-L432KC.build.mcu=cortex-m4
+NUCLEO-L432KC.build.f_cpu=80000000L
+NUCLEO-L432KC.build.board=NUCLEO-L432KC
+NUCLEO-L432KC.build.arch=STM32L4
+NUCLEO-L432KC.build.core=stm32l4
+NUCLEO-L432KC.build.extra_flags=-DSTM32L432xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
+NUCLEO-L432KC.build.ldscript=linker_scripts/STM32L432KC_FLASH.ld
+NUCLEO-L432KC.build.openocdscript=openocd_scripts/stm32l432kc_nucleo.cfg
+NUCLEO-L432KC.build.variant=STM32L432KC-NUCLEO
+NUCLEO-L432KC.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l432 -larm_cortexM4lf_math
+NUCLEO-L432KC.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/STM32L4xx/Include" 
+
+NUCLEO-L432KC.menu.CpuFrequency.80=80 MHz
+NUCLEO-L432KC.menu.CpuFrequency.80.build.f_cpu=80000000L
+NUCLEO-L432KC.menu.CpuFrequency.24=24 MHz
+NUCLEO-L432KC.menu.CpuFrequency.24.build.f_cpu=24000000L
+NUCLEO-L432KC.menu.CpuFrequency.2=2 MHz
+NUCLEO-L432KC.menu.CpuFrequency.2.build.f_cpu=2000000L
+
+
 # ST NUCLEO-L476RG
 # ---------------------------------------
 NUCLEO-L476RG.name=NUCLEO-L476RG

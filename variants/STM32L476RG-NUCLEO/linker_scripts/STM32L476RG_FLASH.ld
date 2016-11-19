@@ -91,14 +91,45 @@ SECTIONS
        *(SORT(.dtors.*))
        *(.dtors)
 
+       *(.rodata* .gnu.linkonce.r.*)
+
        KEEP(*(.eh_frame*))
 
-       . = ALIGN(8);
-   } > FLASH
+       /* preinit data */
+       PROVIDE_HIDDEN (__preinit_array_start = .);
+       KEEP(*(.preinit_array))
+       PROVIDE_HIDDEN (__preinit_array_end = .);
 
-   .rodata :
-   {
-       *(.rodata* .gnu.linkonce.r.*)
+       /* init data */
+       PROVIDE_HIDDEN (__init_array_start = .);
+       KEEP(*(SORT(.init_array.*)))
+       KEEP(*(.init_array))
+       PROVIDE_HIDDEN (__init_array_end = .);
+
+       /* finit data */
+       PROVIDE_HIDDEN (__fini_array_start = .);
+       KEEP(*(SORT(.fini_array.*)))
+       KEEP(*(.fini_array))
+       PROVIDE_HIDDEN (__fini_array_end = .);
+
+       . = ALIGN(4);
+     __copy_table_start__ = .;
+       LONG (LOADADDR(.data))
+       LONG (__data_start__)
+       LONG (__data_end__ - __data_start__)
+       LONG (LOADADDR(.ramfunc))
+       LONG (__ramfunc_start__)
+       LONG (__ramfunc_end__ - __ramfunc_start__)
+       LONG (LOADADDR(.data2))
+       LONG (__data2_start__)
+       LONG (__data2_end__ - __data2_start__)
+     __copy_table_end__ = .;
+     __zero_table_start__ = .;
+       LONG (__bss_start__)
+       LONG (__bss_end__ - __bss_start__)
+       LONG (__bss2_start__)
+       LONG (__bss2_end__ - __bss2_start__)
+     __zero_table_end__ = .;
        . = ALIGN(8);
    } > FLASH
 
@@ -116,46 +147,7 @@ SECTIONS
        . = ALIGN(8);
    } > FLASH
 
-   .preinit_array :
-   {
-       /* preinit data */
-       PROVIDE_HIDDEN (__preinit_array_start = .);
-       KEEP(*(.preinit_array))
-       PROVIDE_HIDDEN (__preinit_array_end = .);
-       . = ALIGN(8);
-   } > FLASH
-
-   .init_array :
-   {
-       /* init data */
-       PROVIDE_HIDDEN (__init_array_start = .);
-       KEEP(*(SORT(.init_array.*)))
-       KEEP(*(.init_array))
-       PROVIDE_HIDDEN (__init_array_end = .);
-       . = ALIGN(8);
-   } > FLASH
-
-   .fini_array :
-   {
-       /* finit data */
-       PROVIDE_HIDDEN (__fini_array_start = .);
-       KEEP(*(SORT(.fini_array.*)))
-       KEEP(*(.fini_array))
-       PROVIDE_HIDDEN (__fini_array_end = .);
-       . = ALIGN(8);
-   } > FLASH
-
    __etext = . ;
-
-/*
-   .isr_vector_sram (NOLOAD) :
-   {
-       . = ALIGN(512);
-     __isr_vector_sram = .;
-       KEEP(*(.isr_vector_sram));
-       . = ALIGN(8);
-   } > SRAM2
-*/
 
    .ramfunc :
    {
@@ -235,36 +227,6 @@ SECTIONS
         
    /* Check if data + heap + stack exceeds RAM limit */
    ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed with stack")
-
-   .copy_table :
-   {
-       . = ALIGN(4);
-     __copy_table_start__ = .;
-       LONG (LOADADDR(.data))
-       LONG (__data_start__)
-       LONG (__data_end__ - __data_start__)
-       LONG (LOADADDR(.ramfunc))
-       LONG (__ramfunc_start__)
-       LONG (__ramfunc_end__ - __ramfunc_start__)
-       LONG (LOADADDR(.data2))
-       LONG (__data2_start__)
-       LONG (__data2_end__ - __data2_start__)
-     __copy_table_end__ = .;
-   } > FLASH
-
-   .zero_table :
-   {
-       . = ALIGN(4);
-     __zero_table_start__ = .;
-       LONG (__bss_start__)
-       LONG (__bss_end__ - __bss_start__)
-       LONG (__bss2_start__)
-       LONG (__bss2_end__ - __bss2_start__)
-     __zero_table_end__ = .;
-       FILL(0x00);
-       . = ALIGN(2048);
-   } > FLASH
-
 
    /* Stabs debugging sections.  */
    .stab          0 : { *(.stab) }

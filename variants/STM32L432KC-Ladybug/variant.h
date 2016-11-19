@@ -106,7 +106,7 @@ static const uint8_t ATN = PIN_ATN;
  * Serial interfaces
  */
 
-#define SERIAL_INTERFACES_COUNT 2
+#define SERIAL_INTERFACES_COUNT 3
 
 #define PIN_SERIAL1_RX       (0ul)
 #define PIN_SERIAL1_TX       (1ul)
@@ -164,10 +164,9 @@ static const uint8_t SCL = PIN_WIRE_SCL;
  *----------------------------------------------------------------------------*/
 
 #ifdef __cplusplus
-
+extern CDC  Serial;
 extern Uart Serial1;
 extern Uart Serial2;
-
 #endif
 
 // These serial port names are intended to allow libraries and architecture-neutral
@@ -185,14 +184,15 @@ extern Uart Serial2;
 //
 // SERIAL_PORT_HARDWARE_OPEN  Hardware serial ports which are open for use.  Their RX & TX
 //                            pins are NOT connected to anything by default.
-#define SERIAL_PORT_USBVIRTUAL      SerialUSB
-#define SERIAL_PORT_MONITOR         SerialUSB
+#define SERIAL_PORT_USBVIRTUAL      Serial
+#define SERIAL_PORT_MONITOR         Serial
 #define SERIAL_PORT_HARDWARE1       Serial1
 #define SERIAL_PORT_HARDWARE2       Serial2
 #define SERIAL_PORT_HARDWARE_OPEN1  Serial1
 #define SERIAL_PORT_HARDWARE_OPEN2  Serial2
 
-#define Serial SerialUSB
+// Alias SerialUSB to Serial
+#define SerialUSB SERIAL_PORT_USBVIRTUAL
 
 #endif /* _VARIANT_LADYBUG_STM32L432KC_ */
 

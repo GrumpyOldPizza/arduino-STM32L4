@@ -29,76 +29,73 @@ void (*serialEventCallback)(void) = NULL;
 // but we can refer to it weakly so we don't pull in the entire
 // HardwareSerial instance if the user doesn't also refer to it.
 
-#if defined(STM32L4_CONFIG_USBD_CDC)
-
 void serialEvent() __attribute__((weak));
-bool SerialUSB_empty() __attribute__((weak));
+bool Serial_empty() __attribute__((weak));
+
+#if SERIAL_INTERFACES_COUNT > 1
 
 void serialEvent1() __attribute__((weak));
 bool Serial1_empty() __attribute__((weak));
 
-#if SERIAL_INTERFACES_COUNT > 1
+#endif
+
+#if SERIAL_INTERFACES_COUNT > 2
 
 void serialEvent2() __attribute__((weak));
 bool Serial2_empty() __attribute__((weak));
 
 #endif
 
-#if SERIAL_INTERFACES_COUNT > 2
+#if SERIAL_INTERFACES_COUNT > 3
 
 void serialEvent3() __attribute__((weak));
 bool Serial3_empty() __attribute__((weak));
 
 #endif
 
-#if SERIAL_INTERFACES_COUNT > 3
+#if SERIAL_INTERFACES_COUNT > 4
 
 void serialEvent4() __attribute__((weak));
 bool Serial4_empty() __attribute__((weak));
 
 #endif
 
-#if SERIAL_INTERFACES_COUNT > 4
+#if SERIAL_INTERFACES_COUNT > 5
 
 void serialEvent5() __attribute__((weak));
 bool Serial5_empty() __attribute__((weak));
 
 #endif
 
+#if SERIAL_INTERFACES_COUNT > 6
+
+void serialEvent6() __attribute__((weak));
+bool Serial6_empty() __attribute__((weak));
+
+#endif
+
 void serialEventDispatch(void)
 {
-    if (serialEvent && SerialUSB_empty && !SerialUSB_empty()) { serialEvent(); }
-
-    if (serialEvent1 && Serial1_empty && !Serial1_empty()) { serialEvent1(); }
+    if (serialEvent  && Serial_empty  && !Serial_empty())  { serialEvent();  }
 #if SERIAL_INTERFACES_COUNT > 1
-    if (serialEvent2 && Serial2_empty && !Serial2_empty()) { serialEvent2(); }
+    if (serialEvent1 && Serial1_empty && !Serial1_empty()) { serialEvent1(); }
 #endif
 #if SERIAL_INTERFACES_COUNT > 2
-    if (serialEvent3 && Serial3_empty && !Serial3_empty()) { serialEvent3(); }
+    if (serialEvent2 && Serial2_empty && !Serial2_empty()) { serialEvent2(); }
 #endif
 #if SERIAL_INTERFACES_COUNT > 3
-    if (serialEvent4 && Serial4_empty && !Serial4_empty()) { serialEvent4(); }
+    if (serialEvent3 && Serial3_empty && !Serial3_empty()) { serialEvent3(); }
 #endif
 #if SERIAL_INTERFACES_COUNT > 4
-    if (serialEvent5 && Serial5_empty && !Serial5_empty()) { serialEvent5(); }
+    if (serialEvent4 && Serial4_empty && !Serial4_empty()) { serialEvent4(); }
 #endif
 #if SERIAL_INTERFACES_COUNT > 5
+    if (serialEvent5 && Serial5_empty && !Serial5_empty()) { serialEvent5(); }
+#endif
+#if SERIAL_INTERFACES_COUNT > 6
     if (serialEvent6 && Serial6_empty && !Serial6_empty()) { serialEvent6(); }
 #endif
 }
-
-#else /* STM32L4_CONFIG_USBD_CDC */
-
-void serialEvent() __attribute__((weak));
-bool Serial_empty() __attribute__((weak));
-
-void serialEventDispatch(void)
-{
-    if (serialEvent && Serial_empty && !Serial_empty()) { serialEvent(); }
-}
-
-#endif /* STM32L4_CONFIG_USBD_CDC */
-
 
 // Weak empty variant initialization function.
 // May be redefined by variant files.

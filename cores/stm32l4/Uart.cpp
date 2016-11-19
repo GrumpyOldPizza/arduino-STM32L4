@@ -451,101 +451,7 @@ void Uart::_event_callback(void *context, uint32_t events)
   reinterpret_cast<class Uart*>(context)->EventCallback(events);
 }
 
-#if defined(STM32L4_CONFIG_USBD_CDC)
-
-bool Serial1_empty() { return !Serial1.available(); }
-
-extern void serialEvent1() __attribute__((weak));
-
-extern const stm32l4_uart_pins_t g_Serial1Pins;
-extern const unsigned int g_Serial1Instance;
-extern const unsigned int g_Serial1Mode;
-
-static stm32l4_uart_t _Serial1;
-
-Uart Serial1(&_Serial1, g_Serial1Instance, &g_Serial1Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial1Mode, (serialEvent1 != NULL));
-
-#if SERIAL_INTERFACES_COUNT > 1
-
-bool Serial2_empty() { return !Serial2.available(); }
-
-extern void serialEvent2() __attribute__((weak));
-
-extern const stm32l4_uart_pins_t g_Serial2Pins;
-extern const unsigned int g_Serial2Instance;
-extern const unsigned int g_Serial2Mode;
-
-static stm32l4_uart_t _Serial2;
-
-Uart Serial2(&_Serial2, g_Serial2Instance, &g_Serial2Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial2Mode, (serialEvent2 != NULL));
-
-#endif
-
-#if SERIAL_INTERFACES_COUNT > 2
-
-bool Serial3_empty() { return !Serial3.available(); }
-
-extern void serialEvent3() __attribute__((weak));
-
-extern const stm32l4_uart_pins_t g_Serial3Pins;
-extern const unsigned int g_Serial3Instance;
-extern const unsigned int g_Serial3Mode;
-
-static stm32l4_uart_t _Serial3;
-
-Uart Serial3(&_Serial3, g_Serial3Instance, &g_Serial3Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial3Mode, (serialEvent3 != NULL));
-
-#endif
-
-#if SERIAL_INTERFACES_COUNT > 3
-
-bool Serial4_empty() { return !Serial4.available(); }
-
-extern void serialEvent4() __attribute__((weak));
-
-extern const stm32l4_uart_pins_t g_Serial4Pins;
-extern const unsigned int g_Serial4Instance;
-extern const unsigned int g_Serial4Mode;
-
-static stm32l4_uart_t _Serial4;
-
-Uart Serial4(&_Serial4, g_Serial4Instance, &g_Serial4Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial4Mode, (serialEvent4 != NULL));
-
-#endif
-
-#if SERIAL_INTERFACES_COUNT > 4
-
-bool Serial5_empty() { return !Serial5.available(); }
-
-extern void serialEvent5() __attribute__((weak));
-
-extern const stm32l4_uart_pins_t g_Serial5Pins;
-extern const unsigned int g_Serial5Instance;
-extern const unsigned int g_Serial5Mode;
-
-static stm32l4_uart_t _Serial5;
-
-Uart Serial5(&_Serial5, g_Serial5Instance, &g_Serial5Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial5Mode, (serialEvent5 != NULL));
-
-#endif
-
-#if SERIAL_INTERFACES_COUNT > 5
-
-bool Serial6_empty() { return !Serial6.available(); }
-
-extern void serialEvent6() __attribute__((weak));
-
-extern const stm32l4_uart_pins_t g_Serial6Pins;
-extern const unsigned int g_Serial6Instance;
-extern const unsigned int g_Serial6Mode;
-
-static stm32l4_uart_t _Serial6;
-
-Uart Serial6(&_Serial6, g_Serial6Instance, &g_Serial6Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial6Mode, (serialEvent6 != NULL));
-
-#endif
-
-#else // !USB_CDC
+#if !defined(STM32L4_CONFIG_USBD_CDC)
 
 bool Serial_empty() { return !Serial.available(); }
 
@@ -561,3 +467,98 @@ Uart Serial(&_Serial, g_SerialInstance, &g_SerialPins, STM32L4_UART_IRQ_PRIORITY
 
 #endif
 
+#if SERIAL_INTERFACES_COUNT > 1
+
+bool Serial1_empty() { return !Serial1.available(); }
+
+extern void serialEvent1() __attribute__((weak));
+
+extern const stm32l4_uart_pins_t g_Serial1Pins;
+extern const unsigned int g_Serial1Instance;
+extern const unsigned int g_Serial1Mode;
+
+static stm32l4_uart_t _Serial1;
+
+Uart Serial1(&_Serial1, g_Serial1Instance, &g_Serial1Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial1Mode, (serialEvent1 != NULL));
+
+#endif
+
+#if SERIAL_INTERFACES_COUNT > 2
+
+bool Serial2_empty() { return !Serial2.available(); }
+
+extern void serialEvent2() __attribute__((weak));
+
+extern const stm32l4_uart_pins_t g_Serial2Pins;
+extern const unsigned int g_Serial2Instance;
+extern const unsigned int g_Serial2Mode;
+
+static stm32l4_uart_t _Serial2;
+
+Uart Serial2(&_Serial2, g_Serial2Instance, &g_Serial2Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial2Mode, (serialEvent2 != NULL));
+
+#endif
+
+#if SERIAL_INTERFACES_COUNT > 3
+
+bool Serial3_empty() { return !Serial3.available(); }
+
+extern void serialEvent3() __attribute__((weak));
+
+extern const stm32l4_uart_pins_t g_Serial3Pins;
+extern const unsigned int g_Serial3Instance;
+extern const unsigned int g_Serial3Mode;
+
+static stm32l4_uart_t _Serial3;
+
+Uart Serial3(&_Serial3, g_Serial3Instance, &g_Serial3Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial3Mode, (serialEvent3 != NULL));
+
+#endif
+
+#if SERIAL_INTERFACES_COUNT > 4
+
+bool Serial4_empty() { return !Serial4.available(); }
+
+extern void serialEvent4() __attribute__((weak));
+
+extern const stm32l4_uart_pins_t g_Serial4Pins;
+extern const unsigned int g_Serial4Instance;
+extern const unsigned int g_Serial4Mode;
+
+static stm32l4_uart_t _Serial4;
+
+Uart Serial4(&_Serial4, g_Serial4Instance, &g_Serial4Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial4Mode, (serialEvent4 != NULL));
+
+#endif
+
+#if SERIAL_INTERFACES_COUNT > 5
+
+bool Serial5_empty() { return !Serial5.available(); }
+
+extern void serialEvent5() __attribute__((weak));
+
+extern const stm32l4_uart_pins_t g_Serial5Pins;
+extern const unsigned int g_Serial5Instance;
+extern const unsigned int g_Serial5Mode;
+
+static stm32l4_uart_t _Serial5;
+
+Uart Serial5(&_Serial5, g_Serial5Instance, &g_Serial5Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial5Mode, (serialEvent5 != NULL));
+
+#endif
+
+#if SERIAL_INTERFACES_COUNT > 6
+
+bool Serial6_empty() { return !Serial6.available(); }
+
+extern void serialEvent6() __attribute__((weak));
+
+extern const stm32l4_uart_pins_t g_Serial6Pins;
+extern const unsigned int g_Serial6Instance;
+extern const unsigned int g_Serial6Mode;
+
+static stm32l4_uart_t _Serial6;
+
+Uart Serial6(&_Serial6, g_Serial6Instance, &g_Serial6Pins, STM32L4_UART_IRQ_PRIORITY, g_Serial6Mode, (serialEvent6 != NULL));
+
+#endif

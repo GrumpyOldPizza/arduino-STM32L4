@@ -498,9 +498,9 @@ bool CDC::rts()
 
 extern void serialEvent() __attribute__((weak));
 
-bool SerialUSB_empty() { return !SerialUSB.available(); }
+bool Serial_empty() { return !Serial.available(); }
 
-CDC SerialUSB(&stm32l4_usbd_cdc, (serialEvent != NULL));
+CDC Serial(&stm32l4_usbd_cdc, (serialEvent != NULL));
 
 #endif /* STM32L4_CONFIG_USBD_CDC */
 

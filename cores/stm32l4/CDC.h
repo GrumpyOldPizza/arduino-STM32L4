@@ -114,5 +114,3 @@ private:
     static void _event_callback(void *context, uint32_t events);
     void EventCallback(uint32_t events);
 };
-
-extern CDC SerialUSB;
