@@ -33,6 +33,7 @@
 #include "stm32l4_system.h"
 
 typedef struct _stm32l4_system_device_t {
+    uint32_t reset;
     uint32_t lseclk;
     uint32_t hseclk;
     uint32_t sysclk;
@@ -672,7 +673,7 @@ static void stm32l4_system_msi4_sysclk(void)
 #endif    
 
     /* Disable HSE */
-    if (stm32l4_system_device.hseclk <= 48000000)
+    if (stm32l4_system_device.hseclk)
     {
 	RCC->CR &= ~RCC_CR_HSEON;
 	
@@ -701,7 +702,7 @@ void stm32l4_system_bootloader(void)
     while (1) { }
 }
 
-bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
+bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 {
     uint32_t sysclk, fclk, fvco, fpll, fpllout, mout, nout, rout, qout, n, r;
     uint32_t count, msirange, hpre, ppre1, ppre2, latency;
@@ -715,13 +716,28 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
     /* Detect LSE/HSE on the first pass.
      */
 
-    if (stm32l4_system_device.lseclk == 0)
+    if (!stm32l4_system_device.reset)
     {
+        stm32l4_system_device.reset = (RCC->CSR & 0xff000000) | RCC_CSR_RMVF;
+
+	RCC->CSR |= RCC_CSR_RMVF;
+	RCC->CSR &= ~RCC_CSR_RMVF;
+
+	stm32l4_system_device.lseclk = lseclk;
+	stm32l4_system_device.hseclk = hseclk;
+
 	/* This is executed only on the very forst goaround, while interrupts are disabled.
 	 * So RCC does not need atomics.
 	 */
 
 	RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+
+#if defined(STM32L432xx) || defined(STM32L433xx)
+	/* Unlock RTCAPBEN (and leave it unlocked for RTC/BKUP use).
+	 */
+    
+	RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;
+#endif
 
 	PWR->CR1 |= PWR_CR1_DBP;
 	    
@@ -764,39 +780,56 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 		"   bx      r1                             \n");
 	}
 
-	if (!(RCC->BDCR & RCC_BDCR_LSEON))
+	if (lseclk)
 	{
-	    RCC->BDCR |= RCC_BDCR_LSEON;
-	    
-	    /* The loop below take about 8 cycles per iteration. The startup time for
-	     * LSE is 5000ms. At 16MHz this corresponds to about 10000000 iterations.
-	     */
-	    count = 0;
-	    
-	    while (!(RCC->BDCR & RCC_BDCR_LSERDY))
+	    if (!(RCC->BDCR & RCC_BDCR_LSEON))
 	    {
-		if (++count >= 10000000)
+		RCC->BDCR |= RCC_BDCR_LSEON;
+		
+		/* The loop below take about 8 cycles per iteration. The startup time for
+		 * LSE is 5000ms. At 16MHz this corresponds to about 10000000 iterations.
+		 */
+		count = 0;
+		
+		while (!(RCC->BDCR & RCC_BDCR_LSERDY))
 		{
-		    RCC->BDCR &= ~RCC_BDCR_LSEON;
-		    break;
+		    if (++count >= 10000000)
+		    {
+			stm32l4_system_device.lseclk = 0;
+			break;
+		    }
 		}
 	    }
 	}
-	    
-	if (RCC->BDCR & RCC_BDCR_LSEON)
+
+	if (stm32l4_system_device.lseclk == 0)
 	{
-	    stm32l4_system_device.lseclk = 32768;
+	    RCC->BDCR &= ~RCC_BDCR_LSEON;
+			
+	    RCC->CSR |= RCC_CSR_LSION;
+	    
+	    while (!(RCC->CSR & RCC_CSR_LSIRDY))
+	    {
+	    }
 	}
 	else
 	{
-	    stm32l4_system_device.lseclk = ~0ul;
+	    RCC->CSR &= ~RCC_CSR_LSION;
 	}
 
 	/* Enable RTC properly and write protect it. */
 	if (!(RCC->BDCR & RCC_BDCR_RTCEN))
 	{
-	    /* Use LSE as source for RTC */
-	    RCC->BDCR = (RCC->BDCR & ~RCC_BDCR_RTCSEL) | (RCC_BDCR_RTCSEL_0 | RCC_BDCR_RTCEN);
+	    /* Use LSI/LSE as source for RTC */
+
+	    if (stm32l4_system_device.lseclk == 0)
+	    {
+		RCC->BDCR = (RCC->BDCR & ~RCC_BDCR_RTCSEL) | (RCC_BDCR_RTCSEL_1 | RCC_BDCR_RTCEN);
+	    }
+	    else
+	    {
+		RCC->BDCR = (RCC->BDCR & ~RCC_BDCR_RTCSEL) | (RCC_BDCR_RTCSEL_0 | RCC_BDCR_RTCEN);
+	    }
 
 	    RTC->WPR = 0xca;
 	    RTC->WPR = 0x53;
@@ -808,7 +841,7 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 	    }
 
 	    RTC->CR = RTC_CR_BYPSHAD;
-	    RTC->PRER = 0x007f00ff;
+	    RTC->PRER = (stm32l4_system_device.lseclk == 0) ? 0x007d00ff : 0x007f00ff;
 
 	    RTC->ISR &= ~RTC_ISR_INIT;
 	}
@@ -816,41 +849,33 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 	RTC->WPR = 0x00;
 	RTC->WPR = 0x00;
 
-	/* Enable VBAT charging.
+#if defined(STM32L476xx)
+	/* Enable VBAT charging (for Dragonfly).
 	 */
 	PWR->CR4 |= PWR_CR4_VBE;
+#endif
 
 	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
-    }
 
-    if (stm32l4_system_device.hseclk == 0)
-    {
-	RCC->CR |= RCC_CR_HSEON;
-	    
-	/* The loop below take about 8 cycles per iteration. The startup time for
-	 * HSE is 100ms. At 16MHz this corresponds to about 200000 iterations.
-	 */
-	count = 0;
-	    
-	while (!(RCC->CR & RCC_CR_HSERDY))
+	if (hseclk)
 	{
-	    if (++count >= 200000)
-	    {
-		RCC->CR &= ~RCC_CR_HSEON;
-		break;
-	    }
-	}
-
-	if (RCC->CR & RCC_CR_HSEON)
-	{
-	    /* Here we could be smart and autodetect hseclk ...
-	     * but for now hardcode the 16MHz DRAGONFLY uses.
+	    RCC->CR |= RCC_CR_HSEON;
+	    
+	    /* The loop below take about 8 cycles per iteration. The startup time for
+	     * HSE is 100ms. At 16MHz this corresponds to about 200000 iterations.
 	     */
-	    stm32l4_system_device.hseclk = 16000000;
-	}
-	else
-	{
-	    stm32l4_system_device.hseclk = ~0ul;
+	    count = 0;
+	    
+	    while (!(RCC->CR & RCC_CR_HSERDY))
+	    {
+		if (++count >= 200000)
+		{
+		    stm32l4_system_device.hseclk = 0;
+
+		    RCC->CR &= ~RCC_CR_HSEON;
+		    break;
+		}
+	    }
 	}
     }
 
@@ -897,7 +922,7 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 	
 	msirange = RCC_CR_MSIRANGE_11;
 	
-	if (stm32l4_system_device.hseclk <= 48000000)
+	if (stm32l4_system_device.hseclk)
 	{
 	    mout = stm32l4_system_device.hseclk / 8000000; 
 	}
@@ -1034,7 +1059,7 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 	/* Range 2, use MSI */
 	
 	/* Disable HSE */
-	if (stm32l4_system_device.hseclk <= 48000000)
+	if (stm32l4_system_device.hseclk)
 	{
 	    RCC->CR &= ~RCC_CR_HSEON;
 	    
@@ -1058,7 +1083,7 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 	    armv7m_clock_spin(500);
 	}
 
-	if (stm32l4_system_device.lseclk == 32768)
+	if (stm32l4_system_device.lseclk)
 	{
 	    /* Enable the MSI PLL */
 	    RCC->CR |= RCC_CR_MSIPLLEN;
@@ -1118,7 +1143,7 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 	/* Be careful not to change HSE/MSI settings which might be shared
 	 * with PLLSAI1/PLLSAI2.
 	 */
-	if (stm32l4_system_device.hseclk <= 48000000)
+	if (stm32l4_system_device.hseclk)
 	{
 	    if (!(RCC->CR & RCC_CR_HSEON))
 	    {
@@ -1149,7 +1174,7 @@ bool stm32l4_system_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 		    armv7m_clock_spin(500);
 		}
 
-		if (stm32l4_system_device.lseclk == 32768)
+		if (stm32l4_system_device.lseclk)
 		{
 		    /* Enable the MSI PLL */
 		    RCC->CR |= RCC_CR_MSIPLLEN;
@@ -1244,7 +1269,7 @@ bool stm32l4_system_clk48_enable(void)
 {
     uint32_t apb1enr1, latency;
 
-    if ((stm32l4_system_device.lseclk != 32768) || (stm32l4_system_device.hclk < 16000000))
+    if (!stm32l4_system_device.lseclk || (stm32l4_system_device.hclk < 16000000))
     {
 	return false;
     }
@@ -1306,7 +1331,7 @@ bool stm32l4_system_clk48_enable(void)
 		    armv7m_clock_spin(500);
 		}
 
-		if (stm32l4_system_device.lseclk == 32768)
+		if (stm32l4_system_device.lseclk)
 		{
 		    /* Enable the MSI PLL */
 		    RCC->CR |= RCC_CR_MSIPLLEN;
@@ -1324,7 +1349,7 @@ bool stm32l4_system_clk48_disable(void)
 {
     uint32_t apb1enr1, latency;
 
-    if ((stm32l4_system_device.lseclk != 32768) || (stm32l4_system_device.hclk < 16000000))
+    if (!stm32l4_system_device.lseclk || (stm32l4_system_device.hclk < 16000000))
     {
 	return false;
     }
@@ -1473,7 +1498,7 @@ bool stm32l4_system_suspend(void)
 	}
 #endif	
 	/* Disable HSE */
-	if (stm32l4_system_device.hseclk <= 48000000)
+	if (stm32l4_system_device.hseclk)
 	{
 	    RCC->CR &= ~RCC_CR_HSEON;
 	    
@@ -1512,7 +1537,7 @@ bool stm32l4_system_restore(void)
     }
     else
     {
-	if (stm32l4_system_device.hseclk <= 48000000)
+	if (stm32l4_system_device.hseclk)
 	{
 	    RCC->CR |= RCC_CR_HSEON;
 	    
@@ -1529,7 +1554,7 @@ bool stm32l4_system_restore(void)
 	    {
 	    }
 		    
-	    if (stm32l4_system_device.lseclk == 32768)
+	    if (stm32l4_system_device.lseclk)
 	    {
 		/* Enable the MSI PLL */
 		RCC->CR |= RCC_CR_MSIPLLEN;

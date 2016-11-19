@@ -36,6 +36,8 @@
  *        Definitions
  *----------------------------------------------------------------------------*/
 
+#define STM32L4_CONFIG_LSECLK             32768
+#define STM32L4_CONFIG_HSECLK             16000000
 #define STM32L4_CONFIG_USBD_VUSB          GPIO_PIN_PA9
 #define STM32L4_CONFIG_USBD_CDC           1
 #define STM32L4_CONFIG_USBD_MSC           1

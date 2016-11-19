@@ -88,12 +88,12 @@ void init( void )
 
     if ((_SYSTEM_CORE_CLOCK_ < 16000000) && stm32l4_gpio_pin_read(STM32L4_CONFIG_USBD_VUSB))
     {
-	stm32l4_system_configure(16000000, 8000000, 8000000);
+	stm32l4_system_configure(STM32L4_CONFIG_LSECLK, STM32L4_CONFIG_HSECLK, 16000000, 8000000, 8000000);
     }
     else
 #endif
     {
-	stm32l4_system_configure(_SYSTEM_CORE_CLOCK_, _SYSTEM_CORE_CLOCK_/2, _SYSTEM_CORE_CLOCK_/2);
+	stm32l4_system_configure(STM32L4_CONFIG_LSECLK, STM32L4_CONFIG_HSECLK, _SYSTEM_CORE_CLOCK_, _SYSTEM_CORE_CLOCK_/2, _SYSTEM_CORE_CLOCK_/2);
     }
 
     armv7m_svcall_initialize();

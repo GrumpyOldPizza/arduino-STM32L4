@@ -36,6 +36,9 @@
  *        Definitions
  *----------------------------------------------------------------------------*/
 
+#define STM32L4_CONFIG_LSECLK             32768
+#define STM32L4_CONFIG_HSECLK             0
+
 /** Master clock frequency */
 #define VARIANT_MCK			  F_CPU
 
