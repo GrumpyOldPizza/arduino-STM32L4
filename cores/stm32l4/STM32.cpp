@@ -29,16 +29,6 @@
 #include "Arduino.h"
 #include "stm32l4_wiring_private.h"
 
-uint32_t STM32Class::readBackup(unsigned int index)
-{
-    return stm32l4_rtc_read_backup(index);
-}
-
-void STM32Class::writeBackup(unsigned int index, uint32_t data)
-{
-    stm32l4_rtc_write_backup(index, data);
-}
-
 uint64_t STM32Class::getSerial()
 {
     uint32_t serial0, serial1, serial2;

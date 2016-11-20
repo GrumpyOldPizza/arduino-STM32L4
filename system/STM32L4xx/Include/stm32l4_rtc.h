@@ -95,6 +95,7 @@ extern void stm32l4_rtc_adjust_ticks(int32_t ticks);
 extern uint32_t stm32l4_rtc_get_ticks(void);
 extern void stm32l4_rtc_pin_configure(unsigned int mode);
 extern void stm32l4_rtc_alarm(unsigned int channel, unsigned int match, const stm32l4_rtc_alarm_t *alarm, stm32l4_rtc_callback_t callback, void *context);
+extern uint32_t stm32l4_rtc_wakeup(uint32_t ticks, stm32l4_rtc_callback_t callback, void *context);
 extern bool stm32l4_rtc_get_sync(stm32l4_rtc_sync_t *p_sync_return);
 extern void stm32l4_rtc_notify_sync(stm32l4_rtc_callback_t callback, void *context);
 extern uint32_t stm32l4_rtc_read_backup(unsigned int index);

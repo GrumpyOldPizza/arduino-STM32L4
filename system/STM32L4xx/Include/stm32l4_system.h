@@ -123,6 +123,8 @@ extern void     stm32l4_system_bootloader(void);
 extern bool     stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, uint32_t pclk1, uint32_t pclk2);
 extern bool     stm32l4_system_clk48_enable(void);
 extern bool     stm32l4_system_clk48_disable(void);
+extern uint32_t stm32l4_system_lseclk(void);
+extern uint32_t stm32l4_system_hseclk(void);
 extern uint32_t stm32l4_system_sysclk(void);
 extern uint32_t stm32l4_system_hclk(void);
 extern uint32_t stm32l4_system_pclk1(void);
