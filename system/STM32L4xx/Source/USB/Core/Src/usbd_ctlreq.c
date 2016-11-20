@@ -387,6 +387,11 @@ static void USBD_GetDescriptor(USBD_HandleTypeDef *pdev ,
     default:
 #if (USBD_SUPPORT_USER_STRING == 1)
       pbuf = pdev->pClass->GetUsrStrDescriptor(pdev, (req->wValue) , &len);
+      if (pbuf == NULL)
+      {
+        USBD_CtlError(pdev , req);
+        return;
+      }
       break;
 #else      
        USBD_CtlError(pdev , req);

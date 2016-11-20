@@ -256,21 +256,25 @@ const uint8_t *USBD_CDC_MSC_GetUsrStrDescriptor (USBD_HandleTypeDef *pdev ,uint8
 	USBD_GetString ((const uint8_t*)USBD_USR_FS_STRING_6, USBD_StrDesc, length);
       }
 
-    if (index == 7)
+    else if (index == 7)
       {
 	USBD_GetString ((const uint8_t*)USBD_USR_FS_STRING_7, USBD_StrDesc, length);
       }
 
-    if (index == 8)
+    else if (index == 8)
       {
 	USBD_GetString ((const uint8_t*)USBD_USR_FS_STRING_8, USBD_StrDesc, length);
       }
     
-    if (index == 9)
+    else if (index == 9)
       {
 	USBD_GetString ((const uint8_t*)USBD_USR_FS_STRING_9, USBD_StrDesc, length);
       }
-      
+    else
+      {
+	return NULL;
+      }
+
   return USBD_StrDesc;  
 }
 
