@@ -385,6 +385,11 @@ bool stm32l4_uart_enable(stm32l4_uart_t *uart, uint8_t *rx_data, uint16_t rx_siz
 	uart->rx_index = UART_RX_DATA_NONE;
     }
 
+    if (uart->instance != UART_INSTANCE_LPUART1)
+    {
+	stm32l4_system_hsi16_enable();
+    }
+
     switch (uart->instance) {
     case UART_INSTANCE_USART1:
 	armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_USART1SEL, RCC_CCIPR_USART1SEL_1); /* HSI */
@@ -458,6 +463,11 @@ bool stm32l4_uart_disable(stm32l4_uart_t *uart)
     }
 
     stm32l4_system_periph_disable(SYSTEM_PERIPH_USART1 + uart->instance);
+
+    if (uart->instance != UART_INSTANCE_LPUART1)
+    {
+	stm32l4_system_hsi16_disable();
+    }
 
     uart->state = UART_STATE_INIT;
 

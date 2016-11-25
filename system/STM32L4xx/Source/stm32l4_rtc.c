@@ -45,6 +45,12 @@ static stm32l4_rtc_device_t stm32l4_rtc_device;
 
 void stm32l4_rtc_configure(unsigned int priority)
 {
+    EXTI->PR1 = (EXTI_PR1_PIF18 | EXTI_PR1_PIF19 | EXTI_PR1_PIF20);
+
+    armv7m_atomic_or(&EXTI->IMR1, (EXTI_IMR1_IM18 | EXTI_IMR1_IM19 | EXTI_IMR1_IM20));
+    armv7m_atomic_or(&EXTI->EMR1, (EXTI_EMR1_EM18 | EXTI_EMR1_EM19 | EXTI_EMR1_EM20));
+    armv7m_atomic_or(&EXTI->RTSR1, (EXTI_RTSR1_RT18 | EXTI_RTSR1_RT19 | EXTI_RTSR1_RT20));
+
     NVIC_SetPriority(TAMP_STAMP_IRQn, priority);
     NVIC_EnableIRQ(TAMP_STAMP_IRQn);
 
@@ -53,9 +59,6 @@ void stm32l4_rtc_configure(unsigned int priority)
 
     NVIC_SetPriority(RTC_Alarm_IRQn, priority);
     NVIC_EnableIRQ(RTC_Alarm_IRQn);
-
-    armv7m_atomic_or(&EXTI->IMR1, (EXTI_IMR1_IM18 | EXTI_IMR1_IM19 | EXTI_IMR1_IM20));
-    armv7m_atomic_or(&EXTI->RTSR1, (EXTI_RTSR1_RT18 | EXTI_RTSR1_RT19 | EXTI_RTSR1_RT20));
 }
 
 void stm32l4_rtc_set_time(unsigned int mask, const stm32l4_rtc_time_t *time)

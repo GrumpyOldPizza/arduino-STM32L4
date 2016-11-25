@@ -39,6 +39,12 @@ public:
     float getVREF();
     float getTemperature();
 
+    void  sleep();
+    bool  stop();
+    bool  standby();
+    bool  shutdown();
+    void  reset();
+
     inline uint32_t getCycleCount() { return *((volatile uint32_t*)0xe0001004); } // DWT->CYCCNT
 };
 

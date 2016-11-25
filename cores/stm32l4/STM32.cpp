@@ -129,4 +129,31 @@ float STM32Class::getTemperature()
     return (30.0 + ((float)(110.0 - 30.0) * (float)(ts_data - ts_cal1)) / (float)(ts_cal2 - ts_cal1));
 }
 
+void STM32Class::sleep()
+{
+    __WFE();
+    __SEV();
+    __WFE();
+}
+
+bool STM32Class::stop()
+{
+    return stm32l4_system_stop();
+}
+
+bool STM32Class::standby()
+{
+    return stm32l4_system_standby();
+}
+
+bool STM32Class::shutdown()
+{
+    return stm32l4_system_shutdown();
+}
+
+void STM32Class::reset()
+{
+    stm32l4_system_reset();
+}
+
 STM32Class STM32;

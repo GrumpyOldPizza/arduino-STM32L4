@@ -809,6 +809,8 @@ bool stm32l4_i2c_enable(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option, stm
     i2c->context = NULL;
     i2c->events = 0x00000000;
 
+    stm32l4_system_hsi16_enable();
+
     switch (i2c->instance) {
     case I2C_INSTANCE_I2C1:
 	armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_I2C1SEL, RCC_CCIPR_I2C1SEL_1); /* HSI */
@@ -853,6 +855,8 @@ bool stm32l4_i2c_disable(stm32l4_i2c_t *i2c)
     {
 	stm32l4_i2c_stop(i2c);
     }
+
+    stm32l4_system_hsi16_disable();
 
     i2c->state = I2C_STATE_INIT;
 
