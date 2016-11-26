@@ -1195,7 +1195,7 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
     }
     else
     {
-	FLASH->ACR = FLASH_ACR_PRFTEN | FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
+	FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
     }
 
     if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
