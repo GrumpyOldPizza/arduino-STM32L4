@@ -72,7 +72,7 @@ SECTIONS
    .text :
    {
        KEEP(*(.isr_vector));
-       *(.text* .gnu.linkonce.t.*)
+       *(.text .text.* .gnu.linkonce.t.*)
 
        KEEP(*(.init))
        KEEP(*(.fini))
@@ -91,7 +91,7 @@ SECTIONS
        *(SORT(.dtors.*))
        *(.dtors)
 
-       *(.rodata* .gnu.linkonce.r.*)
+       *(.rodata .rodata.* .gnu.linkonce.r.*)
 
        KEEP(*(.eh_frame*))
 
@@ -117,12 +117,12 @@ SECTIONS
        LONG (LOADADDR(.data))
        LONG (__data_start__)
        LONG (__data_end__ - __data_start__)
-       LONG (LOADADDR(.ramfunc))
-       LONG (__ramfunc_start__)
-       LONG (__ramfunc_end__ - __ramfunc_start__)
        LONG (LOADADDR(.data2))
        LONG (__data2_start__)
        LONG (__data2_end__ - __data2_start__)
+       LONG (LOADADDR(.rodata2))
+       LONG (__rodata2_start__)
+       LONG (__rodata2_end__ - __rodata2_start__)
      __copy_table_end__ = .;
      __zero_table_start__ = .;
        LONG (__bss_start__)
@@ -149,56 +149,27 @@ SECTIONS
 
    __etext = . ;
 
-   .ramfunc :
-   {
-     __ramfunc_start__ = .;
-       *(.ramfunc .RamFunc .fastrun)
-       . = ALIGN(8);
-     __ramfunc_end__ = .;
-   } > SRAM2 AT >FLASH
-
-   .data2 :
-   {
-     __data2_start__ = .;
-       . = ALIGN(8);
-     __data2_end__ = .;
-   } > SRAM2 AT >FLASH
-
    .data :
    {
      __data_start__ = .;
-         *(vtable)
-       *(.data* .gnu.linkonce.d.*)
+       *(vtable)
+       *(.data .data.* .gnu.linkonce.d.*)
      . = ALIGN(8);
      __data_end__ = .;
    } > SRAM1 AT >FLASH
 
-   .bss2 (NOLOAD) :
-   {
-     __bss2_start__ = .;
-       *(.bss2*)
-       . = ALIGN(8);
-     __bss2_end__ = .;
-   } > SRAM2
-
    .bss (NOLOAD) :
    {
      __bss_start__ = .;
-       *(.bss* .gnu.linkonce.b.*)
+       *(.bss .bss.* .gnu.linkonce.b.*)
        *(COMMON)
        . = ALIGN(8);
      __bss_end__ = .;
    } > SRAM1
 
-   .noinit2 (NOLOAD) :
-   {
-       *(.noinit2*)
-       . = ALIGN(8);
-   } > SRAM2
-
    .noinit (NOLOAD) :
    {
-       *(.noinit*)
+       *(.noinit .noinit.*)
        . = ALIGN(8);
    } > SRAM1
 
@@ -227,6 +198,49 @@ SECTIONS
         
    /* Check if data + heap + stack exceeds RAM limit */
    ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed with stack")
+
+   .rodata2 :
+   {
+     __rodata2_start__ = .;
+       *(.rodata2 .rodata2.*)
+       . = ALIGN(8);
+     __rodata2_end__ = .;
+       . = ALIGN(1024);
+   } > SRAM2 AT >FLASH
+
+   .data2 :
+   {
+     __data2_start__ = .;
+       *(.data2 .data2.*)
+       . = ALIGN(8);
+     __data2_end__ = .;
+   } > SRAM2 AT >FLASH
+
+   __etext2 = LOADADDR(.data2);
+
+   .databkup :
+   {
+     __databkup_start__ = .;
+       *(.databkup .databkup.*)
+       . = ALIGN(8);
+     __databkup_end__ = .;
+   } > SRAM2 AT >FLASH
+
+   __etextbkup = LOADADDR(.databkup);
+
+   .bss2 (NOLOAD) :
+   {
+     __bss2_start__ = .;
+       *(.bss2 .bss2.*)
+       . = ALIGN(8);
+     __bss2_end__ = .;
+   } > SRAM2
+
+   .noinit2 (NOLOAD) :
+   {
+       *(.noinit2 .noinit2.*)
+       . = ALIGN(8);
+   } > SRAM2
 
    /* Stabs debugging sections.  */
    .stab          0 : { *(.stab) }

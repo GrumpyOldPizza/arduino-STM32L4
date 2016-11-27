@@ -253,17 +253,6 @@ void SystemInit(void)
 #else
   SCB->VTOR = FLASH_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal FLASH */
 #endif
-
-  /* For some reason DWT is enabled per default. Disable it with the proper reset values */
-  if (!(CoreDebug->DHCSR & 0x00000001)) {
-    DWT->CTRL      = 0x00000000;
-    DWT->FUNCTION0 = 0x00000000;
-    DWT->FUNCTION1 = 0x00000000;
-    DWT->FUNCTION2 = 0x00000000;
-    DWT->FUNCTION3 = 0x00000000;
-
-    CoreDebug->DEMCR &= ~0x01000000;
-  }
 }
 
 /**

@@ -32,6 +32,12 @@
 
 #include "stm32l4_system.h"
 
+extern uint32_t __rodata2_start__;
+extern uint32_t __rodata2_end__;
+extern uint32_t __databkup_start__;
+extern uint32_t __databkup_end__;
+extern uint32_t __etextbkup;
+
 typedef struct _stm32l4_system_device_t {
     uint32_t                  reset;
     uint32_t                  lseclk;
@@ -593,12 +599,16 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
     uint32_t sysclk, fclk, fvco, fpll, fpllout, mout, nout, rout, qout, n, r;
     uint32_t count, msirange, hpre, ppre1, ppre2, latency;
     uint32_t primask, apb1enr1;
+    uint32_t *data_s, *data_e;
+    const uint32_t *data_t;
 
     primask = __get_PRIMASK();
 
     __disable_irq();
 
     /* Unlock SYSCFG (and leave it unlocked for EXTI use).
+     * RCC does not need to be protected by atomics as
+     * interrupts are disabled.
      */
     
     RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
@@ -613,15 +623,12 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	RCC->CSR |= RCC_CSR_RMVF;
 	RCC->CSR &= ~RCC_CSR_RMVF;
 
-	stm32l4_system_device.lseclk = lseclk;
-	stm32l4_system_device.hseclk = hseclk;
-
-	/* This is executed only on the very forst goaround, while interrupts are disabled.
-	 * So RCC does not need atomics.
-	 */
-
 	RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
 
+        stm32l4_system_device.reset |= (PWR->SR1 & (PWR_SR1_SBF | PWR_SR1_WUF5 | PWR_SR1_WUF4 | PWR_SR1_WUF3 | PWR_SR1_WUF2 | PWR_SR1_WUF1));
+
+	PWR->SCR = (PWR_SCR_CSBF | PWR_SCR_CWUF5 | PWR_SCR_CWUF4 | PWR_SCR_CWUF3 | PWR_SCR_CWUF2 | PWR_SCR_CWUF1);
+	
 #if defined(STM32L432xx) || defined(STM32L433xx)
 	/* Unlock RTCAPBEN (and leave it unlocked for RTC/BKUP use).
 	 */
@@ -647,6 +654,7 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	    RTC->WPR = 0xca;
 	    RTC->WPR = 0x53;
 	    RTC->CR &= ~RTC_CR_BCK;
+	    RTC->WPR = 0x00;
 
 	    /* Switch to System Memory @ 0x00000000.
 	     */
@@ -669,6 +677,9 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 		"   isb                                    \n"
 		"   bx      r1                             \n");
 	}
+
+	stm32l4_system_device.lseclk = lseclk;
+	stm32l4_system_device.hseclk = hseclk;
 
 	if (lseclk)
 	{
@@ -745,8 +756,6 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	PWR->CR4 |= PWR_CR4_VBE;
 #endif
 
-	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
-
 	if (hseclk)
 	{
 	    RCC->CR |= RCC_CR_HSEON;
@@ -766,6 +775,41 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 		    break;
 		}
 	    }
+	}
+
+	/* If not coming back from STANDBY, initialize the .databkup section */
+	if (!(stm32l4_system_device.reset & PWR_SR1_SBF))
+	{
+	    data_s = &__databkup_start__;
+	    data_e = &__databkup_end__;
+	    data_t = &__etextbkup;
+
+	    while (data_s != data_e) { *data_s++ = *data_t++; };
+	}
+
+	/* If there is a non-empty .databkup section enable SRAM2 retention for STANDBY */
+	if (&__databkup_start__ != &__databkup_end__) {
+	    PWR->CR3 |= PWR_CR3_RRS;
+	} else {
+	    PWR->CR3 &= ~PWR_CR3_RRS;
+	}
+
+	/* Write protect .rodata2 in SRAM2 */
+	if (&__rodata2_start__ != &__rodata2_end__) {
+	    SYSCFG->SWPR = 0xffffffff >> (32 - ((((uint8_t*)&__rodata2_end__ - (uint8_t*)&__rodata2_start__) + 1023) / 1024));
+	}
+
+	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
+
+	/* For some reason DWT is enabled per default. Disable it with the proper reset values */
+	if (!(CoreDebug->DHCSR & 0x00000001)) {
+	    DWT->CTRL      = 0x00000000;
+	    DWT->FUNCTION0 = 0x00000000;
+	    DWT->FUNCTION1 = 0x00000000;
+	    DWT->FUNCTION2 = 0x00000000;
+	    DWT->FUNCTION3 = 0x00000000;
+	    
+	    CoreDebug->DEMCR &= ~0x01000000;
 	}
     }
 
@@ -1795,6 +1839,8 @@ bool stm32l4_system_stop(void)
 
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
+    __DMB();
+
     __SEV();
     __WFE();
     __WFE();
@@ -1919,6 +1965,8 @@ static void stm32l4_system_deepsleep(void)
     FLASH->ACR = FLASH_ACR_LATENCY_0WS;
 
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+
+    __DMB();
 
     __SEV();
     __WFE();

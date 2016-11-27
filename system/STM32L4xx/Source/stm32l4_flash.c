@@ -32,7 +32,7 @@
 
 #include "stm32l4_flash.h"
 
-static __attribute__((optimize("O3"), section(".ramfunc"), long_call)) void stm32l4_flash_erase_page(void)
+static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_erase_page(void)
 {
     uint32_t primask;
 
@@ -50,7 +50,7 @@ static __attribute__((optimize("O3"), section(".ramfunc"), long_call)) void stm3
     __set_PRIMASK(primask);
 }
 
-static __attribute__((optimize("O3"), section(".ramfunc"), long_call)) void stm32l4_flash_program_standard(volatile uint32_t *flash, uint32_t count, const uint8_t *data)
+static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_program_standard(volatile uint32_t *flash, uint32_t count, const uint8_t *data)
 {
     uint32_t primask;
     const uint8_t *data_e;
@@ -88,7 +88,7 @@ static __attribute__((optimize("O3"), section(".ramfunc"), long_call)) void stm3
     while (data != data_e);
 }
 
-static __attribute__((optimize("O3"), section(".ramfunc"), long_call)) void stm32l4_flash_program_fast(volatile uint32_t *flash, uint32_t count, const uint8_t *data)
+static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_program_fast(volatile uint32_t *flash, uint32_t count, const uint8_t *data)
 {
     uint32_t primask;
     const uint8_t *data_r, *data_e;
