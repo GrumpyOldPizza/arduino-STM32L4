@@ -99,9 +99,9 @@ bool stm32l4_sdcard_spi_present(dosfs_sdcard_t *sdcard)
      */
 
     stm32l4_gpio_pin_write(sdcard->pin_cs, 0);
-    armv7m_clock_spin(2000);
+    armv7m_core_udelay(2);
     stm32l4_gpio_pin_input(sdcard->pin_cs);
-    armv7m_clock_spin(2000);
+    armv7m_core_udelay(2);
     present = !!stm32l4_gpio_pin_read(sdcard->pin_cs);
     stm32l4_gpio_pin_output(sdcard->pin_cs);
     stm32l4_gpio_pin_write(sdcard->pin_cs, 1);

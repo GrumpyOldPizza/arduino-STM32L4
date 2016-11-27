@@ -70,7 +70,7 @@ static inline void delayMicroseconds(uint32_t usec)
     if (usec == 0)
 	return;
 
-    armv7m_clock_spin(usec * 1000);
+    armv7m_core_udelay(usec);
 }
 
 extern void init(void);

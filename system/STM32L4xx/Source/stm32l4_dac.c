@@ -191,7 +191,7 @@ bool stm32l4_dac_channel(stm32l4_dac_t *dac, unsigned int channel, uint32_t outp
 		{
 		    DACx->CCR = (DACx->CCR & ~DAC_CCR_OTRIM1) | (trim << 0);
 		
-		    armv7m_clock_spin(50000);
+		    armv7m_core_udelay(50);
 		
 		    if (DACx->SR & DAC_SR_CAL_FLAG1)
 		    {
@@ -207,7 +207,7 @@ bool stm32l4_dac_channel(stm32l4_dac_t *dac, unsigned int channel, uint32_t outp
 
 		DACx->CCR = (DACx->CCR & ~DAC_CCR_OTRIM1) | (trim << 0);
 
-		armv7m_clock_spin(50000);
+		armv7m_core_udelay(50);
 
 		if (!(DACx->SR & DAC_SR_CAL_FLAG1))
 		{
@@ -215,7 +215,7 @@ bool stm32l4_dac_channel(stm32l4_dac_t *dac, unsigned int channel, uint32_t outp
 
 		    DACx->CCR = (DACx->CCR & ~DAC_CCR_OTRIM1) | (trim << 0);
 
-		    armv7m_clock_spin(50000);
+		    armv7m_core_udelay(50);
 		}
 
 		DACx->CR &= ~DAC_CR_CEN1;
@@ -254,7 +254,7 @@ bool stm32l4_dac_channel(stm32l4_dac_t *dac, unsigned int channel, uint32_t outp
 		{
 		    DACx->CCR = (DACx->CCR & ~DAC_CCR_OTRIM2) | (trim << 16);
 		
-		    armv7m_clock_spin(50000);
+		    armv7m_core_udelay(50);
 		
 		    if (DACx->SR & DAC_SR_CAL_FLAG2)
 		    {
@@ -270,7 +270,7 @@ bool stm32l4_dac_channel(stm32l4_dac_t *dac, unsigned int channel, uint32_t outp
 
 		DACx->CCR = (DACx->CCR & ~DAC_CCR_OTRIM2) | (trim << 16);
 
-		armv7m_clock_spin(50000);
+		armv7m_core_udelay(50);
 
 		if (!(DACx->SR & DAC_SR_CAL_FLAG2))
 		{
@@ -278,7 +278,7 @@ bool stm32l4_dac_channel(stm32l4_dac_t *dac, unsigned int channel, uint32_t outp
 
 		    DACx->CCR = (DACx->CCR & ~DAC_CCR_OTRIM2) | (trim << 16);
 
-		    armv7m_clock_spin(50000);
+		    armv7m_core_udelay(50);
 		}
 
 		DACx->CR &= ~DAC_CR_CEN2;

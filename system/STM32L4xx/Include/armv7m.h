@@ -45,10 +45,10 @@ static inline void armv7m_core_yield(void)
 }
 
 extern int armv7m_core_priority(void);
+extern void armv7m_core_udelay(uint32_t udelay);
 
 #include "armv7m_atomic.h"
 #include "armv7m_bitband.h"
-#include "armv7m_clock.h"
 #include "armv7m_pendsv.h"
 #include "armv7m_svcall.h"
 #include "armv7m_systick.h"

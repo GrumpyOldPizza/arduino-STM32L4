@@ -30,6 +30,13 @@
 
 #include "stm32l476xx.h"
 
+typedef struct _armv7m_core_control_t {
+    uint32_t               clock;
+    uint32_t               scale;
+} armv7m_core_control_t;
+
+static armv7m_core_control_t armv7m_core_control;
+
 int armv7m_core_priority(void)
 {
     uint32_t ipsr, faultmask, primask;
@@ -90,3 +97,20 @@ int armv7m_core_priority(void)
     return priority;
 }
 
+void armv7m_core_udelay(uint32_t delay)
+{
+    uint32_t n;
+
+    if (armv7m_core_control.clock != SystemCoreClock)
+    {
+	armv7m_core_control.clock = SystemCoreClock;
+	armv7m_core_control.scale = SystemCoreClock / 1000000;
+    }
+
+    n = (delay * armv7m_core_control.scale + 2) / 3;
+
+    __asm__ __volatile__(
+			 "1: subs %0, #1 \n"
+			 "   bne  1b     \n"
+			 : "+r" (n));
+}

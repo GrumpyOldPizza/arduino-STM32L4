@@ -18,6 +18,43 @@
 
 #include "Arduino.h"
 #include "stm32l4_wiring_private.h"
+#include <stdio.h>
+
+static inline __attribute__((optimize("O3"),always_inline)) uint32_t countPulseInline(const volatile uint32_t *port, uint32_t bit, uint32_t stateMask, unsigned long maxloops)
+{
+    uint32_t micros;
+
+    // wait for any previous pulse to end
+    while ((*port & bit) == stateMask)
+    {
+	if (--maxloops == 0)
+	{
+	    return 0;
+	}
+    }
+    
+    // wait for the pulse to start
+    while ((*port & bit) != stateMask)
+    {
+	if (--maxloops == 0)
+	{
+	    return 0;
+	}
+    }
+
+    micros = armv7m_systick_micros();
+
+    // wait for the pulse to stop
+    while ((*port & bit) == stateMask)
+    {
+	if (--maxloops == 0)
+	{
+	    return 0;
+	}
+    }
+    
+    return (uint32_t)armv7m_systick_micros() - micros;
+}
 
 /* Measures the length (in microseconds) of a pulse on the pin; state is HIGH
  * or LOW, the type of pulse to measure.  Works on pulses from 2-3 microseconds
@@ -34,53 +71,13 @@ uint32_t pulseIn(uint32_t pin, uint32_t state, uint32_t timeout)
   // pulse width measuring loop and achieve finer resolution.  calling
   // digitalRead() instead yields much coarser resolution.
   GPIO_TypeDef *GPIO = g_APinDescription[pin].GPIO;
-  uint32_t bit = 1 << g_APinDescription[pin].bit;
+  uint32_t bit = g_APinDescription[pin].bit;
   uint32_t stateMask = state ? bit : 0;
 
-  
   // convert the timeout from microseconds to a number of times through
-  // the initial loop; it takes (roughly) 13 clock cycles per iteration.
-  uint32_t maxcycles = microsecondsToClockCycles(timeout);
-  uint32_t cycles;
+  // the initial loop; it takes (roughly) 8 clock cycles per iteration.
+  uint32_t maxloops = microsecondsToClockCycles(timeout) / 8;
 
-  cycles = DWT->CYCCNT;
-
-  // wait for any previous pulse to end
-  while ((GPIO->IDR & bit) == stateMask)
-  {
-      if ((DWT->CYCCNT - cycles) >= maxcycles)
-      {
-          return 0;
-      }
-  }
-
-  cycles = DWT->CYCCNT;
-
-  // wait for the pulse to start
-  while ((GPIO->IDR & bit) != stateMask)
-  {
-      if ((DWT->CYCCNT - cycles) >= maxcycles)
-      {
-          return 0;
-      }
-  }
-
-  cycles = DWT->CYCCNT;
-
-  // wait for the pulse to stop
-  while ((GPIO->IDR & bit) == stateMask)
-  {
-      if ((DWT->CYCCNT - cycles) >= maxcycles)
-      {
-          return 0;
-      }
-  }
-
-  cycles = DWT->CYCCNT - cycles;
-
-  if (cycles)
-    return clockCyclesToMicroseconds(cycles);
-  else
-    return 0;
+  return countPulseInline(&GPIO->IDR, bit, stateMask, maxloops);
 }
 

@@ -29,7 +29,6 @@ SRCS = \
 	./USB/usbd_conf.c \
 	./USB/usbd_desc.c \
 	armv7m_atomic.c \
-	armv7m_clock.c \
 	armv7m_core.c \
 	armv7m_orchid.c \
 	armv7m_pendsv.c \

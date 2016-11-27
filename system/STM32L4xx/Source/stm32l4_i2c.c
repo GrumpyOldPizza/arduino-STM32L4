@@ -1060,23 +1060,23 @@ bool stm32l4_i2c_reset(stm32l4_i2c_t *i2c)
     
     /* Set SCL to H */ 
     stm32l4_gpio_pin_write(pin_scl, 1);
-    armv7m_clock_spin(5000);;    
+    armv7m_core_udelay(5);    
     
     for (count = 0; count < 9; count++)
     {
 	/* Set SCL to L */ 
 	stm32l4_gpio_pin_write(pin_scl, 0);
-	armv7m_clock_spin(5000);;    
+	armv7m_core_udelay(5);    
 	
 	/* Set SCL to H */ 
 	stm32l4_gpio_pin_write(pin_scl, 1);
-	armv7m_clock_spin(5000);;    
+	armv7m_core_udelay(5);    
     }
     
     stm32l4_gpio_pin_configure(pin_sda, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_OUTPUT));
     
     stm32l4_gpio_pin_write(pin_sda, 1);
-    armv7m_clock_spin(5000);;    
+    armv7m_core_udelay(5);    
 
     
     /* Now SCL is H and SDA is H, so generate a STOP condition.
@@ -1084,19 +1084,19 @@ bool stm32l4_i2c_reset(stm32l4_i2c_t *i2c)
     
     /* Set SCL to L */ 
     stm32l4_gpio_pin_write(pin_scl, 0);
-    armv7m_clock_spin(5000);;    
+    armv7m_core_udelay(5);    
     
     /* Set SDA to L */ 
     stm32l4_gpio_pin_write(pin_sda, 0);
-    armv7m_clock_spin(5000);;    
+    armv7m_core_udelay(5);    
     
     /* Set SCL to H */ 
     stm32l4_gpio_pin_write(pin_scl, 1);
-    armv7m_clock_spin(5000);;    
+    armv7m_core_udelay(5);    
     
     /* Set SDA to H */ 
     stm32l4_gpio_pin_write(pin_sda, 1);
-    armv7m_clock_spin(5000);;    
+    armv7m_core_udelay(5);    
 
     stm32l4_gpio_pin_configure(pin_scl, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_ALTERNATE));
     stm32l4_gpio_pin_configure(pin_sda, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_ALTERNATE));

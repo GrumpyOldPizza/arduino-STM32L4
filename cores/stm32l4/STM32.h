@@ -44,8 +44,6 @@ public:
     bool  standby();
     bool  shutdown();
     void  reset();
-
-    inline uint32_t getCycleCount() { return *((volatile uint32_t*)0xe0001004); } // DWT->CYCCNT
 };
 
 extern STM32Class STM32;

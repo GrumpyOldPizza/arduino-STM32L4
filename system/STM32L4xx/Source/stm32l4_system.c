@@ -970,7 +970,7 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 
 	RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | msirange | RCC_CR_MSIRGSEL | RCC_CR_MSION;
 
-	armv7m_clock_spin(500);
+	armv7m_core_udelay(1);
 	    
 	while (!(RCC->CR & RCC_CR_MSIRDY))
 	{
@@ -1061,7 +1061,7 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	    /* ERRATA 2.1.15. WAR: Switch MSI to <= 16MHz before turing off */
 	    RCC->CR = (RCC->CR & ~(RCC_CR_MSIRANGE | RCC_CR_MSIPLLEN)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL;
 	    
-	    armv7m_clock_spin(500);
+	    armv7m_core_udelay(1);
 	    
 	    RCC->CR &= ~RCC_CR_MSION;
 	    
@@ -1079,7 +1079,7 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	    /* STM32L432/STML433 use MSI @4MHz for the PLL, and HSI48 for CLK48 */
 	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
 
-	    armv7m_clock_spin(500);
+	    armv7m_core_udelay(1);
 	    
 	    while (!(RCC->CR & RCC_CR_MSIRDY))
 	    {
@@ -1131,7 +1131,7 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	{
 	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
 
-	    armv7m_clock_spin(500);
+	    armv7m_core_udelay(1);
 		
 	    while (!(RCC->CR & RCC_CR_MSIRDY))
 	    {
@@ -1148,7 +1148,7 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	    /* ERRATA 2.1.15. WAR: Switch MSI to <= 16MHz before turing off */
 	    RCC->CR = (RCC->CR & ~(RCC_CR_MSIRANGE | RCC_CR_MSIPLLEN)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL;
 	    
-	    armv7m_clock_spin(500);
+	    armv7m_core_udelay(1);
 	    
 	    RCC->CR &= ~RCC_CR_MSION;
 	    
@@ -1293,7 +1293,7 @@ bool stm32l4_system_clk48_enable(void)
 	{
 	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
 
-	    armv7m_clock_spin(500);
+	    armv7m_core_udelay(1);
 	    
 	    while (!(RCC->CR & RCC_CR_MSIRDY))
 	    {
@@ -1356,7 +1356,7 @@ bool stm32l4_system_clk48_disable(void)
 	    /* ERRATA 2.1.15. WAR: Switch MSI to <= 16MHz before turing off */
 	    RCC->CR = (RCC->CR & ~(RCC_CR_MSIRANGE | RCC_CR_MSIPLLEN)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL;
 	    
-	    armv7m_clock_spin(500);
+	    armv7m_core_udelay(1);
 	    
 	    RCC->CR &= ~RCC_CR_MSION;
 	    
@@ -1547,7 +1547,7 @@ static void stm32l4_system_suspend(void)
 	    /* ERRATA 2.1.15. WAR: Switch MSI to <= 16MHz before turing off */
 	    RCC->CR = (RCC->CR & ~(RCC_CR_MSIRANGE | RCC_CR_MSIPLLEN)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL;
 	    
-	    armv7m_clock_spin(500);
+	    armv7m_core_udelay(1);
 	    
 	    RCC->CR &= ~(RCC_CR_MSIPLLEN | RCC_CR_MSION);
 	    
@@ -1731,7 +1731,7 @@ static void stm32l4_system_resume(void)
 	{
 	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
 
-	    armv7m_clock_spin(500);
+	    armv7m_core_udelay(1);
 	    
 	    while (!(RCC->CR & RCC_CR_MSIRDY))
 	    {
@@ -1898,7 +1898,7 @@ static void stm32l4_system_deepsleep(void)
     /* Select MSI @ 4MHz as system clock source (disable MSIPLL). */
     RCC->CR = (RCC->CR & ~(RCC_CR_MSIPLLEN | RCC_CR_MSIRANGE)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
 
-    armv7m_clock_spin(500);
+    armv7m_core_udelay(1);
     
     while (!(RCC->CR & RCC_CR_MSIRDY))
     {

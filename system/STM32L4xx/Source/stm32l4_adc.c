@@ -205,7 +205,7 @@ bool stm32l4_adc_configure(stm32l4_adc_t *adc, uint32_t option)
 
 	ADCx->CR |= ADC_CR_ADVREGEN;
 
-	armv7m_clock_spin(20000);
+	armv7m_core_udelay(20);
 
 	/* Finally turn on the ADC */
 
@@ -269,7 +269,7 @@ bool stm32l4_adc_calibrate(stm32l4_adc_t *adc)
     {
     }
 
-    armv7m_clock_spin(100000);
+    armv7m_core_udelay(100);
 
     ADCx->ISR = ADC_ISR_ADRDY;
 
@@ -321,7 +321,7 @@ uint32_t stm32l4_adc_convert(stm32l4_adc_t *adc, unsigned int channel)
 	    }
 	    while (!(ADCx->ISR & ADC_ISR_ADRDY));
 
-	    armv7m_clock_spin(120000);
+	    armv7m_core_udelay(120);
 
 	    /* min time is 5us */
 	    adc_smp = ADC_SAMPLE_TIME_247_5;

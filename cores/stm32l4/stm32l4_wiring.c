@@ -84,7 +84,7 @@ void init( void )
 #if defined(STM32L4_CONFIG_USBD_CDC) || defined(STM32L4_CONFIG_USBD_MSC)
     stm32l4_gpio_pin_configure(STM32L4_CONFIG_USBD_VUSB, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
 
-    armv7m_clock_spin(2000);
+    armv7m_core_udelay(2);
 
     if ((_SYSTEM_CORE_CLOCK_ < 16000000) && stm32l4_gpio_pin_read(STM32L4_CONFIG_USBD_VUSB))
     {
