@@ -110,6 +110,7 @@ bool stm32l4_exti_disable(stm32l4_exti_t *exti)
     }
 
     armv7m_atomic_and(&EXTI->IMR1, ~0x0000ffff);
+    armv7m_atomic_and(&EXTI->EMR1, ~0x0000ffff);
 
     NVIC_DisableIRQ(EXTI15_10_IRQn);
     NVIC_DisableIRQ(EXTI9_5_IRQn);
@@ -134,6 +135,7 @@ bool stm32l4_exti_suspend(stm32l4_exti_t *exti, uint32_t mask)
     armv7m_atomic_and(&exti->mask, ~mask);
 
     armv7m_atomic_modify(&EXTI->IMR1, 0x0000ffff, (exti->enables & exti->mask));
+    armv7m_atomic_modify(&EXTI->EMR1, 0x0000ffff, (exti->enables & exti->mask));
 
     return true;
 }
@@ -147,6 +149,7 @@ bool stm32l4_exti_resume(stm32l4_exti_t *exti, uint32_t mask)
 
     armv7m_atomic_or(&exti->mask, mask);
 
+    armv7m_atomic_modify(&EXTI->EMR1, 0x0000ffff, (exti->enables & exti->mask));
     armv7m_atomic_modify(&EXTI->IMR1, 0x0000ffff, (exti->enables & exti->mask));
 
     return true;
@@ -167,6 +170,7 @@ bool stm32l4_exti_notify(stm32l4_exti_t *exti, uint16_t pin, uint32_t control, s
     mask = 1ul << index;
 
     armv7m_atomic_and(&EXTI->IMR1, ~mask);
+    armv7m_atomic_and(&EXTI->EMR1, ~mask);
     armv7m_atomic_and(&exti->enables, ~mask);
     
     exti->channels[index].callback = callback;
@@ -198,6 +202,7 @@ bool stm32l4_exti_notify(stm32l4_exti_t *exti, uint16_t pin, uint32_t control, s
 
 	if ((exti->enables & exti->mask) & mask)
 	{
+	    armv7m_atomic_or(&EXTI->EMR1, mask);
 	    armv7m_atomic_or(&EXTI->IMR1, mask);
 	}
     }

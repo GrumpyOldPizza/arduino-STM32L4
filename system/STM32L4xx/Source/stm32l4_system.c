@@ -747,7 +747,8 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	    RTC->ISR &= ~RTC_ISR_INIT;
 	}
 
-	RTC->WPR = 0x00;
+	/* Clear out pending RTC flags from a STANDBY return */
+	RTC->ISR &= ~(RTC_ISR_WUTF | RTC_ISR_ALRBF | RTC_ISR_ALRAF);
 	RTC->WPR = 0x00;
 
 #if defined(STM32L476xx)
@@ -1964,6 +1965,12 @@ static void stm32l4_system_deepsleep(void)
 
     FLASH->ACR = FLASH_ACR_LATENCY_0WS;
 
+    /* Clear pending RTC flags and thenafter enable the ALARM/WAKEUP events */
+    RTC->ISR &= ~(RTC_ISR_WUTF | RTC_ISR_ALRBF | RTC_ISR_ALRAF);
+    
+    EXTI->PR1 = (EXTI_PR1_PIF18 | EXTI_PR1_PIF20);
+    EXTI->EMR1 |= (EXTI_EMR1_EM18 | EXTI_EMR1_EM20);
+    
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
     __DMB();
