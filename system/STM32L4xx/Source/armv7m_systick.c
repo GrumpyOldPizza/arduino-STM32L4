@@ -119,10 +119,27 @@ void armv7m_systick_initialize(unsigned int priority)
 
     SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
     SysTick->LOAD = armv7m_systick_control.cycle - 1;
-    SysTick->VAL  = 0;
+    SysTick->VAL  = armv7m_systick_control.cycle - 1;
     SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
 }
 
+void armv7m_systick_enable(void)
+{
+    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
+
+    armv7m_systick_control.micros = 0;
+    armv7m_systick_control.millis = 0;
+    armv7m_systick_control.heartbeat = 0;
+
+    SysTick->LOAD = armv7m_systick_control.cycle - 1;
+    SysTick->VAL  = armv7m_systick_control.cycle - 1;
+    SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
+}
+
+void armv7m_systick_disable(void)
+{
+    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
+}
 
 void SysTick_Handler(void)
 {

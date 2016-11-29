@@ -44,6 +44,8 @@ extern void armv7m_systick_delay(uint32_t delay);
 extern void armv7m_systick_timeout(armv7m_systick_callback_t callback, uint32_t timeout);
 extern void armv7m_systick_routine(armv7m_systick_routine_t routine);
 extern void armv7m_systick_initialize(unsigned int priority);
+extern void armv7m_systick_enable(void);
+extern void armv7m_systick_disable(void);
 
 extern void SysTick_Handler(void);
 

@@ -1560,6 +1560,8 @@ void stm32l4_system_unlock(uint32_t lock)
 
 static void stm32l4_system_suspend(void)
 {
+    armv7m_systick_disable();
+
     if (stm32l4_system_device.clk48)
     {
 #if defined(STM32L432xx) || defined(STM32L433xx)
@@ -1790,6 +1792,8 @@ static void stm32l4_system_resume(void)
 	}
 #endif /* defined(STM32L432xx) || defined(STM32L433xx) */
     }
+
+    armv7m_systick_enable();
 }
 
 bool stm32l4_system_stop(void)
@@ -1817,14 +1821,14 @@ bool stm32l4_system_stop(void)
 	(*stm32l4_system_device.callback[slot])(stm32l4_system_device.context[slot], SYSTEM_EVENT_SUSPEND);
     }
 
-    stm32l4_system_suspend();
-
     apb1enr1 = RCC->APB1ENR1;
 
     if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
     {
-	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+	RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
     }
+
+    stm32l4_system_suspend();
     
     PWR->CR1 = ((PWR->CR1 & ~PWR_CR1_LPMS) |
 		(stm32l4_system_device.lock[SYSTEM_LOCK_STOP_0]
@@ -1832,11 +1836,6 @@ bool stm32l4_system_stop(void)
 		 : (stm32l4_system_device.lock[SYSTEM_LOCK_STOP_1]
 		    ? PWR_CR1_LPMS_STOP1
 		    : PWR_CR1_LPMS_STOP2)));
-
-    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
-    {
-	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
-    }
 
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
@@ -1849,6 +1848,11 @@ bool stm32l4_system_stop(void)
     SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
 
     stm32l4_system_resume();
+
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
+    }
 
     mask = stm32l4_system_device.event[SYSTEM_INDEX_RESUME];
 
@@ -1865,8 +1869,10 @@ bool stm32l4_system_stop(void)
     return true;
 }
 
-static void stm32l4_system_deepsleep(void)
+static void stm32l4_system_sleepdeep(uint32_t lpms)
 {
+    RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+
     /* ERRATA 2.1.15. WAR: Switch MSI to 4MHz before entering STANDBY/SHUTDOWN mode */
 
     FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_LATENCY_4WS;
@@ -1970,6 +1976,8 @@ static void stm32l4_system_deepsleep(void)
     
     EXTI->PR1 = (EXTI_PR1_PIF18 | EXTI_PR1_PIF20);
     EXTI->EMR1 |= (EXTI_EMR1_EM18 | EXTI_EMR1_EM20);
+
+    PWR->CR1 = ((PWR->CR1 & ~PWR_CR1_LPMS) | lpms);
     
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
@@ -2012,11 +2020,7 @@ bool stm32l4_system_standby(void)
 	(*stm32l4_system_device.callback[slot])(stm32l4_system_device.context[slot], SYSTEM_EVENT_STANDBY);
     }
 
-    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
-
-    PWR->CR1 = (PWR->CR1 & ~PWR_CR1_LPMS) | PWR_CR1_LPMS_STANDBY;
-
-    stm32l4_system_deepsleep();
+    stm32l4_system_sleepdeep(PWR_CR1_LPMS_STANDBY);
 
     return true;
 }
@@ -2050,11 +2054,7 @@ bool stm32l4_system_shutdown(void)
 	(*stm32l4_system_device.callback[slot])(stm32l4_system_device.context[slot], SYSTEM_EVENT_SHUTDOWN);
     }
 
-    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
-
-    PWR->CR1 = (PWR->CR1 & ~PWR_CR1_LPMS) | PWR_CR1_LPMS_SHUTDOWN;
-
-    stm32l4_system_deepsleep();
+    stm32l4_system_sleepdeep(PWR_CR1_LPMS_SHUTDOWN);
 
     return true;
 }
