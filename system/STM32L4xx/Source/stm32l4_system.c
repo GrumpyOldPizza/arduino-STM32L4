@@ -34,9 +34,9 @@
 
 extern uint32_t __rodata2_start__;
 extern uint32_t __rodata2_end__;
-extern uint32_t __databkup_start__;
-extern uint32_t __databkup_end__;
-extern uint32_t __etextbkup;
+extern uint32_t __databkp_start__;
+extern uint32_t __databkp_end__;
+extern uint32_t __etextbkp;
 
 typedef struct _stm32l4_system_device_t {
     uint32_t                  reset;
@@ -630,7 +630,7 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	PWR->SCR = (PWR_SCR_CSBF | PWR_SCR_CWUF5 | PWR_SCR_CWUF4 | PWR_SCR_CWUF3 | PWR_SCR_CWUF2 | PWR_SCR_CWUF1);
 	
 #if defined(STM32L432xx) || defined(STM32L433xx)
-	/* Unlock RTCAPBEN (and leave it unlocked for RTC/BKUP use).
+	/* Unlock RTCAPBEN (and leave it unlocked for RTC/BKP use).
 	 */
     
 	RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;
@@ -778,18 +778,18 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	    }
 	}
 
-	/* If not coming back from STANDBY, initialize the .databkup section */
+	/* If not coming back from STANDBY, initialize the .databkp section */
 	if (!(stm32l4_system_device.reset & PWR_SR1_SBF))
 	{
-	    data_s = &__databkup_start__;
-	    data_e = &__databkup_end__;
-	    data_t = &__etextbkup;
+	    data_s = &__databkp_start__;
+	    data_e = &__databkp_end__;
+	    data_t = &__etextbkp;
 
 	    while (data_s != data_e) { *data_s++ = *data_t++; };
 	}
 
-	/* If there is a non-empty .databkup section enable SRAM2 retention for STANDBY */
-	if (&__databkup_start__ != &__databkup_end__) {
+	/* If there is a non-empty .databkp section enable SRAM2 retention for STANDBY */
+	if (&__databkp_start__ != &__databkp_end__) {
 	    PWR->CR3 |= PWR_CR3_RRS;
 	} else {
 	    PWR->CR3 &= ~PWR_CR3_RRS;

@@ -218,15 +218,15 @@ SECTIONS
 
    __etext2 = LOADADDR(.data2);
 
-   .databkup :
+   .databkp :
    {
-     __databkup_start__ = .;
-       *(.databkup .databkup.*)
+     __databkp_start__ = .;
+       *(.databkp .databkp.*)
        . = ALIGN(8);
-     __databkup_end__ = .;
+     __databkp_end__ = .;
    } > SRAM2 AT >FLASH
 
-   __etextbkup = LOADADDR(.databkup);
+   __etextbkp = LOADADDR(.databkp);
 
    .bss2 (NOLOAD) :
    {
