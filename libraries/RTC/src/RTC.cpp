@@ -446,11 +446,6 @@ void RTCClass::pinMode(PinMode mode)
     stm32l4_rtc_pin_configure(mode);
 }
 
-uint32_t RTCClass::wakeup(uint32_t ticks, void(*callback)(void))
-{
-     return stm32l4_rtc_wakeup(ticks, (stm32l4_rtc_callback_t)callback, NULL);
-}
-
 uint32_t RTCClass::read(unsigned int index)
 {
     return stm32l4_rtc_read_backup(index);
@@ -473,7 +468,7 @@ void RTCClass::SyncAlarm()
 	rtc_alarm.minute = _alarm_minute;
 	rtc_alarm.second = _alarm_second;
 
-	match = (_alarm_match & (RTC_ALARM_MATCH_SECOND | RTC_ALARM_MATCH_MINUTE | RTC_ALARM_MATCH_HOUR | RTC_ALARM_MATCH_DAY)) | RTC_ALARM_MATCH_ENABLE;
+	match = (_alarm_match & (RTC_ALARM_MATCH_SECOND | RTC_ALARM_MATCH_MINUTE | RTC_ALARM_MATCH_HOUR | RTC_ALARM_MATCH_DAY));
 
 	stm32l4_rtc_alarm(0, match, &rtc_alarm, RTCClass::_alarmCallback, (void*)this);
     }

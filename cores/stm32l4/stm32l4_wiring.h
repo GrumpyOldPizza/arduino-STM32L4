@@ -37,6 +37,8 @@ extern "C" {
 
 #include "armv7m.h"
 
+#define retained __attribute__((section(".databkp")))
+
 static inline void interrupts(void)
 {
     __asm__ volatile ("cpsie i" : : : "memory");
@@ -114,6 +116,14 @@ extern void tone(uint32_t pin, uint32_t frequency, uint32_t duration = 0);
 #define PIN_ATTR_ADC           (1UL<<1)
 #define PIN_ATTR_PWM           (1UL<<2)
 #define PIN_ATTR_EXTI          (1UL<<3)
+#define PIN_ATTR_WKUP1         (1UL<<4)   /* PA0  */
+#define PIN_ATTR_WKUP2         (2UL<<4)   /* PC13 */
+#define PIN_ATTR_WKUP3         (3UL<<4)   /* PE6  */
+#define PIN_ATTR_WKUP4         (4UL<<4)   /* PA2  */
+#define PIN_ATTR_WKUP5         (5UL<<4)   /* PC5  */
+#define PIN_ATTR_WKUP_MASK     (7UL<<4)
+#define PIN_ATTR_WKUP_SHIFT    4
+#define PIN_ATTR_WKUP_OFFSET   1
 
 #define PWM_INSTANCE_NONE      255
 

@@ -31,6 +31,24 @@
 
 #include <Arduino.h>
 
+#define RESET_POWERON        0
+#define RESET_EXTERNAL       1
+#define RESET_SOFTWARE       2
+#define RESET_WATCHDOG       3
+#define RESET_BROWNOUT       4
+#define RESET_FIREWALL       5
+#define RESET_OTHER          6
+#define RESET_STANDBY        7
+
+#define WAKEUP_WKUP1         0x00000001
+#define WAKEUP_WKUP2         0x00000002
+#define WAKEUP_WKUP3         0x00000004
+#define WAKEUP_WKUP4         0x00000008
+#define WAKEUP_WKUP5         0x00000010
+#define WAKEUP_WATCHDOG      0x00000100
+#define WAKEUP_ALARM         0x00000200
+#define WAKEUP_TIMEOUT       0x00008000
+
 class STM32Class {
 public:
     uint64_t getSerial();
@@ -39,10 +57,15 @@ public:
     float getVREF();
     float getTemperature();
 
+    uint32_t resetCause();
+    uint32_t wakeupReason();
+
     void  sleep();
-    bool  stop();
-    bool  standby();
-    bool  shutdown();
+    bool  stop(uint32_t timeout = 0);
+    void  standby(uint32_t timeout = 0);
+    void  standby(uint32_t pin, uint32_t mode, uint32_t timeout = 0);
+    void  shutdown(uint32_t timeout = 0);
+    void  shutdown(uint32_t pin, uint32_t mode, uint32_t timeout = 0);
     void  reset();
 };
 

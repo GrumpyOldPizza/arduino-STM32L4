@@ -35,8 +35,6 @@
 typedef struct _stm32l4_rtc_device_t {
     stm32l4_rtc_callback_t alarm_callback[2];
     void                   *alarm_context[2];
-    stm32l4_rtc_callback_t wakeup_callback;
-    void                   *wakeup_context;
     stm32l4_rtc_callback_t sync_callback;
     void                   *sync_context;
 } stm32l4_rtc_device_t;
@@ -45,17 +43,14 @@ static stm32l4_rtc_device_t stm32l4_rtc_device;
 
 void stm32l4_rtc_configure(unsigned int priority)
 {
-    armv7m_atomic_and(&EXTI->IMR1, ~(EXTI_IMR1_IM18 | EXTI_IMR1_IM19 | EXTI_IMR1_IM20));
-    armv7m_atomic_and(&EXTI->EMR1, ~(EXTI_EMR1_EM18 | EXTI_EMR1_EM19 | EXTI_EMR1_EM20));
+    armv7m_atomic_or(&EXTI->IMR1, (EXTI_IMR1_IM18 | EXTI_IMR1_IM19));
+    armv7m_atomic_or(&EXTI->EMR1, (EXTI_EMR1_EM18 | EXTI_EMR1_EM19 | EXTI_EMR1_EM20));
     armv7m_atomic_or(&EXTI->RTSR1, (EXTI_RTSR1_RT18 | EXTI_RTSR1_RT19 | EXTI_RTSR1_RT20));
 
     EXTI->PR1 = (EXTI_PR1_PIF18 | EXTI_PR1_PIF19 | EXTI_PR1_PIF20);
 
     NVIC_SetPriority(TAMP_STAMP_IRQn, priority);
     NVIC_EnableIRQ(TAMP_STAMP_IRQn);
-
-    NVIC_SetPriority(RTC_WKUP_IRQn, priority);
-    NVIC_EnableIRQ(RTC_WKUP_IRQn);
 
     NVIC_SetPriority(RTC_Alarm_IRQn, priority);
     NVIC_EnableIRQ(RTC_Alarm_IRQn);
@@ -243,7 +238,7 @@ void stm32l4_rtc_adjust_ticks(int32_t ticks)
     else
     {
 	if (ticks < -32767) {
-	  ticks = -32767;
+	    ticks = -32767;
 	}
 
 	RTC->SHIFTR = (((uint32_t)(-ticks) / 128) << RTC_SHIFTR_SUBFS_Pos);
@@ -272,15 +267,12 @@ void stm32l4_rtc_alarm(unsigned int channel, unsigned int match, const stm32l4_r
 
     RTC->CR &= ~((RTC_CR_ALRAIE | RTC_CR_ALRAE) << channel);
 
-    armv7m_atomic_and(&EXTI->IMR1, ~EXTI_IMR1_IM18);
-    armv7m_atomic_and(&EXTI->EMR1, ~EXTI_EMR1_EM18);
-
     RTC->ISR &= ~RTC_ISR_ALRAF;
 
     stm32l4_rtc_device.alarm_callback[channel] = callback;
     stm32l4_rtc_device.alarm_context[channel] = context;
 
-    if (match & RTC_ALARM_MATCH_ENABLE)
+    if (callback)
     {
 	alrmr = 0;
 
@@ -320,7 +312,8 @@ void stm32l4_rtc_alarm(unsigned int channel, unsigned int match, const stm32l4_r
 	    alrmr |= RTC_ALRMAR_MSK4;
 	}
 
-	while (!(RTC->ISR & (RTC_ISR_ALRAWF << channel))) {
+	while (!(RTC->ISR & (RTC_ISR_ALRAWF << channel)))
+	{
 	}
 
 	if (channel == 0)
@@ -334,93 +327,74 @@ void stm32l4_rtc_alarm(unsigned int channel, unsigned int match, const stm32l4_r
 	    RTC->ALRMBSSR = 0;
 	}
 
-	if (callback) {
-	    armv7m_atomic_or(&EXTI->EMR1, EXTI_EMR1_EM18);
-	    armv7m_atomic_or(&EXTI->IMR1, EXTI_IMR1_IM18);
-	}
-
 	RTC->CR |= ((RTC_CR_ALRAIE | RTC_CR_ALRAE) << channel);
     }
 
     RTC->WPR = 0x00;
 }
 
-uint32_t stm32l4_rtc_wakeup(uint32_t ticks, stm32l4_rtc_callback_t callback, void *context)
+void stm32l4_rtc_wakeup(uint32_t timeout)
 {
+    uint32_t ticks;
+
     RTC->WPR = 0xca;
     RTC->WPR = 0x53;
 
     RTC->CR &= ~(RTC_CR_WUTIE | RTC_CR_WUTE);
 
-    armv7m_atomic_and(&EXTI->IMR1, ~EXTI_IMR1_IM20);
-    armv7m_atomic_and(&EXTI->EMR1, ~EXTI_EMR1_EM20);
-
     RTC->ISR &= ~RTC_ISR_WUTF;
 
-    stm32l4_rtc_device.wakeup_callback = callback;
-    stm32l4_rtc_device.wakeup_context = context;
+    EXTI->PR1 = EXTI_PR1_PIF20;
 
-    if (ticks)
+    while (!(RTC->ISR & RTC_ISR_WUTWF))
     {
-	if (ticks <= (65536 * 2))
-	{
-	    ticks = (ticks + 1) & ~1;
+    }
 
-	    RTC->WUTR = (ticks / 2) - 1;
-	    RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | (RTC_CR_WUCKSEL_1 | RTC_CR_WUCKSEL_0);
-	}
-	else if (ticks <= (65536 * 4))
+    if (timeout)
+    {
+        if (timeout <= (((65536 * 16) / 32768) * 1000))
 	{
-	    ticks = (ticks + 2) & ~3;
+	    ticks = (timeout * 32768 + 500) / 1000;
 
-	    RTC->WUTR = (ticks / 4) - 1;
-	    RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | (RTC_CR_WUCKSEL_1);
-	}
-	else if (ticks <= (65536 * 8))
-	{
-	    ticks = (ticks + 4) & ~7;
-
-	    RTC->WUTR = (ticks / 8) -1;
-	    RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | (RTC_CR_WUCKSEL_0);
-	}
-	else if (ticks <= (65536 * 16))
-	{
-	    ticks = (ticks + 8) & ~15;
-
-	    RTC->WUTR = (ticks / 16) - 1;
-	    RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL);
+	    if (ticks <= (65536 * 2))
+	    {
+		RTC->WUTR = (ticks / 2) - 1;
+		RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | (RTC_CR_WUCKSEL_1 | RTC_CR_WUCKSEL_0);
+	    }
+	    else if (ticks <= (65536 * 4))
+	    {
+		RTC->WUTR = (ticks / 4) - 1;
+		RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | (RTC_CR_WUCKSEL_1);
+	    }
+	    else if (ticks <= (65536 * 8))
+	    {
+		RTC->WUTR = (ticks / 8) -1;
+		RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | (RTC_CR_WUCKSEL_0);
+	    }
+	    else
+	    {
+		RTC->WUTR = (ticks / 16) - 1;
+		RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL);
+	    }
 	}
 	else
 	{
-	    if (ticks > (uint32_t)(65536ull * 65536ull - 16384ull -1ull)) {
- 	         ticks = (uint32_t)(65536ull * 65536ull - 16384ull -1ull);
-	    }
-
-	    ticks = (ticks + 16384) & ~32767;
-
-	    if (ticks <= ((uint32_t)65536 * (uint32_t)32768))
+	    if (timeout <= (65536 * 1000))
 	    {
-		RTC->WUTR = (ticks / 32768) - 1;
+		RTC->WUTR = ((timeout + 500) / 1000) - 1;
 		RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | (RTC_CR_WUCKSEL_2);
 	    }
 	    else
 	    {
-		RTC->WUTR = ((ticks - ((uint32_t)65536 * (uint32_t)32768)) / 32768) - 1;
+		RTC->WUTR = ((timeout - (65536 * 1000) + 500) / 1000) - 1;
 		RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | (RTC_CR_WUCKSEL_2 | RTC_CR_WUCKSEL_1);
 	    }
-	}
-
-	if (callback) {
-	    armv7m_atomic_or(&EXTI->EMR1, EXTI_EMR1_EM20);
-	    armv7m_atomic_or(&EXTI->IMR1, EXTI_IMR1_IM20);
 	}
 
 	RTC->CR |= (RTC_CR_WUTIE | RTC_CR_WUTE);
     }
 
     RTC->WPR = 0x00;
-
-    return ticks;
 }
 
 
@@ -455,18 +429,12 @@ void stm32l4_rtc_notify_sync(stm32l4_rtc_callback_t callback, void *context)
 
     RTC->CR &= ~RTC_CR_TSIE;
 
-    armv7m_atomic_and(&EXTI->IMR1, ~EXTI_IMR1_IM19);
-    armv7m_atomic_and(&EXTI->EMR1, ~EXTI_EMR1_EM19);
-
     RTC->ISR &= ~RTC_ISR_TSF;
 
     stm32l4_rtc_device.sync_callback = callback;
     stm32l4_rtc_device.sync_context = context;
 
     if (callback) {
-	armv7m_atomic_or(&EXTI->EMR1, EXTI_EMR1_EM19);
-	armv7m_atomic_or(&EXTI->IMR1, EXTI_IMR1_IM19);
-
 	RTC->CR |= RTC_CR_TSIE;
     }
 
@@ -501,20 +469,6 @@ void TAMP_STAMP_IRQHandler(void)
     }
 
     EXTI->PR1 = EXTI_PR1_PIF19;
-}
-
-void RTC_WKUP_IRQHandler(void)
-{
-    if (RTC->ISR & RTC_ISR_WUTF)
-    {
-	RTC->ISR &= ~RTC_ISR_WUTF;
-
-	if (stm32l4_rtc_device.wakeup_callback) {
-	    (*stm32l4_rtc_device.wakeup_callback)(stm32l4_rtc_device.wakeup_context);
-	}
-    }
-
-    EXTI->PR1 = EXTI_PR1_PIF20;
 }
 
 void RTC_Alarm_IRQHandler(void)

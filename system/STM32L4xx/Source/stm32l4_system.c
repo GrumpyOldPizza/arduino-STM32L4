@@ -31,6 +31,7 @@
 #include "armv7m.h"
 
 #include "stm32l4_system.h"
+#include "stm32l4_rtc.h"
 
 extern uint32_t __rodata2_start__;
 extern uint32_t __rodata2_end__;
@@ -39,7 +40,9 @@ extern uint32_t __databkp_end__;
 extern uint32_t __etextbkp;
 
 typedef struct _stm32l4_system_device_t {
-    uint32_t                  reset;
+    uint8_t                   state;
+    uint8_t                   reset;
+    uint16_t                  wakeup;
     uint32_t                  lseclk;
     uint32_t                  hseclk;
     uint32_t                  sysclk;
@@ -616,25 +619,79 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
     /* Detect LSE/HSE on the first pass.
      */
 
-    if (!stm32l4_system_device.reset)
+    if (stm32l4_system_device.state == 0)
     {
-        stm32l4_system_device.reset = (RCC->CSR & 0xff000000) | RCC_CSR_RMVF;
+	stm32l4_system_device.state = 1;
+
+	RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+
+#if defined(STM32L432xx) || defined(STM32L433xx)
+	/* Unlock RTCAPBEN (and leave it unlocked for RTC/BKP use).
+	 */
+
+	RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;
+#endif
+
+	if (PWR->SR1 & PWR_SR1_SBF)
+	{
+	    stm32l4_system_device.reset = SYSTEM_RESET_STANDBY;
+	    stm32l4_system_device.wakeup = (PWR->SR1 & PWR_SR1_WUF);
+
+	    if (PWR->SR1 & PWR_SR1_WUFI)
+	    {
+		if (RTC->ISR & (RTC_ISR_ALRAF | RTC_ISR_ALRBF))
+		{
+		    stm32l4_system_device.wakeup |= SYSTEM_WAKEUP_ALARM;
+		}
+
+		if (RTC->ISR & RTC_ISR_WUTF)
+		{
+		    stm32l4_system_device.wakeup |= SYSTEM_WAKEUP_TIMEOUT;
+		}
+
+		RTC->ISR &= ~(RTC_ISR_ALRAF | RTC_ISR_ALRBF | RTC_ISR_WUTF);
+	    }
+	}
+	else
+	{
+	    stm32l4_system_device.reset = SYSTEM_RESET_POWERON;
+	    stm32l4_system_device.wakeup = 0;
+
+	    if (RCC->CSR & (RCC_CSR_LPWRRSTF | RCC_CSR_OBLRSTF))
+	    {
+		stm32l4_system_device.reset = SYSTEM_RESET_OTHER;
+	    }
+
+	    if (RCC->CSR & RCC_CSR_FWRSTF)
+	    {
+		stm32l4_system_device.reset = SYSTEM_RESET_FIREWALL;
+	    }
+
+	    if (RCC->CSR & RCC_CSR_BORRSTF)
+	    {
+		stm32l4_system_device.reset = SYSTEM_RESET_BROWNOUT;
+	    }
+
+	    if (RCC->CSR & (RCC_CSR_IWDGRSTF | RCC_CSR_WWDGRSTF))
+	    {
+		stm32l4_system_device.reset = SYSTEM_RESET_WATCHDOG;
+	    }
+
+	    if (RCC->CSR & RCC_CSR_SFTRSTF)
+	    {
+		stm32l4_system_device.reset = SYSTEM_RESET_SOFTWARE;
+	    }
+
+	    if (RCC->CSR & RCC_CSR_PINRSTF)
+	    {
+		stm32l4_system_device.reset = SYSTEM_RESET_EXTERNAL;
+	    }
+	}
 
 	RCC->CSR |= RCC_CSR_RMVF;
 	RCC->CSR &= ~RCC_CSR_RMVF;
 
-	RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
-
-        stm32l4_system_device.reset |= (PWR->SR1 & (PWR_SR1_SBF | PWR_SR1_WUF5 | PWR_SR1_WUF4 | PWR_SR1_WUF3 | PWR_SR1_WUF2 | PWR_SR1_WUF1));
-
 	PWR->SCR = (PWR_SCR_CSBF | PWR_SCR_CWUF5 | PWR_SCR_CWUF4 | PWR_SCR_CWUF3 | PWR_SCR_CWUF2 | PWR_SCR_CWUF1);
-	
-#if defined(STM32L432xx) || defined(STM32L433xx)
-	/* Unlock RTCAPBEN (and leave it unlocked for RTC/BKP use).
-	 */
-    
-	RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;
-#endif
 
 	PWR->CR1 |= PWR_CR1_DBP;
 	    
@@ -1488,6 +1545,16 @@ void stm32l4_system_hsi16_disable(void)
     __set_PRIMASK(primask);
 }
 
+uint32_t stm32l4_system_reset_cause(void)
+{
+    return stm32l4_system_device.reset;
+}
+
+uint32_t stm32l4_system_wakeup_reason(void)
+{
+    return stm32l4_system_device.wakeup;
+}
+
 uint32_t stm32l4_system_lseclk(void)
 {
     return stm32l4_system_device.lseclk;
@@ -1553,8 +1620,6 @@ void stm32l4_system_unlock(uint32_t lock)
 
 static void stm32l4_system_suspend(void)
 {
-    armv7m_systick_disable();
-
     if (stm32l4_system_device.clk48)
     {
 #if defined(STM32L432xx) || defined(STM32L433xx)
@@ -1785,11 +1850,9 @@ static void stm32l4_system_resume(void)
 	}
 #endif /* defined(STM32L432xx) || defined(STM32L433xx) */
     }
-
-    armv7m_systick_enable();
 }
 
-bool stm32l4_system_stop(void)
+bool stm32l4_system_stop(uint32_t timeout)
 {
     uint32_t primask, apb1enr1, slot, mask;
 
@@ -1812,6 +1875,13 @@ bool stm32l4_system_stop(void)
 	mask &= ~(0x80000000 >> slot);
 
 	(*stm32l4_system_device.callback[slot])(stm32l4_system_device.context[slot], SYSTEM_EVENT_SUSPEND);
+    }
+
+    armv7m_systick_disable();
+
+    if (timeout)
+    {
+	stm32l4_rtc_wakeup(timeout);
     }
 
     apb1enr1 = RCC->APB1ENR1;
@@ -1847,6 +1917,13 @@ bool stm32l4_system_stop(void)
 	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
     }
 
+    if (timeout)
+    {
+	stm32l4_rtc_wakeup(0);
+    }
+
+    armv7m_systick_enable();
+
     mask = stm32l4_system_device.event[SYSTEM_INDEX_RESUME];
 
     while (mask) 
@@ -1862,8 +1939,13 @@ bool stm32l4_system_stop(void)
     return true;
 }
 
-static void stm32l4_system_sleepdeep(uint32_t lpms)
+static void stm32l4_system_deepsleep(uint32_t lpms, uint32_t config, uint32_t timeout)
 {
+    if (timeout)
+    {
+	stm32l4_rtc_wakeup(timeout);
+    }
+
     RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
 
     /* ERRATA 2.1.15. WAR: Switch MSI to 4MHz before entering STANDBY/SHUTDOWN mode */
@@ -1968,10 +2050,11 @@ static void stm32l4_system_sleepdeep(uint32_t lpms)
     RTC->ISR &= ~(RTC_ISR_WUTF | RTC_ISR_ALRBF | RTC_ISR_ALRAF);
     
     EXTI->PR1 = (EXTI_PR1_PIF18 | EXTI_PR1_PIF20);
-    EXTI->EMR1 |= (EXTI_EMR1_EM18 | EXTI_EMR1_EM20);
 
-    PWR->CR1 = ((PWR->CR1 & ~PWR_CR1_LPMS) | lpms);
-    
+    PWR->CR1 = (PWR->CR1 & ~PWR_CR1_LPMS) | lpms;
+    PWR->CR3 = (PWR->CR3 & ~PWR_CR3_EWUP) | ((config >> 0) & PWR_CR3_EWUP) | PWR_CR3_EIWF;
+    PWR->CR4 = (PWR->CR4 & ~(PWR_CR4_WP1 | PWR_CR4_WP2 | PWR_CR4_WP3 | PWR_CR4_WP4 | PWR_CR4_WP5)) | ((config >> 8) & (PWR_CR4_WP1 | PWR_CR4_WP2 | PWR_CR4_WP3 | PWR_CR4_WP4 | PWR_CR4_WP5));
+
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
     __DMB();
@@ -1985,7 +2068,7 @@ static void stm32l4_system_sleepdeep(uint32_t lpms)
     }
 }
 
-bool stm32l4_system_standby(void)
+void stm32l4_system_standby(uint32_t config, uint32_t timeout)
 {
     uint32_t primask, slot, mask;
 
@@ -2000,7 +2083,7 @@ bool stm32l4_system_standby(void)
     {
 	__set_PRIMASK(primask);
 
-	return false;
+	return;
     }
 
     mask = stm32l4_system_device.event[SYSTEM_INDEX_STANDBY];
@@ -2013,12 +2096,14 @@ bool stm32l4_system_standby(void)
 	(*stm32l4_system_device.callback[slot])(stm32l4_system_device.context[slot], SYSTEM_EVENT_STANDBY);
     }
 
-    stm32l4_system_sleepdeep(PWR_CR1_LPMS_STANDBY);
+    stm32l4_system_deepsleep(PWR_CR1_LPMS_STANDBY, config, timeout);
 
-    return true;
+    while (1)
+    {
+    }
 }
 
-bool stm32l4_system_shutdown(void)
+void stm32l4_system_shutdown(uint32_t config, uint32_t timeout)
 {
     uint32_t primask, slot, mask;
 
@@ -2034,7 +2119,7 @@ bool stm32l4_system_shutdown(void)
     {
 	__set_PRIMASK(primask);
 
-	return false;
+	return;
     }
 
     mask = stm32l4_system_device.event[SYSTEM_INDEX_SHUTDOWN];
@@ -2047,9 +2132,11 @@ bool stm32l4_system_shutdown(void)
 	(*stm32l4_system_device.callback[slot])(stm32l4_system_device.context[slot], SYSTEM_EVENT_SHUTDOWN);
     }
 
-    stm32l4_system_sleepdeep(PWR_CR1_LPMS_SHUTDOWN);
+    stm32l4_system_deepsleep(PWR_CR1_LPMS_SHUTDOWN, config, timeout);
 
-    return true;
+    while (1)
+    {
+    }
 }
 
 void stm32l4_system_reset(void)

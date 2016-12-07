@@ -37,6 +37,12 @@ extern "C" {
 stm32l4_adc_t stm32l4_adc;
 stm32l4_exti_t stm32l4_exti;
 
+#if defined(STM32L476xx)
+extern void OTG_FS_IRQHandler(void);
+#else
+extern void USB_IRQHandler(void);
+#endif
+
 void HardFault_Handler(void)
 {
     while (1)

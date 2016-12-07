@@ -129,6 +129,16 @@ float STM32Class::getTemperature()
     return (30.0 + ((float)(110.0 - 30.0) * (float)(ts_data - ts_cal1)) / (float)(ts_cal2 - ts_cal1));
 }
 
+uint32_t STM32Class::resetCause()
+{
+    return stm32l4_system_reset_cause();
+}
+
+uint32_t STM32Class::wakeupReason()
+{
+    return stm32l4_system_wakeup_reason();
+}
+
 void STM32Class::sleep()
 {
     __WFE();
@@ -136,19 +146,49 @@ void STM32Class::sleep()
     __WFE();
 }
 
-bool STM32Class::stop()
+bool STM32Class::stop(uint32_t timeout)
 {
-    return stm32l4_system_stop();
+    return stm32l4_system_stop(timeout);
 }
 
-bool STM32Class::standby()
+void STM32Class::standby(uint32_t timeout)
 {
-    return stm32l4_system_standby();
+    stm32l4_system_standby(0, timeout);
 }
 
-bool STM32Class::shutdown()
+void STM32Class::standby(uint32_t pin, uint32_t mode, uint32_t timeout)
 {
-    return stm32l4_system_shutdown();
+    uint32_t wakeup;
+
+    if (!(g_APinDescription[pin].attr & PIN_ATTR_WKUP_MASK))
+	return;
+
+    if ((mode != RISING) && (mode != FALLING))
+	return;
+
+    wakeup = ((mode == RISING) ? SYSTEM_CONFIG_WKUP1_RISING :  SYSTEM_CONFIG_WKUP1_FALLING) << (((g_APinDescription[pin].attr & PIN_ATTR_WKUP_MASK) >> PIN_ATTR_WKUP_SHIFT) - PIN_ATTR_WKUP_OFFSET);
+
+    stm32l4_system_standby(wakeup, timeout);
+}
+
+void STM32Class::shutdown(uint32_t timeout)
+{
+    stm32l4_system_shutdown(0, timeout);
+}
+
+void STM32Class::shutdown(uint32_t pin, uint32_t mode, uint32_t timeout)
+{
+    uint32_t wakeup;
+
+    if (!(g_APinDescription[pin].attr & PIN_ATTR_WKUP_MASK))
+	return;
+
+    if ((mode != RISING) && (mode != FALLING))
+	return;
+
+    wakeup = ((mode == RISING) ? SYSTEM_CONFIG_WKUP1_RISING :  SYSTEM_CONFIG_WKUP1_FALLING) << (((g_APinDescription[pin].attr & PIN_ATTR_WKUP_MASK) >> PIN_ATTR_WKUP_SHIFT) - PIN_ATTR_WKUP_OFFSET);
+
+    stm32l4_system_shutdown(wakeup, timeout);
 }
 
 void STM32Class::reset()

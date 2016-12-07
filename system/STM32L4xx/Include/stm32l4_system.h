@@ -134,6 +134,35 @@ enum {
 
 typedef void (*stm32l4_system_callback_t)(void *context, uint32_t events);
 
+#define SYSTEM_RESET_POWERON        0
+#define SYSTEM_RESET_EXTERNAL       1
+#define SYSTEM_RESET_SOFTWARE       2
+#define SYSTEM_RESET_WATCHDOG       3
+#define SYSTEM_RESET_BROWNOUT       4
+#define SYSTEM_RESET_FIREWALL       5
+#define SYSTEM_RESET_OTHER          6
+#define SYSTEM_RESET_STANDBY        7
+
+#define SYSTEM_WAKEUP_WKUP1         0x00000001
+#define SYSTEM_WAKEUP_WKUP2         0x00000002
+#define SYSTEM_WAKEUP_WKUP3         0x00000004
+#define SYSTEM_WAKEUP_WKUP4         0x00000008
+#define SYSTEM_WAKEUP_WKUP5         0x00000010
+#define SYSTEM_WAKEUP_WATCHDOG      0x00000100
+#define SYSTEM_WAKEUP_ALARM         0x00000200
+#define SYSTEM_WAKEUP_TIMEOUT       0x00008000
+
+#define SYSTEM_CONFIG_WKUP1_RISING  0x00000001
+#define SYSTEM_CONFIG_WKUP1_FALLING 0x00000101
+#define SYSTEM_CONFIG_WKUP2_RISING  0x00000002
+#define SYSTEM_CONFIG_WKUP2_FALLING 0x00000202
+#define SYSTEM_CONFIG_WKUP3_RISING  0x00000004
+#define SYSTEM_CONFIG_WKUP3_FALLING 0x00000404
+#define SYSTEM_CONFIG_WKUP4_RISING  0x00000008
+#define SYSTEM_CONFIG_WKUP4_FALLING 0x00000808
+#define SYSTEM_CONFIG_WKUP5_RISING  0x00000010
+#define SYSTEM_CONFIG_WKUP5_FALLING 0x00001010
+
 extern void     stm32l4_system_periph_reset(unsigned int periph);
 extern void     stm32l4_system_periph_enable(unsigned int periph);
 extern void     stm32l4_system_periph_disable(unsigned int periph);
@@ -148,6 +177,8 @@ extern bool     stm32l4_system_clk48_enable(void);
 extern bool     stm32l4_system_clk48_disable(void);
 extern void     stm32l4_system_hsi16_enable(void);
 extern void     stm32l4_system_hsi16_disable(void);
+extern uint32_t stm32l4_system_reset_cause(void);
+extern uint32_t stm32l4_system_wakeup_reason(void);
 extern uint32_t stm32l4_system_lseclk(void);
 extern uint32_t stm32l4_system_hseclk(void);
 extern uint32_t stm32l4_system_sysclk(void);
@@ -157,9 +188,9 @@ extern uint32_t stm32l4_system_pclk2(void);
 extern void     stm32l4_system_notify(uint32_t slot, stm32l4_system_callback_t callback, void *context, uint32_t events); 
 extern void     stm32l4_system_lock(uint32_t lock); 
 extern void     stm32l4_system_unlock(uint32_t lock);
-extern bool     stm32l4_system_stop(void);
-extern bool     stm32l4_system_standby(void);
-extern bool     stm32l4_system_shutdown(void);
+extern bool     stm32l4_system_stop(uint32_t timeout);
+extern void     stm32l4_system_standby(uint32_t config, uint32_t timeout);
+extern void     stm32l4_system_shutdown(uint32_t config, uint32_t timeout);
 extern void     stm32l4_system_reset(void);
 extern void     stm32l4_system_bootloader(void);
 

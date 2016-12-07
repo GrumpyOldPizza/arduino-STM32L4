@@ -127,9 +127,6 @@ public:
     // STM32L4 EXTENSION: PC13 control
     void pinMode(PinMode mode);
 
-    // STM32L4 EXTENSION: periodic wakeup
-    uint32_t wakeup(uint32_t ticks, void(*callback)(void) = NULL);
-
     // STM32L4 EXTENSION: battery backed registers
     uint32_t read(unsigned int idx);
     void write(unsigned int idx, uint32_t val);
