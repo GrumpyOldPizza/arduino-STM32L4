@@ -355,10 +355,10 @@ bool stm32l4_timer_configure(stm32l4_timer_t *timer, uint32_t prescaler, uint32_
 	case TIMER_INSTANCE_TIM5:
 	    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_TIM5EN);
 	    break;
+#endif
 	case TIMER_INSTANCE_TIM6:
 	    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_TIM6EN);
 	    break;
-#endif
 	case TIMER_INSTANCE_TIM7:
 	    armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_TIM7EN);
 	    break;
