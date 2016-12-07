@@ -336,7 +336,7 @@ void stm32l4_rtc_alarm(unsigned int channel, unsigned int match, const stm32l4_r
 
 	if (callback) {
 	    armv7m_atomic_or(&EXTI->EMR1, EXTI_EMR1_EM18);
-	    armv7m_atomic_and(&EXTI->IMR1, ~EXTI_IMR1_IM18);
+	    armv7m_atomic_or(&EXTI->IMR1, EXTI_IMR1_IM18);
 	}
 
 	RTC->CR |= ((RTC_CR_ALRAIE | RTC_CR_ALRAE) << channel);
