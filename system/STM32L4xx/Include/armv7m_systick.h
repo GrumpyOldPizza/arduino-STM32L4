@@ -35,14 +35,12 @@
  extern "C" {
 #endif
 
-typedef void (*armv7m_systick_callback_t)(void);
-typedef void (*armv7m_systick_routine_t)(uint32_t heartbeat);
+typedef void (*armv7m_systick_callback_t)(void *context, uint32_t heartbeat);
 
 extern uint64_t armv7m_systick_millis(void);
 extern uint64_t armv7m_systick_micros(void);
 extern void armv7m_systick_delay(uint32_t delay);
-extern void armv7m_systick_timeout(armv7m_systick_callback_t callback, uint32_t timeout);
-extern void armv7m_systick_routine(armv7m_systick_routine_t routine);
+extern void armv7m_systick_notify(armv7m_systick_callback_t callback, void *context);
 extern void armv7m_systick_initialize(unsigned int priority);
 extern void armv7m_systick_enable(void);
 extern void armv7m_systick_disable(void);

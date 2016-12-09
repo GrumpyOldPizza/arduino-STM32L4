@@ -49,6 +49,7 @@ typedef struct _stm32l4_usbd_cdc_device_t {
     volatile uint8_t               tx_busy;
     uint8_t                        rx_data[USBD_CDC_DATA_MAX_PACKET_SIZE];
     uint64_t                       connect;
+    armv7m_timer_t                 timeout;
 } stm32l4_usbd_cdc_device_t;
 
 static stm32l4_usbd_cdc_device_t stm32l4_usbd_cdc_device;
@@ -64,6 +65,8 @@ static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
     stm32l4_usbd_cdc_info.bParityType = 0;
     stm32l4_usbd_cdc_info.bDataBits = 8;
     stm32l4_usbd_cdc_info.lineState = 0;
+
+    armv7m_timer_create(&stm32l4_usbd_cdc_device.timeout, (armv7m_timer_callback_t)&stm32l4_system_bootloader);
 
     USBD_CDC_SetRxBuffer(stm32l4_usbd_cdc_device.USBD, &stm32l4_usbd_cdc_device.rx_data[0]);
     USBD_CDC_ReceivePacket(stm32l4_usbd_cdc_device.USBD);
@@ -113,13 +116,13 @@ static void stm32l4_usbd_cdc_control(uint8_t command, uint8_t *data, uint16_t le
 	{
 	    if ((stm32l4_usbd_cdc_info.dwDTERate == 1200) && !(stm32l4_usbd_cdc_info.lineState & 1))
 	    {
-		/* init reset timer */
-		armv7m_systick_timeout(stm32l4_system_bootloader, 250);
+		/* start reset timer */
+		armv7m_timer_start(&stm32l4_usbd_cdc_device.timeout, 250);
 	    }
 	    else
 	    {
-		/* cancel reset timer */
-		armv7m_systick_timeout(NULL, 0);
+		/* stop reset timer */
+		armv7m_timer_stop(&stm32l4_usbd_cdc_device.timeout);
 	    }
 	}
     }

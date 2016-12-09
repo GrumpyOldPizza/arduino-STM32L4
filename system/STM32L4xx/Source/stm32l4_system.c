@@ -799,7 +799,24 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	    }
 
 	    RTC->CR = RTC_CR_BYPSHAD;
-	    RTC->PRER = (stm32l4_system_device.lseclk == 0) ? 0x007d00ff : 0x007f00ff;
+
+	    /* If LSE is present we use a PREDIV_A of 1 and a PREDIV_S of 32768 to get
+	     * the maximum precision SSR (15 bits). If there is no LSE and LSI @ 32000Hz is
+	     * used PREDIV_A is 125 and PREDIV_S is 256.
+	     *
+	     * Need to check on the 512Hz output with those PREDIV_A values.
+	     */
+
+	    if (stm32l4_system_device.lseclk == 0)
+	    {
+		RTC->PRER = 0x000000ff;
+		RTC->PRER |= 0x007c0000;
+	    }
+	    else
+	    {
+		RTC->PRER = 0x00007fff;
+		RTC->PRER |= 0x00000000;
+	    }
 
 	    RTC->ISR &= ~RTC_ISR_INIT;
 	}
@@ -1797,6 +1814,8 @@ static void stm32l4_system_resume(void)
 	    {
 	    }
 	}
+
+	SystemCoreClock = stm32l4_system_device.hclk;
     }
 
     if (stm32l4_system_device.clk48)

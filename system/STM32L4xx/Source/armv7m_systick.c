@@ -31,16 +31,16 @@
 #include "armv7m.h"
 
 #include "stm32l4xx.h"
+#include "stm32l4_rtc.h"
 
 typedef struct _armv7m_systick_control_t {
     volatile uint64_t         micros;
     volatile uint64_t         millis;
-    armv7m_systick_callback_t callback;
-    uint32_t                  timeout;
-    armv7m_systick_routine_t  routine;
-    uint32_t                  heartbeat;
+    uint64_t                  count;
     uint32_t                  cycle;
     uint32_t                  scale;
+    armv7m_systick_callback_t callback;
+    void                      *context;
 } armv7m_systick_control_t;
 
 static armv7m_systick_control_t armv7m_systick_control;
@@ -62,7 +62,7 @@ uint64_t armv7m_systick_micros(void)
     }
     while (micros != armv7m_systick_control.micros);
 
-    micros += (((armv7m_systick_control.cycle - count) * armv7m_systick_control.scale) >> 22);
+    micros += ((((armv7m_systick_control.cycle - 1) - count) * armv7m_systick_control.scale) >> 22);
 
     return micros;
 }
@@ -80,93 +80,101 @@ void armv7m_systick_delay(uint32_t delay)
     while ((armv7m_systick_control.millis - millis) < delay);
 }
 
-void armv7m_systick_timeout(armv7m_systick_callback_t callback, uint32_t timeout)
+void armv7m_systick_notify(armv7m_systick_callback_t callback, void *context)
 {
-    armv7m_systick_control.timeout = 0;
-
-    if (timeout)
-    {
-	armv7m_systick_control.callback = callback;
-	armv7m_systick_control.timeout = timeout;
-    }
-}
-
-void armv7m_systick_routine(armv7m_systick_routine_t routine)
-{
-    if (!armv7m_systick_control.routine)
-    {
-	armv7m_systick_control.heartbeat = 0;
-    }
-    
-    armv7m_systick_control.routine = routine;
+    armv7m_systick_control.callback = NULL;
+    armv7m_systick_control.context = context;
+    armv7m_systick_control.callback = callback;
 }
 
 void armv7m_systick_initialize(unsigned int priority)
 {
     NVIC_SetPriority(SysTick_IRQn, priority);
 
-    armv7m_systick_control.micros = 0;
-    armv7m_systick_control.millis = 0;
-    armv7m_systick_control.heartbeat = 0;
-    armv7m_systick_control.cycle = (SystemCoreClock + 500) / 1000;
+    armv7m_systick_control.cycle = SystemCoreClock / 1000;
+
+    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
+    SysTick->VAL  = (armv7m_systick_control.cycle - 1);
+    SysTick->LOAD = (armv7m_systick_control.cycle - 1);
+    SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
 
     /* To get from the current counter to the microsecond offset,
-     * the (cycle - Systick->VAL) value is scaled so that the resulting
+     * the ((cycle - 1) - Systick->VAL) value is scaled so that the resulting
      * microseconds fit into the upper 10 bits of a 32bit value. Then
      * this is post diveded by 2^22. That ensures proper scaling.
      */
-    armv7m_systick_control.scale = ((uint64_t)4194304000000ull + (uint64_t)(SystemCoreClock / 2)) / (uint64_t)SystemCoreClock;
-
-    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
-    SysTick->LOAD = armv7m_systick_control.cycle - 1;
-    SysTick->VAL  = armv7m_systick_control.cycle - 1;
-    SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
+    armv7m_systick_control.scale = (uint64_t)4194304000000ull / (uint64_t)SystemCoreClock;
+    armv7m_systick_control.millis = 0;
+    armv7m_systick_control.micros = 0;
 }
 
 void armv7m_systick_enable(void)
 {
-    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
+    uint32_t count, o_count, o_cycle;
+    uint64_t delta;
 
-    armv7m_systick_control.micros = 0;
-    armv7m_systick_control.millis = 0;
-    armv7m_systick_control.heartbeat = 0;
+    /* Compute a new adjusted count value based upon the new SystemCoreClock.
+     */
+    o_cycle = armv7m_systick_control.cycle;
+    o_count = (armv7m_systick_control.cycle - 1) - SysTick->VAL;
 
-    SysTick->LOAD = armv7m_systick_control.cycle - 1;
-    SysTick->VAL  = armv7m_systick_control.cycle - 1;
+    armv7m_systick_control.cycle = SystemCoreClock / 1000;
+
+    count = (o_count * armv7m_systick_control.cycle) / o_cycle;
+
+    /* Compute the delta between disable() -> enable() in terms of 32768 clocks.
+     */
+    delta = stm32l4_rtc_get_count() - armv7m_systick_control.count;
+
+    /* Adjust the current count by the left over sub millis second delta. 
+     * The calculation is a tad cryptic, just so that expensive
+     * 64 bit division can be avoided.
+     *
+     * The remainder in 32768Hz units of 1ms is:
+     *
+     * ((uint32_t)(delta * 1000ull) & 32767) / 1000
+     *
+     * Rescaling this to CPU clock cycles is:
+     *
+     * ((((uint32_t)(delta * 1000ull) & 32767) / 1000) * SystemCoreClock) / 32768
+     *
+     * Or in other words:
+     *
+     * ((((uint32_t)(delta * 1000ull) & 32767) / 1000) * (armv7m_systick_control.cycle * 1000)) / 32768
+     */
+
+    count += ((((uint32_t)(delta * 1000ull) & 32767) * armv7m_systick_control.cycle) / 32768);
+
+    while (count >= armv7m_systick_control.cycle)
+    {
+	armv7m_systick_control.millis += 1;
+	armv7m_systick_control.micros += 1000;
+	
+	count -= armv7m_systick_control.cycle;
+    }
+
+    SysTick->VAL  = (armv7m_systick_control.cycle - 1) - count;
+    SysTick->LOAD = (armv7m_systick_control.cycle - 1);
     SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
+
+    armv7m_systick_control.millis += ((delta * 1000ull) / 32768);
+    armv7m_systick_control.micros = armv7m_systick_control.millis * 1000;
 }
 
 void armv7m_systick_disable(void)
 {
     SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
+
+    armv7m_systick_control.count = stm32l4_rtc_get_count();
 }
 
 void SysTick_Handler(void)
 {
-    uint32_t timeout;
-
     armv7m_systick_control.micros += 1000;
     armv7m_systick_control.millis += 1;
 
-    timeout = armv7m_systick_control.timeout;
-
-    if (timeout) 
+    if (armv7m_systick_control.callback) 
     {
-	armv7m_systick_control.timeout = --timeout;
-
-	if (timeout == 0)
-	{
-	    (armv7m_systick_control.callback)();
-	}
-    }
-
-    if (armv7m_systick_control.routine) 
-    {
-	armv7m_systick_control.heartbeat += 1;
-
-	if (armv7m_pendsv_enqueue((armv7m_pendsv_routine_t)armv7m_systick_control.routine, armv7m_systick_control.heartbeat))
-	{
-	    armv7m_systick_control.heartbeat = 0;
-	}
+	armv7m_pendsv_enqueue((armv7m_pendsv_routine_t)armv7m_systick_control.callback, armv7m_systick_control.context, (uint32_t)armv7m_systick_control.millis);
     }
 }

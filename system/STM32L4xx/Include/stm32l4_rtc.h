@@ -88,6 +88,7 @@ typedef struct _stm32l4_rtc_sync_t {
 extern void stm32l4_rtc_configure(unsigned int priority);
 extern void stm32l4_rtc_set_time(unsigned int mask, const stm32l4_rtc_time_t *time);
 extern void stm32l4_rtc_get_time(stm32l4_rtc_time_t *p_time_return);
+extern uint64_t stm32l4_rtc_get_count(void);
 extern void stm32l4_rtc_set_calibration(int32_t calibration);
 extern int32_t stm32l4_rtc_get_calibration(void);
 extern void stm32l4_rtc_adjust_ticks(int32_t ticks);

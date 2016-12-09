@@ -33,7 +33,8 @@
 #include "stm32l4_nvic.h"
 
 typedef struct _armv7m_pendsv_entry_t {
-    uint32_t                         argument;
+    void                             *context;
+    uint32_t                         data;
     volatile armv7m_pendsv_routine_t routine;
 } armv7m_pendsv_entry_t;
 
@@ -45,7 +46,7 @@ typedef struct _armv7m_pendsv_control_t {
 
 static armv7m_pendsv_control_t armv7m_pendsv_control;
 
-volatile armv7m_pendsv_routine_t * armv7m_pendsv_enqueue(armv7m_pendsv_routine_t routine, uint32_t argument)
+volatile armv7m_pendsv_routine_t * armv7m_pendsv_enqueue(armv7m_pendsv_routine_t routine, void *context, uint32_t data)
 {
     volatile armv7m_pendsv_entry_t *pendsv_write, *pendsv_write_next;
 
@@ -67,7 +68,8 @@ volatile armv7m_pendsv_routine_t * armv7m_pendsv_enqueue(armv7m_pendsv_routine_t
     }
     while (!armv7m_atomic_compare_exchange((volatile uint32_t*)&armv7m_pendsv_control.pendsv_write, (uint32_t*)&pendsv_write, (uint32_t)pendsv_write_next));
 
-    pendsv_write->argument = argument;
+    pendsv_write->context = context;
+    pendsv_write->data = data;
     pendsv_write->routine = routine;
 
     SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
@@ -79,13 +81,15 @@ static __attribute__((used)) void armv7m_pendsv_dequeue(void)
 {
     volatile armv7m_pendsv_entry_t *pendsv_read;
     armv7m_pendsv_routine_t routine;
-    uint32_t argument;
+    void *context;
+    uint32_t data;
 
     while (1)
     {
 	pendsv_read = armv7m_pendsv_control.pendsv_read;
 
-	argument = pendsv_read->argument;
+	context = pendsv_read->context;
+	data = pendsv_read->data;
 	routine = pendsv_read->routine;
 
 	if (routine == NULL)
@@ -104,7 +108,7 @@ static __attribute__((used)) void armv7m_pendsv_dequeue(void)
 
 	armv7m_pendsv_control.pendsv_read = pendsv_read;
 
-	(*routine)(argument);
+	(*routine)(context, data);
     }
 }
 

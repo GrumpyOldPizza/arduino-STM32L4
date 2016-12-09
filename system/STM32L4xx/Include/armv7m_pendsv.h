@@ -37,9 +37,9 @@
 
 #define ARMV7M_PENDSV_ENTRY_COUNT 32
 
-typedef void (*armv7m_pendsv_routine_t)(uint32_t argument);
+typedef void (*armv7m_pendsv_routine_t)(void *context, uint32_t data);
 
-extern volatile armv7m_pendsv_routine_t * armv7m_pendsv_enqueue(armv7m_pendsv_routine_t routine, uint32_t argument);
+extern volatile armv7m_pendsv_routine_t * armv7m_pendsv_enqueue(armv7m_pendsv_routine_t routine, void *context, uint32_t data);
 
 extern void armv7m_pendsv_initialize(void);
 
