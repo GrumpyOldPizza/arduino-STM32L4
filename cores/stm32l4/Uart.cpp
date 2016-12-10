@@ -451,7 +451,7 @@ void Uart::_event_callback(void *context, uint32_t events)
   reinterpret_cast<class Uart*>(context)->EventCallback(events);
 }
 
-#if !defined(STM32L4_CONFIG_USBD_CDC)
+#if !defined(USBCON)
 
 bool Serial_empty() { return !Serial.available(); }
 

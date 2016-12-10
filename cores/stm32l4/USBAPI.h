@@ -30,6 +30,27 @@
 
 #include "HardwareSerial.h"
 
+class USBDeviceClass
+{
+public:
+    USBDeviceClass() {};
+
+    // USB Device API
+    void init();
+    bool attach();
+    bool detach();
+    void poll();
+    
+    bool connected();
+    bool configured();
+    bool suspended();
+
+private:
+    bool initialized;
+};
+
+extern USBDeviceClass USBDevice;
+
 #define CDC_RX_BUFFER_SIZE 512
 #define CDC_TX_BUFFER_SIZE 512
 

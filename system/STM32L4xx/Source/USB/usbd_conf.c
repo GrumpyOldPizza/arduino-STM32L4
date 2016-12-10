@@ -68,7 +68,9 @@ static PCD_HandleTypeDef hpcd;
 extern stm32l4_exti_t stm32l4_exti;
 extern stm32l4_usbd_cdc_t stm32l4_usbd_cdc;
 
-static unsigned int usbd_pin_vusb = GPIO_PIN_NONE;
+static unsigned int usbd_pin_vbus = GPIO_PIN_NONE;
+static bool usbd_connected = false;
+
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -77,64 +79,119 @@ extern USBD_StorageTypeDef const dosfs_storage_interface;
 
 static USBD_HandleTypeDef USBD_Device;
 
-void USBD_AttachCallback(void *context)
-{
-  if (stm32l4_gpio_pin_read(usbd_pin_vusb))
-    {
-      stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vusb, EXTI_CONTROL_DISABLE, NULL, NULL);
+static armv7m_timer_t USBD_AttachTimer;
+static armv7m_timer_t USBD_DetachTimer;
 
-      USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
-      USBD_RegisterClass(&USBD_Device, USBD_CDC_MSC_CLASS);
-      USBD_CDC_RegisterInterface(&USBD_Device, &stm32l4_usbd_cdc_interface);
-      USBD_MSC_RegisterStorage(&USBD_Device, &dosfs_storage_interface);
-      USBD_Start(&USBD_Device);
+static void USBD_AttachCallback(void *context)
+{
+    usbd_connected = true;
+
+    USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
+    USBD_RegisterClass(&USBD_Device, USBD_CDC_MSC_CLASS);
+    USBD_CDC_RegisterInterface(&USBD_Device, &stm32l4_usbd_cdc_interface);
+    USBD_MSC_RegisterStorage(&USBD_Device, &dosfs_storage_interface);
+    USBD_Start(&USBD_Device);
+}
+
+static void USBD_DetachCallback(void *context)
+{
+    USBD_DeInit(&USBD_Device);
+
+    usbd_connected = false;
+}
+
+static void USBD_VBUSCallback(void *context)
+{
+    if (stm32l4_gpio_pin_read(usbd_pin_vbus))
+    {
+	armv7m_timer_stop(&USBD_DetachTimer);
+	armv7m_timer_start(&USBD_AttachTimer, 10);
+    }
+    else
+    {
+	armv7m_timer_stop(&USBD_AttachTimer);
+	armv7m_timer_start(&USBD_DetachTimer, 10);
     }
 }
 
-void USBD_DetachCallback(void *context)
+void USBD_Initialize(unsigned int pin_vbus, unsigned int priority)
 {
-  if (!stm32l4_gpio_pin_read(usbd_pin_vusb))
-    {
-      USBD_DeInit(&USBD_Device);
+    usbd_pin_vbus = pin_vbus;
 
-      stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vusb, EXTI_CONTROL_RISING_EDGE, USBD_AttachCallback, NULL);
-    }
-}
-
-void USBD_Attach(unsigned int pin_vusb, unsigned int priority)
-{
-  usbd_pin_vusb = pin_vusb;
-
-  /* Configure USB FS GPIOs */
-  stm32l4_gpio_pin_configure(usbd_pin_vusb, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
+    /* Configure USB FS GPIOs */
+    stm32l4_gpio_pin_configure(usbd_pin_vbus, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
 
 #if defined(STM32L476xx)
-  stm32l4_gpio_pin_configure(GPIO_PIN_PA11_USB_OTG_FS_DM, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
-  stm32l4_gpio_pin_configure(GPIO_PIN_PA12_USB_OTG_FS_DP, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+    stm32l4_gpio_pin_configure(GPIO_PIN_PA11_USB_OTG_FS_DM, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+    stm32l4_gpio_pin_configure(GPIO_PIN_PA12_USB_OTG_FS_DP, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
 #else
-  stm32l4_gpio_pin_configure(GPIO_PIN_PA11_USB_DM, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
-  stm32l4_gpio_pin_configure(GPIO_PIN_PA12_USB_DP, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+    stm32l4_gpio_pin_configure(GPIO_PIN_PA11_USB_DM, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+    stm32l4_gpio_pin_configure(GPIO_PIN_PA12_USB_DP, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
 #endif
 
-  /* Set USB Interrupt priority */
+    /* Set USB Interrupt priority */
 #if defined(STM32L476xx)
-  NVIC_SetPriority(OTG_FS_IRQn, priority);
+    NVIC_SetPriority(OTG_FS_IRQn, priority);
 #else
-  NVIC_SetPriority(USB_IRQn, priority);
+    NVIC_SetPriority(USB_IRQn, priority);
 #endif  
 
-  if (stm32l4_gpio_pin_read(usbd_pin_vusb))
+    armv7m_timer_create(&USBD_AttachTimer, (armv7m_timer_callback_t)USBD_AttachCallback);
+    armv7m_timer_create(&USBD_DetachTimer, (armv7m_timer_callback_t)USBD_DetachCallback);
+}
+
+void USBD_Attach(void)
+{
+    stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vbus, EXTI_CONTROL_BOTH_EDGES, USBD_VBUSCallback, NULL);
+
+    if (!usbd_connected)
     {
-      USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
-      USBD_RegisterClass(&USBD_Device, USBD_CDC_MSC_CLASS);
-      USBD_CDC_RegisterInterface(&USBD_Device, &stm32l4_usbd_cdc_interface);
-      USBD_MSC_RegisterStorage(&USBD_Device, &dosfs_storage_interface);
-      USBD_Start(&USBD_Device);
+	if (stm32l4_gpio_pin_read(usbd_pin_vbus))
+	{
+	    usbd_connected = true;
+	    
+	    USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
+	    USBD_RegisterClass(&USBD_Device, USBD_CDC_MSC_CLASS);
+	    USBD_CDC_RegisterInterface(&USBD_Device, &stm32l4_usbd_cdc_interface);
+	    USBD_MSC_RegisterStorage(&USBD_Device, &dosfs_storage_interface);
+	    USBD_Start(&USBD_Device);
+	}
     }
-  else
+}
+
+void USBD_Detach(void)
+{
+    stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vbus, EXTI_CONTROL_DISABLE, NULL, NULL);
+
+    armv7m_timer_stop(&USBD_AttachTimer);
+    armv7m_timer_stop(&USBD_DetachTimer);
+
+    if (usbd_connected)
     {
-      stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vusb, EXTI_CONTROL_RISING_EDGE, USBD_AttachCallback, NULL);
+	USBD_DeInit(&USBD_Device);
+
+	usbd_connected = false;
     }
+}
+
+void USBD_Poll(void)
+{
+    HAL_PCD_IRQHandler(&hpcd);
+}
+
+bool USBD_Connected(void)
+{
+    return usbd_connected;
+}
+
+bool USBD_Configured(void)
+{
+    return ((USBD_Device.dev_state == USBD_STATE_CONFIGURED) || ((USBD_Device.dev_state == USBD_STATE_SUSPENDED) && (USBD_Device.dev_old_state == USBD_STATE_CONFIGURED)));
+}
+
+bool USBD_Suspended(void)
+{
+    return (USBD_Device.dev_state == USBD_STATE_SUSPENDED);
 }
 
 int stm32l4_console(char *buf, int nbytes)
@@ -411,17 +468,6 @@ void HAL_PCD_ConnectCallback(PCD_HandleTypeDef *hpcd)
 void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
 {
   USBD_LL_DevDisconnected(hpcd->pData);
-
-  if (!stm32l4_gpio_pin_read(usbd_pin_vusb))
-    {
-      USBD_DeInit(&USBD_Device);
-
-      stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vusb, EXTI_CONTROL_RISING_EDGE, USBD_AttachCallback, NULL);
-    }
-  else
-    {
-      stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vusb, EXTI_CONTROL_FALLING_EDGE, USBD_DetachCallback, NULL);
-    }
 }
 
 

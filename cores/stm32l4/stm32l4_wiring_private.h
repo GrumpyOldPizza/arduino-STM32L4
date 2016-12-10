@@ -68,7 +68,13 @@ extern "C" {
 #define STM32L4_TONE_IRQ_PRIORITY    2
 #define STM32L4_SERVO_IRQ_PRIORITY   1
 
-extern void USBD_Attach(unsigned int pin_vusb, unsigned int priority);
+extern void USBD_Initialize(unsigned int pin_vbus, unsigned int priority);
+extern void USBD_Attach(void);
+extern void USBD_Detach(void);
+extern void USBD_Poll(void);
+extern bool USBD_Connected(void);
+extern bool USBD_Configured(void);
+extern bool USBD_Suspended(void);
 
 /************************************************************************
  *

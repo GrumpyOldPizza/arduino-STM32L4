@@ -28,9 +28,9 @@
 
 #include "Arduino.h"
 #include "stm32l4_wiring_private.h"
-#include "CDC.h"
+#include "USBAPI.h"
 
-#if defined(STM32L4_CONFIG_USBD_CDC)
+#if defined(USBCON)
 
 /* STM32L4x5/STM32L4x6 have USB_OTG_FS with a multi-packet FIFO. However 
  * to avoid sending ZLP packets, the CDC_TX_PACKET_SIZE is one byte
@@ -502,5 +502,5 @@ bool Serial_empty() { return !Serial.available(); }
 
 CDC Serial(&stm32l4_usbd_cdc, (serialEvent != NULL));
 
-#endif /* STM32L4_CONFIG_USBD_CDC */
+#endif /* USBCON */
 

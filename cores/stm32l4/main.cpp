@@ -113,6 +113,14 @@ int main( void )
 
     delay(1);
 
+#if defined(USBCON)
+    if (SystemCoreClock >= 16000000)
+    {
+	USBDevice.init();
+	USBDevice.attach();
+    }
+#endif /* USBCON */
+
     setup();
 
     for (;;)

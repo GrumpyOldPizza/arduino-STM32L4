@@ -38,8 +38,9 @@
 
 #define STM32L4_CONFIG_LSECLK             32768
 #define STM32L4_CONFIG_HSECLK             0
-#define STM32L4_CONFIG_USBD_VUSB          GPIO_PIN_PB2
-#define STM32L4_CONFIG_USBD_CDC           1
+#define STM32L4_CONFIG_USB_VBUS           GPIO_PIN_PB2
+
+#define USBCON
 
 /** Master clock frequency */
 #define VARIANT_MCK			  F_CPU
@@ -49,7 +50,7 @@
  *----------------------------------------------------------------------------*/
 
 #ifdef __cplusplus
-#include "CDC.h"
+#include "USBAPI.h"
 #include "Uart.h"
 #endif // __cplusplus
 

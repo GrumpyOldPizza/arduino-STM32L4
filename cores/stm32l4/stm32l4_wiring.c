@@ -37,22 +37,12 @@ extern "C" {
 stm32l4_adc_t stm32l4_adc;
 stm32l4_exti_t stm32l4_exti;
 
-#if defined(STM32L476xx)
-extern void OTG_FS_IRQHandler(void);
-#else
-extern void USB_IRQHandler(void);
-#endif
-
 void HardFault_Handler(void)
 {
     while (1)
     {
-#if defined(STM32L4_CONFIG_USBD_CDC)
-#if defined(STM32L476xx)
-	OTG_FS_IRQHandler();
-#else
-	USB_IRQHandler();
-#endif
+#if defined(USBCON)
+	USBD_Poll();
 #endif
     }
 }
@@ -61,12 +51,8 @@ void BusFault_Handler(void)
 {
     while (1)
     {
-#if defined(STM32L4_CONFIG_USBD_CDC)
-#if defined(STM32L476xx)
-	OTG_FS_IRQHandler();
-#else
-	USB_IRQHandler();
-#endif
+#if defined(USBCON)
+	USBD_Poll();
 #endif
     }
 }
@@ -75,24 +61,20 @@ void UsageFault_Handler(void)
 {
     while (1)
     {
-#if defined(STM32L4_CONFIG_USBD_CDC)
-#if defined(STM32L476xx)
-	OTG_FS_IRQHandler();
-#else
-	USB_IRQHandler();
-#endif
+#if defined(USBCON)
+	USBD_Poll();
 #endif
     }
 }
 
 void init( void )
 {
-#if defined(STM32L4_CONFIG_USBD_CDC) || defined(STM32L4_CONFIG_USBD_MSC)
-    stm32l4_gpio_pin_configure(STM32L4_CONFIG_USBD_VUSB, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
+#if defined(USBCON)
+    stm32l4_gpio_pin_configure(STM32L4_CONFIG_USB_VBUS, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
 
     armv7m_core_udelay(2);
 
-    if ((_SYSTEM_CORE_CLOCK_ < 16000000) && stm32l4_gpio_pin_read(STM32L4_CONFIG_USBD_VUSB))
+    if ((_SYSTEM_CORE_CLOCK_ < 16000000) && stm32l4_gpio_pin_read(STM32L4_CONFIG_USB_VBUS))
     {
 	stm32l4_system_configure(STM32L4_CONFIG_LSECLK, STM32L4_CONFIG_HSECLK, 16000000, 8000000, 8000000);
     }
@@ -111,13 +93,6 @@ void init( void )
 
     stm32l4_exti_create(&stm32l4_exti, STM32L4_EXTI_IRQ_PRIORITY);
     stm32l4_exti_enable(&stm32l4_exti);
-
-#if defined(STM32L4_CONFIG_USBD_CDC) || defined(STM32L4_CONFIG_USBD_MSC)
-    if (stm32l4_system_hclk() >= 16000000)
-    {
-	USBD_Attach(STM32L4_CONFIG_USBD_VUSB, STM32L4_USB_IRQ_PRIORITY);
-    }
-#endif /* STM32L4_CONFIG_USBD_CDC */
 
 #if defined(STM32L4_CONFIG_DOSFS_SDCARD)
     f_initvolume(&dosfs_sdcard_init, 0);

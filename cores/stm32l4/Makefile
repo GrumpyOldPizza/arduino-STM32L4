@@ -30,6 +30,7 @@ SRCS = \
 	RingBuffer.cpp \
 	STM32.cpp \
 	Stream.cpp \
+	USBCore.cpp \
 	Uart.cpp \
 	WMath.cpp \
 	WString.cpp \
@@ -62,6 +63,7 @@ OBJS = \
 	RingBuffer.o \
 	STM32.o \
 	Stream.o \
+	USBCore.o \
 	Uart.o \
 	WMath.o \
 	WString.o \
