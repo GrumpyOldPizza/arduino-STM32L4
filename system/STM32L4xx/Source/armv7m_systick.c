@@ -31,6 +31,7 @@
 #include "armv7m.h"
 
 #include "stm32l4xx.h"
+#include "stm32l4_system.h"
 #include "stm32l4_rtc.h"
 
 typedef struct _armv7m_systick_control_t {
@@ -38,6 +39,8 @@ typedef struct _armv7m_systick_control_t {
     volatile uint64_t         millis;
     uint64_t                  count;
     uint32_t                  cycle;
+    uint32_t                  frac;
+    uint32_t                  accum;
     uint32_t                  scale;
     armv7m_systick_callback_t callback;
     void                      *context;
@@ -91,7 +94,9 @@ void armv7m_systick_initialize(unsigned int priority)
 {
     NVIC_SetPriority(SysTick_IRQn, priority);
 
-    armv7m_systick_control.cycle = SystemCoreClock / 1000;
+    armv7m_systick_control.cycle = stm32l4_system_sysclk() / 1000;
+    armv7m_systick_control.frac  = stm32l4_system_sysclk() - (armv7m_systick_control.cycle * 1000);
+    armv7m_systick_control.accum = 0;
 
     SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
     SysTick->VAL  = (armv7m_systick_control.cycle - 1);
@@ -103,7 +108,7 @@ void armv7m_systick_initialize(unsigned int priority)
      * microseconds fit into the upper 10 bits of a 32bit value. Then
      * this is post diveded by 2^22. That ensures proper scaling.
      */
-    armv7m_systick_control.scale = (uint64_t)4194304000000ull / (uint64_t)SystemCoreClock;
+    armv7m_systick_control.scale = (uint64_t)4194304000000ull / (uint64_t)stm32l4_system_sysclk();
     armv7m_systick_control.millis = 0;
     armv7m_systick_control.micros = 0;
 }
@@ -172,6 +177,26 @@ void SysTick_Handler(void)
 {
     armv7m_systick_control.micros += 1000;
     armv7m_systick_control.millis += 1;
+
+    /* If SYSCLK is driven throu MSI with LSE PLL then the frequency
+     * is not a multiple of 1000. Hence use a fractional scheme to
+     * distribute the fractional part.
+     */
+    if (armv7m_systick_control.frac)
+    {
+	armv7m_systick_control.accum += armv7m_systick_control.frac;
+
+	if (armv7m_systick_control.accum >= 1000)
+	{
+	    armv7m_systick_control.accum -= 1000;
+
+	    SysTick->LOAD = (armv7m_systick_control.cycle - 1) + 1;
+	}
+	else
+	{
+	    SysTick->LOAD = (armv7m_systick_control.cycle - 1);
+	}
+    }
 
     if (armv7m_systick_control.callback) 
     {

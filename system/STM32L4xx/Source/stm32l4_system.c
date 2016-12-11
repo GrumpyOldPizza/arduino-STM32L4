@@ -599,7 +599,7 @@ void stm32l4_system_periph_cond_sleep(unsigned int periph, volatile uint32_t *p_
 
 bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
 {
-    uint32_t sysclk, fclk, fvco, fpll, fpllout, mout, nout, rout, qout, n, r;
+    uint32_t sysclk, fclk, fvco, fpll, mout, nout, rout, qout, n, r;
     uint32_t count, msirange, hpre, ppre1, ppre2, latency;
     uint32_t primask, apb1enr1;
     uint32_t *data_s, *data_e;
@@ -893,21 +893,23 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	/* Range 2, use MSI.
 	 */
 	
-	if      (hclk >= 24000000) { hclk = 24000000; msirange = RCC_CR_MSIRANGE_9; mout = 6; }
-	else if (hclk >= 16000000) { hclk = 16000000; msirange = RCC_CR_MSIRANGE_8; mout = 4; }
-	else if (hclk >=  8000000) { hclk =  8000000; msirange = RCC_CR_MSIRANGE_7; mout = 2; }
-	else if (hclk >=  4000000) { hclk =  4000000; msirange = RCC_CR_MSIRANGE_6; mout = 1; }
-	else if (hclk >=  2000000) { hclk =  2000000; msirange = RCC_CR_MSIRANGE_5; mout = 1; }
-	else                       { hclk =  1000000; msirange = RCC_CR_MSIRANGE_4; mout = 1; }
+	if      (hclk >= 24000000) { sysclk = 23986176; hclk = 24000000; msirange = RCC_CR_MSIRANGE_9; mout = 6; } /* 732 * 32768 */
+	else if (hclk >= 16000000) { sysclk = 15990784; hclk = 16000000; msirange = RCC_CR_MSIRANGE_8; mout = 4; } /* 488 * 32768 */
+	else if (hclk >=  8000000) { sysclk =  7995392; hclk =  8000000; msirange = RCC_CR_MSIRANGE_7; mout = 2; } /* 244 * 32768 */
+	else if (hclk >=  4000000) { sysclk =  3997696; hclk =  4000000; msirange = RCC_CR_MSIRANGE_6; mout = 1; } /* 122 * 32768 */
+	else if (hclk >=  2000000) { sysclk =  1998848; hclk =  2000000; msirange = RCC_CR_MSIRANGE_5; mout = 1; } /*  61 * 32768 */
+	else                       { sysclk =  1015808; hclk =  1000000; msirange = RCC_CR_MSIRANGE_4; mout = 1; } /*  31 * 32768 */
 
-	sysclk = hclk;
-
+	if (!stm32l4_system_device.lseclk)
+	{
+	    sysclk = hclk;
+	}
 	
 	/* PLLM is setup so that fclk = 4000000 into N/Q for USB. fvco is 96MHz to work around errata via
 	 * PLLN set to 24, and then divided down to 48MHz via PLLQ set to 2.
 	 */
 	
-	fclk = 4000000;
+	fclk = sysclk / mout;
 	nout = 24;
 	rout = 2;
 	qout = 2;
@@ -926,34 +928,34 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	    hclk = 80000000;
 	}
 	
-	sysclk = hclk;
-	
 	msirange = RCC_CR_MSIRANGE_6;
 	
 	if (stm32l4_system_device.hseclk)
 	{
+	    fclk = 4000000;
 	    mout = stm32l4_system_device.hseclk / 4000000; 
 	}
 	else
 	{
 #if defined(STM32L432xx) || defined(STM32L433xx)
 	    /* MSI @4MHz */
+	    fclk = 3997696;
 	    mout = 1;
 #else /* defined(STM32L432xx) || defined(STM32L433xx) */
 	    /* HSI16 @16MHz */
+	    fclk = 4000000;
 	    mout = 4;
 #endif /* defined(STM32L432xx) || defined(STM32L433xx) */
 	}
 	
-	fclk    = 4000000;
-	fpllout = 0;
-	nout    = 0;
-	rout    = 0;
-	qout    = 2;
+	sysclk = 0;
+	nout   = 0;
+	rout   = 0;
+	qout   = 2;
 	
 	for (r = 2; r <= 8; r += 2)
 	{
-	    n = (sysclk * r) / fclk;
+	    n = (hclk * r) / fclk;
 	    
 	    fvco = fclk * n;
 	    
@@ -962,28 +964,26 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 		fpll = fvco / r;
 		
 		/* Prefer lower N,R pairs for lower PLL current. */
-		if (fpllout < fpll)
+		if (sysclk < fpll)
 		{
-		    fpllout = fpll;
+		    sysclk = fpll;
 		    
 		    nout = n;
 		    rout = r;
 		}
 	    }
 	}
-	
-	sysclk = fpllout;
     }
 
-    if      (hclk >= sysclk)         { hclk = sysclk;         hpre = RCC_CFGR_HPRE_DIV1;   }
-    else if (hclk >= (sysclk / 2))   { hclk = (sysclk / 2);   hpre = RCC_CFGR_HPRE_DIV2;   }
-    else if (hclk >= (sysclk / 4))   { hclk = (sysclk / 4);   hpre = RCC_CFGR_HPRE_DIV4;   }
-    else if (hclk >= (sysclk / 8))   { hclk = (sysclk / 8);   hpre = RCC_CFGR_HPRE_DIV8;   }
-    else if (hclk >= (sysclk / 16))  { hclk = (sysclk / 16);  hpre = RCC_CFGR_HPRE_DIV16;  }
-    else if (hclk >= (sysclk / 64))  { hclk = (sysclk / 64);  hpre = RCC_CFGR_HPRE_DIV64;  }
-    else if (hclk >= (sysclk / 128)) { hclk = (sysclk / 128); hpre = RCC_CFGR_HPRE_DIV128; }
-    else if (hclk >= (sysclk / 256)) { hclk = (sysclk / 256); hpre = RCC_CFGR_HPRE_DIV256; }
-    else                             { hclk = (sysclk / 512); hpre = RCC_CFGR_HPRE_DIV512; }
+    if      (hclk >= sysclk)         {                      hpre = RCC_CFGR_HPRE_DIV1;   }
+    else if (hclk >= (sysclk / 2))   { hclk = (hclk / 2);   hpre = RCC_CFGR_HPRE_DIV2;   }
+    else if (hclk >= (sysclk / 4))   { hclk = (hclk / 4);   hpre = RCC_CFGR_HPRE_DIV4;   }
+    else if (hclk >= (sysclk / 8))   { hclk = (hclk / 8);   hpre = RCC_CFGR_HPRE_DIV8;   }
+    else if (hclk >= (sysclk / 16))  { hclk = (hclk / 16);  hpre = RCC_CFGR_HPRE_DIV16;  }
+    else if (hclk >= (sysclk / 64))  { hclk = (hclk / 64);  hpre = RCC_CFGR_HPRE_DIV64;  }
+    else if (hclk >= (sysclk / 128)) { hclk = (hclk / 128); hpre = RCC_CFGR_HPRE_DIV128; }
+    else if (hclk >= (sysclk / 256)) { hclk = (hclk / 256); hpre = RCC_CFGR_HPRE_DIV256; }
+    else                             { hclk = (hclk / 512); hpre = RCC_CFGR_HPRE_DIV512; }
     
     if      (pclk1 >= hclk)       { pclk1 = hclk;        ppre1 = RCC_CFGR_PPRE1_DIV1;  }
     else if (pclk1 >= (hclk / 2)) { pclk1 = (hclk / 2);  ppre1 = RCC_CFGR_PPRE1_DIV2;  }
