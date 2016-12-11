@@ -105,12 +105,18 @@ static void USBD_VBUSCallback(void *context)
     if (stm32l4_gpio_pin_read(usbd_pin_vbus))
     {
 	armv7m_timer_stop(&USBD_DetachTimer);
-	armv7m_timer_start(&USBD_AttachTimer, 10);
+
+	if (!usbd_connected) {
+	    armv7m_timer_start(&USBD_AttachTimer, 10);
+	}
     }
     else
     {
 	armv7m_timer_stop(&USBD_AttachTimer);
-	armv7m_timer_start(&USBD_DetachTimer, 10);
+
+	if (usbd_connected) {
+	    armv7m_timer_start(&USBD_DetachTimer, 10);
+	}
     }
 }
 
