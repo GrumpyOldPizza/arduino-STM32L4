@@ -141,7 +141,7 @@ void stm32l4_rtc_get_time(stm32l4_rtc_time_t *p_time_return)
     p_time_return->hour   = ((o_tr & RTC_TR_HU_Msk) >> RTC_TR_HU_Pos) + (((o_tr & RTC_TR_HT_Msk) >> RTC_TR_HT_Pos) * 10);
     p_time_return->minute = ((o_tr & RTC_TR_MNU_Msk) >> RTC_TR_MNU_Pos) + (((o_tr & RTC_TR_MNT_Msk) >> RTC_TR_MNT_Pos) * 10);
     p_time_return->second = ((o_tr & RTC_TR_SU_Msk) >> RTC_TR_SU_Pos) + (((o_tr & RTC_TR_ST_Msk) >> RTC_TR_ST_Pos) * 10);
-    p_time_return->ticks  = 32767 - (o_ssr & 32767);
+    p_time_return->ticks  = (255 - (o_ssr & 255)) * 128;
 }
 
 static const uint16_t stm32l4_rtc_days_since_month[2][12] = {
@@ -168,7 +168,7 @@ uint64_t stm32l4_rtc_get_count(void)
     hour   = ((o_tr & RTC_TR_HU_Msk) >> RTC_TR_HU_Pos) + (((o_tr & RTC_TR_HT_Msk) >> RTC_TR_HT_Pos) * 10);
     minute = ((o_tr & RTC_TR_MNU_Msk) >> RTC_TR_MNU_Pos) + (((o_tr & RTC_TR_MNT_Msk) >> RTC_TR_MNT_Pos) * 10);
     second = ((o_tr & RTC_TR_SU_Msk) >> RTC_TR_SU_Pos) + (((o_tr & RTC_TR_ST_Msk) >> RTC_TR_ST_Pos) * 10);
-    ticks  = 32767 - (o_ssr & 32767);
+    ticks  = (255 - (o_ssr & 255)) * 128;
 
     epoch = ((((((((year ? (year * 365 + 1 + ((year - 1) / 4)) : 0) + stm32l4_rtc_days_since_month[(year & 3) == 0][month -1] + (day -1)) * 24) + hour) * 60) + minute) * 60) + second);
     
@@ -264,7 +264,7 @@ void stm32l4_rtc_adjust_ticks(int32_t ticks)
 	    ticks = 32768;
 	}
 
-	RTC->SHIFTR = RTC_SHIFTR_ADD1S | ((uint32_t)(32768 - ticks) << RTC_SHIFTR_SUBFS_Pos);
+	RTC->SHIFTR = RTC_SHIFTR_ADD1S | (((uint32_t)(32768 - ticks) / 128) << RTC_SHIFTR_SUBFS_Pos);
     }
     else
     {
@@ -272,7 +272,7 @@ void stm32l4_rtc_adjust_ticks(int32_t ticks)
 	    ticks = -32767;
 	}
 
-	RTC->SHIFTR = ((uint32_t)(-ticks) << RTC_SHIFTR_SUBFS_Pos);
+	RTC->SHIFTR = (((uint32_t)(-ticks) / 128) << RTC_SHIFTR_SUBFS_Pos);
     }
 
     RTC->WPR = 0x00;
@@ -284,7 +284,7 @@ void stm32l4_rtc_adjust_ticks(int32_t ticks)
 
 uint32_t stm32l4_rtc_get_ticks(void)
 {
-    return 32767 - (RTC->SSR & 32767);
+    return (255 - (RTC->SSR & 255)) * 128;
 }
 
 void stm32l4_rtc_alarm(unsigned int channel, unsigned int match, const stm32l4_rtc_alarm_t *alarm, stm32l4_rtc_callback_t callback, void *context)
@@ -442,7 +442,7 @@ bool stm32l4_rtc_get_sync(stm32l4_rtc_sync_t *p_sync_return)
     p_sync_return->hour   = ((s_tr & RTC_TSTR_HU_Msk) >> RTC_TSTR_HU_Pos) + (((s_tr & RTC_TSTR_HT_Msk) >> RTC_TSTR_HT_Pos) * 10);
     p_sync_return->minute = ((s_tr & RTC_TSTR_MNU_Msk) >> RTC_TSTR_MNU_Pos) + (((s_tr & RTC_TSTR_MNT_Msk) >> RTC_TSTR_MNT_Pos) * 10);
     p_sync_return->second = ((s_tr & RTC_TSTR_SU_Msk) >> RTC_TSTR_SU_Pos) + (((s_tr & RTC_TSTR_ST_Msk) >> RTC_TSTR_ST_Pos) * 10);
-    p_sync_return->ticks  = 32767 - (s_ssr & 32767);
+    p_sync_return->ticks  = (255 - (s_ssr & 255)) * 128;
 
     if (!(RTC->ISR & RTC_ISR_TSF)) {
 	return false;
