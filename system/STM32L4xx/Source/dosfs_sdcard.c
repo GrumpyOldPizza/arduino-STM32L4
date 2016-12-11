@@ -70,7 +70,7 @@ bool stm32l4_sdcard_spi_init(dosfs_sdcard_t *sdcard)
 	divide++;
     }
 
-    sdcard->option = SPI_OPTION_MODE_3 | (divide << SPI_OPTION_DIV_SHIFT);
+    sdcard->option = SPI_OPTION_MODE_0 | (divide << SPI_OPTION_DIV_SHIFT);
 
     // ### DRAGONFLY vs BUTTERFLY/LADYBUG
 #if defined(STM32L476xx)
@@ -146,7 +146,7 @@ uint32_t stm32l4_sdcard_spi_mode(dosfs_sdcard_t *sdcard, int mode)
 	    divide++;
 	}
 	
-	sdcard->option = SPI_OPTION_MODE_3 | (divide << SPI_OPTION_DIV_SHIFT);
+	sdcard->option = SPI_OPTION_MODE_0 | (divide << SPI_OPTION_DIV_SHIFT);
 
 	if (mode == DOSFS_SDCARD_MODE_IDENTIFY)
 	{
@@ -195,6 +195,11 @@ void stm32l4_sdcard_spi_select(dosfs_sdcard_t *sdcard)
 
 void stm32l4_sdcard_spi_deselect(dosfs_sdcard_t *sdcard)
 {
+    /* Send a dummy idle byte over the bus to help putting
+     * the SDCARD to sleep.
+     */
+    stm32l4_sdcard_spi_send(sdcard, 0xff);
+
     /* CS is output, drive CS to H */
     stm32l4_gpio_pin_write(sdcard->pin_cs, 1);
 
@@ -202,8 +207,7 @@ void stm32l4_sdcard_spi_deselect(dosfs_sdcard_t *sdcard)
      * clock cycle after CS goes H. Hence send
      * one extra byte over the bus.
      */
-    
-    stm32l4_sdcard_spi_send(sdcard, 0x00);
+    stm32l4_sdcard_spi_send(sdcard, 0xff);
 
     stm32l4_spi_unselect(&sdcard->spi);
 }
