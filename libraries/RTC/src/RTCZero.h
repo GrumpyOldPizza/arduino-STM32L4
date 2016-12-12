@@ -21,6 +21,7 @@
 #define RTC_ZERO_H
 
 #include "RTC.h"
+#include "STM32.h"
 
 typedef void(*voidFuncPtr)(void);
 
@@ -33,9 +34,6 @@ public:
     MATCH_SS           = 1,                                   // Every Minute
     MATCH_MMSS         = 3,                                   // Every Hour
     MATCH_HHMMSS       = 7,                                   // Every Day
-    MATCH_DHHMMSS      = 15,                                  // Every Month
-    MATCH_MMDDHHMMSS   = 31,                                  // Every Year
-    MATCH_YYMMDDHHMMSS = 63                                   // Once, on a specific date and a specific time
   };
 
   inline void begin(bool resetTime = false) { if (resetTime) { RTC.setCalendar(0,0,0,1,1,0); }
@@ -46,7 +44,7 @@ public:
   inline void attachInterrupt(voidFuncPtr callback) { RTC.attachInterrupt(callback); }
   inline void detachInterrupt() { RTC.detachInterrupt(); }
   
-  void standbyMode();
+  inline void standbyMode() { STM32.stop(); }
   
   /* Get Functions */
 
@@ -63,8 +61,6 @@ public:
   inline uint8_t getAlarmHours() { return RTC.getAlarmHours(); }
 
   inline uint8_t getAlarmDay() { return RTC.getAlarmDay(); }
-  inline uint8_t getAlarmMonth() { return RTC.getAlarmMonth(); }
-  inline uint8_t getAlarmYear() { return RTC.getAlarmYear(); }
 
   /* Set Functions */
 
@@ -84,9 +80,6 @@ public:
   inline void setAlarmTime(uint8_t hours, uint8_t minutes, uint8_t seconds) { RTC.setAlarmTime(hours, minutes, seconds); }
 
   inline void setAlarmDay(uint8_t day) { RTC.setAlarmDay(day); }
-  inline void setAlarmMonth(uint8_t month) { RTC.setAlarmMonth(month); }
-  inline void setAlarmYear(uint8_t year) { RTC.setAlarmYear(year); }
-  inline void setAlarmDate(uint8_t day, uint8_t month, uint8_t year) { RTC.setAlarmDate(day, month, year); }
 
   /* Epoch Functions */
 

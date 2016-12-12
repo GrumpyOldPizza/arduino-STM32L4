@@ -39,9 +39,6 @@ public:
  	MATCH_SS           = 1,      // Every Minute
 	MATCH_MMSS         = 3,      // Every Hour
 	MATCH_HHMMSS       = 7,      // Every Day
-	MATCH_DHHMMSS      = 15,     // Every Month
-        MATCH_MMDDHHMMSS   = 31,     // Every Year
-        MATCH_YYMMDDHHMMSS = 64      // Once, on a specific date and a specific time
     };
 
     enum PinMode: uint8_t {
@@ -71,8 +68,6 @@ public:
     uint8_t getAlarmHours();
 
     uint8_t getAlarmDay();
-    uint8_t getAlarmMonth();
-    uint8_t getAlarmYear();
 
     // Set Functions
     void setSeconds(uint8_t seconds);
@@ -91,9 +86,6 @@ public:
     void setAlarmTime(uint8_t hours, uint8_t minutes, uint8_t seconds);
 
     void setAlarmDay(uint8_t day);
-    void setAlarmMonth(uint8_t month);
-    void setAlarmYear(uint8_t year);
-    void setAlarmDate(uint8_t day, uint8_t month, uint8_t year);
 
     // Epoch Functions
     uint32_t getEpoch();
@@ -132,28 +124,28 @@ public:
     void write(unsigned int idx, uint32_t val);
 
 private:
-    uint8_t  _alarm_enable;
-    uint8_t  _alarm_match;
-    uint8_t  _alarm_year;
-    uint8_t  _alarm_month;
-    uint8_t  _alarm_day;
-    uint8_t  _alarm_hour;
-    uint8_t  _alarm_minute;
-    uint8_t  _alarm_second;
-
-    uint8_t  _sync_month;
-    uint8_t  _sync_day;
-    uint8_t  _sync_hour;
-    uint8_t  _sync_minute;
-    uint8_t  _sync_second;
-    uint16_t _sync_ticks;
+    uint8_t _alarm_init;
+    uint8_t _alarm_enable;
+    uint8_t _alarm_match;
+    uint8_t _alarm_day;
+    uint8_t _alarm_hour;
+    uint8_t _alarm_minute;
+    uint8_t _alarm_second;
 
     void (*_alarm_callback)(void);
-    void (*_sync_callback)(void);
 
+    void InitAlarm();
     void SyncAlarm();
 
-    static void _alarmCallback(void *context);
+    uint8_t _sync_month;
+    uint8_t _sync_day;
+    uint8_t _sync_hour;
+    uint8_t _sync_minute;
+    uint8_t _sync_second;
+    uint16_t _sync_ticks;
+
+    void (*_sync_callback)(void);
+
     static void _syncCallback(void *context);
 
     friend class RTCZero;

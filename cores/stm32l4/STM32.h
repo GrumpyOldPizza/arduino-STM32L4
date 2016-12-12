@@ -47,7 +47,8 @@
 #define WAKEUP_WKUP5         0x00000010
 #define WAKEUP_WATCHDOG      0x00000100
 #define WAKEUP_ALARM         0x00000200
-#define WAKEUP_TIMEOUT       0x00008000
+#define WAKEUP_SYNC          0x00000400
+#define WAKEUP_TIMEOUT       0x00000800
 
 class STM32Class {
 public:

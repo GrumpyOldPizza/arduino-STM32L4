@@ -66,6 +66,7 @@ typedef struct _stm32l4_rtc_time_t {
 #define RTC_ALARM_MATCH_MINUTE        0x00000002
 #define RTC_ALARM_MATCH_HOUR          0x00000004
 #define RTC_ALARM_MATCH_DAY           0x00000008
+#define RTC_ALARM_MATCH_ENABLE        0x80000000
 
 typedef struct _stm32l4_rtc_alarm_t {
     uint8_t    day;
@@ -88,13 +89,13 @@ typedef struct _stm32l4_rtc_sync_t {
 extern void stm32l4_rtc_configure(unsigned int priority);
 extern void stm32l4_rtc_set_time(unsigned int mask, const stm32l4_rtc_time_t *time);
 extern void stm32l4_rtc_get_time(stm32l4_rtc_time_t *p_time_return);
-extern uint64_t stm32l4_rtc_get_count(void);
 extern void stm32l4_rtc_set_calibration(int32_t calibration);
 extern int32_t stm32l4_rtc_get_calibration(void);
 extern void stm32l4_rtc_adjust_ticks(int32_t ticks);
 extern uint32_t stm32l4_rtc_get_ticks(void);
 extern void stm32l4_rtc_pin_configure(unsigned int mode);
-extern void stm32l4_rtc_alarm(unsigned int channel, unsigned int match, const stm32l4_rtc_alarm_t *alarm, stm32l4_rtc_callback_t callback, void *context);
+extern void stm32l4_rtc_set_alarm(unsigned int channel, unsigned int match, const stm32l4_rtc_alarm_t *alarm, stm32l4_rtc_callback_t callback, void *context);
+extern void stm32l4_rtc_get_alarm(unsigned int channel, stm32l4_rtc_alarm_t *p_alarm_return);
 extern void stm32l4_rtc_wakeup(uint32_t timeout);
 extern bool stm32l4_rtc_get_sync(stm32l4_rtc_sync_t *p_sync_return);
 extern void stm32l4_rtc_notify_sync(stm32l4_rtc_callback_t callback, void *context);
@@ -106,3 +107,4 @@ extern void stm32l4_rtc_write_backup(unsigned int index, uint32_t data);
 #endif
 
 #endif /* _STM32L4_RTC_H */
+

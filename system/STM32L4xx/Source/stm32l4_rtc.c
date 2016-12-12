@@ -43,8 +43,8 @@ static stm32l4_rtc_device_t stm32l4_rtc_device;
 
 void stm32l4_rtc_configure(unsigned int priority)
 {
-    armv7m_atomic_or(&EXTI->IMR1, (EXTI_IMR1_IM18 | EXTI_IMR1_IM19));
-    armv7m_atomic_or(&EXTI->EMR1, (EXTI_EMR1_EM18 | EXTI_EMR1_EM19 | EXTI_EMR1_EM20));
+    armv7m_atomic_and(&EXTI->IMR1, ~(EXTI_IMR1_IM18 | EXTI_IMR1_IM19 | EXTI_IMR1_IM20));
+    armv7m_atomic_and(&EXTI->EMR1, ~(EXTI_EMR1_EM18 | EXTI_EMR1_EM19 | EXTI_EMR1_EM20));
     armv7m_atomic_or(&EXTI->RTSR1, (EXTI_RTSR1_RT18 | EXTI_RTSR1_RT19 | EXTI_RTSR1_RT20));
 
     EXTI->PR1 = (EXTI_PR1_PIF18 | EXTI_PR1_PIF19 | EXTI_PR1_PIF20);
@@ -59,7 +59,7 @@ void stm32l4_rtc_configure(unsigned int priority)
 void stm32l4_rtc_set_time(unsigned int mask, const stm32l4_rtc_time_t *time)
 {
     uint32_t n_tr, n_dr, m_tr, m_dr, o_tr, o_dr;
-    
+
     n_tr = 0;
     n_dr = 0;
 
@@ -113,7 +113,7 @@ void stm32l4_rtc_set_time(unsigned int mask, const stm32l4_rtc_time_t *time)
     
     o_tr = RTC->TR;
     o_dr = RTC->DR;
-
+    
     RTC->TR = (o_tr & ~m_tr) | (n_tr & m_tr);
     RTC->DR = (o_dr & ~m_dr) | (n_dr & m_dr);
     RTC->CR |= RTC_CR_BYPSHAD;
@@ -142,37 +142,6 @@ void stm32l4_rtc_get_time(stm32l4_rtc_time_t *p_time_return)
     p_time_return->minute = ((o_tr & RTC_TR_MNU_Msk) >> RTC_TR_MNU_Pos) + (((o_tr & RTC_TR_MNT_Msk) >> RTC_TR_MNT_Pos) * 10);
     p_time_return->second = ((o_tr & RTC_TR_SU_Msk) >> RTC_TR_SU_Pos) + (((o_tr & RTC_TR_ST_Msk) >> RTC_TR_ST_Pos) * 10);
     p_time_return->ticks  = (255 - (o_ssr & 255)) * 128;
-}
-
-static const uint16_t stm32l4_rtc_days_since_month[2][12] = {
-    {   0,  31,  59,  90, 120, 151, 181, 212, 243, 273, 304, 334, },
-    {   0,  31,  60,  91, 121, 152, 182, 213, 244, 274, 305, 335, },
-};
-
-uint64_t stm32l4_rtc_get_count(void)
-{
-    uint32_t o_tr, o_dr, o_ssr;
-    uint32_t year, month, day, hour, minute, second, ticks, epoch;
-
-    do
-    {
-	o_ssr = RTC->SSR;
-	o_tr = RTC->TR;
-	o_dr = RTC->DR;
-    }
-    while (o_ssr != RTC->SSR);
-
-    year   = ((o_dr & RTC_DR_YU_Msk) >> RTC_DR_YU_Pos) + (((o_dr & RTC_DR_YT_Msk) >> RTC_DR_YT_Pos) * 10);
-    month  = ((o_dr & RTC_DR_MU_Msk) >> RTC_DR_MU_Pos) + (((o_dr & RTC_DR_MT_Msk) >> RTC_DR_MT_Pos) * 10);
-    day    = ((o_dr & RTC_DR_DU_Msk) >> RTC_DR_DU_Pos) + (((o_dr & RTC_DR_DT_Msk) >> RTC_DR_DT_Pos) * 10);
-    hour   = ((o_tr & RTC_TR_HU_Msk) >> RTC_TR_HU_Pos) + (((o_tr & RTC_TR_HT_Msk) >> RTC_TR_HT_Pos) * 10);
-    minute = ((o_tr & RTC_TR_MNU_Msk) >> RTC_TR_MNU_Pos) + (((o_tr & RTC_TR_MNT_Msk) >> RTC_TR_MNT_Pos) * 10);
-    second = ((o_tr & RTC_TR_SU_Msk) >> RTC_TR_SU_Pos) + (((o_tr & RTC_TR_ST_Msk) >> RTC_TR_ST_Pos) * 10);
-    ticks  = (255 - (o_ssr & 255)) * 128;
-
-    epoch = ((((((((year ? (year * 365 + 1 + ((year - 1) / 4)) : 0) + stm32l4_rtc_days_since_month[(year & 3) == 0][month -1] + (day -1)) * 24) + hour) * 60) + minute) * 60) + second);
-    
-    return (((uint64_t)epoch * 32768) + (uint64_t)ticks);
 }
 
 void stm32l4_rtc_set_calibration(int32_t calibration)
@@ -269,7 +238,7 @@ void stm32l4_rtc_adjust_ticks(int32_t ticks)
     else
     {
 	if (ticks < -32767) {
-	    ticks = -32767;
+	  ticks = -32767;
 	}
 
 	RTC->SHIFTR = (((uint32_t)(-ticks) / 128) << RTC_SHIFTR_SUBFS_Pos);
@@ -287,7 +256,7 @@ uint32_t stm32l4_rtc_get_ticks(void)
     return (255 - (RTC->SSR & 255)) * 128;
 }
 
-void stm32l4_rtc_alarm(unsigned int channel, unsigned int match, const stm32l4_rtc_alarm_t *alarm, stm32l4_rtc_callback_t callback, void *context)
+void stm32l4_rtc_set_alarm(unsigned int channel, unsigned int match, const stm32l4_rtc_alarm_t *alarm, stm32l4_rtc_callback_t callback, void *context)
 {
     uint32_t alrmr;
 
@@ -298,12 +267,20 @@ void stm32l4_rtc_alarm(unsigned int channel, unsigned int match, const stm32l4_r
 
     RTC->CR &= ~((RTC_CR_ALRAIE | RTC_CR_ALRAE) << channel);
 
-    RTC->ISR &= ~RTC_ISR_ALRAF;
+    RTC->ISR &= ~(RTC_ISR_ALRAF << channel);
+
+    if (!(RTC->CR & (RTC_CR_ALRAE | RTC_CR_ALRBE)))
+    {
+	armv7m_atomic_and(&EXTI->IMR1, ~EXTI_IMR1_IM18);
+	armv7m_atomic_and(&EXTI->EMR1, ~EXTI_EMR1_EM18);
+
+	EXTI->PR1 = EXTI_PR1_PIF18;
+    }
 
     stm32l4_rtc_device.alarm_callback[channel] = callback;
     stm32l4_rtc_device.alarm_context[channel] = context;
 
-    if (callback)
+    if (match & RTC_ALARM_MATCH_ENABLE)
     {
 	alrmr = 0;
 
@@ -343,8 +320,7 @@ void stm32l4_rtc_alarm(unsigned int channel, unsigned int match, const stm32l4_r
 	    alrmr |= RTC_ALRMAR_MSK4;
 	}
 
-	while (!(RTC->ISR & (RTC_ISR_ALRAWF << channel)))
-	{
+	while (!(RTC->ISR & (RTC_ISR_ALRAWF << channel))) {
 	}
 
 	if (channel == 0)
@@ -358,10 +334,37 @@ void stm32l4_rtc_alarm(unsigned int channel, unsigned int match, const stm32l4_r
 	    RTC->ALRMBSSR = 0;
 	}
 
+	armv7m_atomic_or(&EXTI->EMR1, EXTI_EMR1_EM18);
+
+	if (callback) {
+	    armv7m_atomic_or(&EXTI->IMR1, EXTI_IMR1_IM18);
+	}
+
 	RTC->CR |= ((RTC_CR_ALRAIE | RTC_CR_ALRAE) << channel);
     }
 
     RTC->WPR = 0x00;
+}
+
+void stm32l4_rtc_get_alarm(unsigned int channel, stm32l4_rtc_alarm_t *p_alarm_return)
+{
+    uint32_t alrmr;
+
+    channel &= 1;
+
+    if (channel == 0)
+    {
+	alrmr = RTC->ALRMAR;
+    }
+    else
+    {
+	alrmr = RTC->ALRMBR;
+    }
+
+    p_alarm_return->day    = ((alrmr & RTC_ALRMAR_DU_Msk) >> RTC_ALRMAR_DU_Pos) + (((alrmr & RTC_ALRMAR_DT_Msk) >> RTC_ALRMAR_DT_Pos) * 10);
+    p_alarm_return->hour   = ((alrmr & RTC_ALRMAR_HU_Msk) >> RTC_ALRMAR_HU_Pos) + (((alrmr & RTC_ALRMAR_HT_Msk) >> RTC_ALRMAR_HT_Pos) * 10);
+    p_alarm_return->minute = ((alrmr & RTC_ALRMAR_MNU_Msk) >> RTC_ALRMAR_MNU_Pos) + (((alrmr & RTC_ALRMAR_MNT_Msk) >> RTC_ALRMAR_MNT_Pos) * 10);
+    p_alarm_return->second = ((alrmr & RTC_ALRMAR_SU_Msk) >> RTC_ALRMAR_SU_Pos) + (((alrmr & RTC_ALRMAR_ST_Msk) >> RTC_ALRMAR_ST_Pos) * 10);
 }
 
 void stm32l4_rtc_wakeup(uint32_t timeout)
@@ -375,14 +378,16 @@ void stm32l4_rtc_wakeup(uint32_t timeout)
 
     RTC->ISR &= ~RTC_ISR_WUTF;
 
-    EXTI->PR1 = EXTI_PR1_PIF20;
+    armv7m_atomic_and(&EXTI->EMR1, ~EXTI_EMR1_EM20);
 
-    while (!(RTC->ISR & RTC_ISR_WUTWF))
-    {
-    }
+    EXTI->PR1 = EXTI_PR1_PIF20;
 
     if (timeout)
     {
+	while (!(RTC->ISR & RTC_ISR_WUTWF))
+	{
+	}
+
         if (timeout <= (((65536 * 16) / 32768) * 1000))
 	{
 	    ticks = (timeout * 32768 + 500) / 1000;
@@ -422,12 +427,13 @@ void stm32l4_rtc_wakeup(uint32_t timeout)
 	    }
 	}
 
+	armv7m_atomic_or(&EXTI->EMR1, EXTI_EMR1_EM20);
+
 	RTC->CR |= (RTC_CR_WUTIE | RTC_CR_WUTE);
     }
 
     RTC->WPR = 0x00;
 }
-
 
 bool stm32l4_rtc_get_sync(stm32l4_rtc_sync_t *p_sync_return)
 {
@@ -462,10 +468,18 @@ void stm32l4_rtc_notify_sync(stm32l4_rtc_callback_t callback, void *context)
 
     RTC->ISR &= ~RTC_ISR_TSF;
 
+    armv7m_atomic_and(&EXTI->IMR1, ~EXTI_IMR1_IM19);
+    armv7m_atomic_and(&EXTI->EMR1, ~EXTI_EMR1_EM19);
+
+    EXTI->PR1 = EXTI_PR1_PIF19;
+
     stm32l4_rtc_device.sync_callback = callback;
     stm32l4_rtc_device.sync_context = context;
 
     if (callback) {
+	armv7m_atomic_or(&EXTI->IMR1, EXTI_IMR1_IM19);
+	armv7m_atomic_or(&EXTI->EMR1, EXTI_EMR1_EM19);
+
 	RTC->CR |= RTC_CR_TSIE;
     }
 
@@ -524,3 +538,4 @@ void RTC_Alarm_IRQHandler(void)
 
     EXTI->PR1 = EXTI_PR1_PIF18;
 }
+

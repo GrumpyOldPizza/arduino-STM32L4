@@ -644,12 +644,17 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 		    stm32l4_system_device.wakeup |= SYSTEM_WAKEUP_ALARM;
 		}
 
+		if (RTC->ISR & RTC_ISR_TSF)
+		{
+		    stm32l4_system_device.wakeup |= SYSTEM_WAKEUP_SYNC;
+		}
+
 		if (RTC->ISR & RTC_ISR_WUTF)
 		{
 		    stm32l4_system_device.wakeup |= SYSTEM_WAKEUP_TIMEOUT;
 		}
 
-		RTC->ISR &= ~(RTC_ISR_ALRAF | RTC_ISR_ALRBF | RTC_ISR_WUTF);
+		RTC->ISR &= ~(RTC_ISR_ALRAF | RTC_ISR_ALRBF | RTC_ISR_TSF | RTC_ISR_WUTF);
 	    }
 	}
 	else
@@ -1862,6 +1867,30 @@ static void stm32l4_system_resume(void)
 	}
 #endif /* defined(STM32L432xx) || defined(STM32L433xx) */
     }
+
+    if (RTC->ISR & (RTC_ISR_ALRAF | RTC_ISR_ALRBF | RTC_ISR_TSF | RTC_ISR_WUTF))
+    {
+	if ((RTC->ISR & (RTC_ISR_ALRAF | RTC_ISR_ALRBF)) && !(EXTI->IMR1 & EXTI_IMR1_IM18))
+	{
+	    RTC->ISR &= ~(RTC_ISR_ALRAF | RTC_ISR_ALRBF);
+	    
+	    EXTI->PR1 = EXTI_PR1_PIF18;
+	}
+	
+	if ((RTC->ISR & RTC_ISR_TSF) && !(EXTI->IMR1 & EXTI_IMR1_IM19))
+	{
+	    RTC->ISR &= ~RTC_ISR_TSF;
+	    
+	    EXTI->PR1 = EXTI_PR1_PIF19;
+	}
+	
+	if ((RTC->ISR & RTC_ISR_WUTF) && !(EXTI->IMR1 & EXTI_IMR1_IM20))
+	{
+	    RTC->ISR &= ~RTC_ISR_WUTF;
+	    
+	    EXTI->PR1 = EXTI_PR1_PIF20;
+	}
+    }
 }
 
 bool stm32l4_system_stop(uint32_t timeout)
@@ -2057,11 +2086,6 @@ static void stm32l4_system_deepsleep(uint32_t lpms, uint32_t config, uint32_t ti
     RCC->CFGR = (RCC->CFGR & ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2)) | (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE1_DIV1 | RCC_CFGR_PPRE2_DIV1);
 
     FLASH->ACR = FLASH_ACR_LATENCY_0WS;
-
-    /* Clear pending RTC flags and thenafter enable the ALARM/WAKEUP events */
-    RTC->ISR &= ~(RTC_ISR_WUTF | RTC_ISR_ALRBF | RTC_ISR_ALRAF);
-    
-    EXTI->PR1 = (EXTI_PR1_PIF18 | EXTI_PR1_PIF20);
 
     PWR->CR1 = (PWR->CR1 & ~PWR_CR1_LPMS) | lpms;
     PWR->CR3 = (PWR->CR3 & ~PWR_CR3_EWUP) | ((config >> 0) & PWR_CR3_EWUP) | PWR_CR3_EIWF;

@@ -37,6 +37,10 @@
 
 void RTCClass::enableAlarm(AlarmMatch match)
 {
+    if (!_alarm_init) {
+	InitAlarm();
+    }
+
     _alarm_enable = 1;
     _alarm_match = match;
 
@@ -47,11 +51,15 @@ void RTCClass::disableAlarm()
 {
     _alarm_enable = 0;
 
-    stm32l4_rtc_alarm(0, 0, NULL, NULL, NULL);
+    stm32l4_rtc_set_alarm(0, 0, NULL, NULL, NULL);
 }
 
 void RTCClass::attachInterrupt(void(*callback)(void))
 {
+    if (!_alarm_init) {
+	InitAlarm();
+    }
+
     _alarm_callback = callback;
 
     SyncAlarm();
@@ -124,32 +132,38 @@ uint8_t RTCClass::getYear()
 
 uint8_t RTCClass::getAlarmSeconds()
 {
+    if (!_alarm_init) {
+	InitAlarm();
+    }
+
     return _alarm_second;
 }
 
 uint8_t RTCClass::getAlarmMinutes()
 {
+    if (!_alarm_init) {
+	InitAlarm();
+    }
+
     return _alarm_minute;
 }
 
 uint8_t RTCClass::getAlarmHours()
 {
+    if (!_alarm_init) {
+	InitAlarm();
+    }
+
     return _alarm_hour;
 }
 
 uint8_t RTCClass::getAlarmDay()
 {
+    if (!_alarm_init) {
+	InitAlarm();
+    }
+
     return _alarm_day;
-}
-
-uint8_t RTCClass::getAlarmMonth()
-{
-    return _alarm_month;
-}
-
-uint8_t RTCClass::getAlarmYear()
-{
-    return _alarm_year;
 }
 
 /*
@@ -234,6 +248,10 @@ void RTCClass::setDate(uint8_t day, uint8_t month, uint8_t year)
 
 void RTCClass::setAlarmSeconds(uint8_t seconds)
 {
+    if (!_alarm_init) {
+	InitAlarm();
+    }
+
     _alarm_second = seconds;
 
     SyncAlarm();
@@ -241,6 +259,10 @@ void RTCClass::setAlarmSeconds(uint8_t seconds)
 
 void RTCClass::setAlarmMinutes(uint8_t minutes)
 {
+    if (!_alarm_init) {
+	InitAlarm();
+    }
+
     _alarm_minute = minutes;
 
     SyncAlarm();
@@ -248,6 +270,10 @@ void RTCClass::setAlarmMinutes(uint8_t minutes)
 
 void RTCClass::setAlarmHours(uint8_t hours)
 {
+    if (!_alarm_init) {
+	InitAlarm();
+    }
+
     _alarm_hour = hours;
 
     SyncAlarm();
@@ -255,6 +281,10 @@ void RTCClass::setAlarmHours(uint8_t hours)
 
 void RTCClass::setAlarmTime(uint8_t hours, uint8_t minutes, uint8_t seconds)
 {
+    if (!_alarm_init) {
+	InitAlarm();
+    }
+
     _alarm_hour = hours;
     _alarm_minute = minutes;
     _alarm_second = seconds;
@@ -264,30 +294,11 @@ void RTCClass::setAlarmTime(uint8_t hours, uint8_t minutes, uint8_t seconds)
 
 void RTCClass::setAlarmDay(uint8_t day)
 {
+    if (!_alarm_init) {
+	InitAlarm();
+    }
+
     _alarm_day = day;
-
-    SyncAlarm();
-}
-
-void RTCClass::setAlarmMonth(uint8_t month)
-{
-    _alarm_month = month;
-
-    SyncAlarm();
-}
-
-void RTCClass::setAlarmYear(uint8_t year)
-{
-    _alarm_year = year;
-
-    SyncAlarm();
-}
-
-void RTCClass::setAlarmDate(uint8_t day, uint8_t month, uint8_t year)
-{
-    _alarm_day = day;
-    _alarm_month = month;
-    _alarm_year = year;
 
     SyncAlarm();
 }
@@ -456,6 +467,20 @@ void RTCClass::write(unsigned int index, uint32_t data)
     stm32l4_rtc_write_backup(index, data);
 }
 
+void RTCClass::InitAlarm()
+{
+    stm32l4_rtc_alarm_t rtc_alarm;
+
+    stm32l4_rtc_get_alarm(0, &rtc_alarm);
+
+    _alarm_day = rtc_alarm.day;
+    _alarm_hour = rtc_alarm.hour;
+    _alarm_minute = rtc_alarm.minute;
+    _alarm_second = rtc_alarm.second;
+
+    _alarm_init = 1;
+}
+    
 void RTCClass::SyncAlarm()
 {
     uint32_t match;
@@ -468,35 +493,9 @@ void RTCClass::SyncAlarm()
 	rtc_alarm.minute = _alarm_minute;
 	rtc_alarm.second = _alarm_second;
 
-	match = (_alarm_match & (RTC_ALARM_MATCH_SECOND | RTC_ALARM_MATCH_MINUTE | RTC_ALARM_MATCH_HOUR | RTC_ALARM_MATCH_DAY));
+	match = (_alarm_match & (RTC_ALARM_MATCH_SECOND | RTC_ALARM_MATCH_MINUTE | RTC_ALARM_MATCH_HOUR | RTC_ALARM_MATCH_DAY)) | RTC_ALARM_MATCH_ENABLE;
 
-	stm32l4_rtc_alarm(0, match, &rtc_alarm, RTCClass::_alarmCallback, (void*)this);
-    }
-}
-
-void RTCClass::_alarmCallback(void *context)
-{
-    class RTCClass *rtc_class = reinterpret_cast<class RTCClass*>(context);
-    stm32l4_rtc_time_t rtc_time;
-
-    if (rtc_class->_alarm_enable)
-    {
-	if (rtc_class->_alarm_match & 48)
-	{
-	    stm32l4_rtc_get_time(&rtc_time);
-
-	    if ((rtc_class->_alarm_match & 16) && (rtc_class->_alarm_month != rtc_time.month)) {
-		return;
-	    }
-
-	    if ((rtc_class->_alarm_match & 32) && (rtc_class->_alarm_year != rtc_time.year)) {
-		return;
-	    }
-	}
-
-	if (rtc_class->_alarm_callback) {
-	    (*rtc_class->_alarm_callback)();
-	}
+	stm32l4_rtc_set_alarm(0, match, &rtc_alarm, (stm32l4_rtc_callback_t)_alarm_callback, NULL);
     }
 }
 

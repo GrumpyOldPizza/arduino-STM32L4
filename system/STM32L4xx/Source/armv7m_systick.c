@@ -32,12 +32,11 @@
 
 #include "stm32l4xx.h"
 #include "stm32l4_system.h"
-#include "stm32l4_rtc.h"
 
 typedef struct _armv7m_systick_control_t {
     volatile uint64_t         micros;
     volatile uint64_t         millis;
-    uint64_t                  count;
+    uint32_t                  sysclk;
     uint32_t                  cycle;
     uint32_t                  frac;
     uint32_t                  accum;
@@ -94,12 +93,13 @@ void armv7m_systick_initialize(unsigned int priority)
 {
     NVIC_SetPriority(SysTick_IRQn, priority);
 
-    armv7m_systick_control.cycle = stm32l4_system_sysclk() / 1000;
-    armv7m_systick_control.frac  = stm32l4_system_sysclk() - (armv7m_systick_control.cycle * 1000);
+    armv7m_systick_control.sysclk = stm32l4_system_sysclk();
+    armv7m_systick_control.cycle = armv7m_systick_control.sysclk / 1000;
+    armv7m_systick_control.frac = armv7m_systick_control.sysclk - (armv7m_systick_control.cycle * 1000);
     armv7m_systick_control.accum = 0;
 
     SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
-    SysTick->VAL  = (armv7m_systick_control.cycle - 1);
+    SysTick->VAL = (armv7m_systick_control.cycle - 1);
     SysTick->LOAD = (armv7m_systick_control.cycle - 1);
     SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
 
@@ -115,62 +115,38 @@ void armv7m_systick_initialize(unsigned int priority)
 
 void armv7m_systick_enable(void)
 {
-    uint32_t count, o_count, o_cycle;
-    uint64_t delta;
+    uint32_t count, cycle;
 
-    /* Compute a new adjusted count value based upon the new SystemCoreClock.
-     */
-    o_cycle = armv7m_systick_control.cycle;
-    o_count = (armv7m_systick_control.cycle - 1) - SysTick->VAL;
-
-    armv7m_systick_control.cycle = SystemCoreClock / 1000;
-
-    count = (o_count * armv7m_systick_control.cycle) / o_cycle;
-
-    /* Compute the delta between disable() -> enable() in terms of 32768 clocks.
-     */
-    delta = stm32l4_rtc_get_count() - armv7m_systick_control.count;
-
-    /* Adjust the current count by the left over sub millis second delta. 
-     * The calculation is a tad cryptic, just so that expensive
-     * 64 bit division can be avoided.
-     *
-     * The remainder in 32768Hz units of 1ms is:
-     *
-     * ((uint32_t)(delta * 1000ull) & 32767) / 1000
-     *
-     * Rescaling this to CPU clock cycles is:
-     *
-     * ((((uint32_t)(delta * 1000ull) & 32767) / 1000) * SystemCoreClock) / 32768
-     *
-     * Or in other words:
-     *
-     * ((((uint32_t)(delta * 1000ull) & 32767) / 1000) * (armv7m_systick_control.cycle * 1000)) / 32768
-     */
-
-    count += ((((uint32_t)(delta * 1000ull) & 32767) * armv7m_systick_control.cycle) / 32768);
-
-    while (count >= armv7m_systick_control.cycle)
+    if (armv7m_systick_control.sysclk != stm32l4_system_sysclk())
     {
-	armv7m_systick_control.millis += 1;
-	armv7m_systick_control.micros += 1000;
+	cycle = armv7m_systick_control.cycle;
+	count = (armv7m_systick_control.cycle - 1) - SysTick->VAL;
+
+	armv7m_systick_control.sysclk = stm32l4_system_sysclk();
+	armv7m_systick_control.cycle = armv7m_systick_control.sysclk / 1000;
+	armv7m_systick_control.frac = armv7m_systick_control.sysclk - (armv7m_systick_control.cycle * 1000);
+	armv7m_systick_control.accum = 0;
 	
-	count -= armv7m_systick_control.cycle;
+	SysTick->VAL = (armv7m_systick_control.cycle - 1) - ((count * armv7m_systick_control.cycle) / cycle);
+	SysTick->LOAD = (armv7m_systick_control.cycle - 1);
+	SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
+	
+	/* To get from the current counter to the microsecond offset,
+	 * the ((cycle - 1) - Systick->VAL) value is scaled so that the resulting
+	 * microseconds fit into the upper 10 bits of a 32bit value. Then
+	 * this is post diveded by 2^22. That ensures proper scaling.
+	 */
+	armv7m_systick_control.scale = (uint64_t)4194304000000ull / (uint64_t)stm32l4_system_sysclk();
     }
-
-    SysTick->VAL  = (armv7m_systick_control.cycle - 1) - count;
-    SysTick->LOAD = (armv7m_systick_control.cycle - 1);
-    SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
-
-    armv7m_systick_control.millis += ((delta * 1000ull) / 32768);
-    armv7m_systick_control.micros = armv7m_systick_control.millis * 1000;
+    else
+    {
+	SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
+    }
 }
 
 void armv7m_systick_disable(void)
 {
     SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
-
-    armv7m_systick_control.count = stm32l4_rtc_get_count();
 }
 
 void SysTick_Handler(void)

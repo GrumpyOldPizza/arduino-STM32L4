@@ -150,7 +150,8 @@ typedef void (*stm32l4_system_callback_t)(void *context, uint32_t events);
 #define SYSTEM_WAKEUP_WKUP5         0x00000010
 #define SYSTEM_WAKEUP_WATCHDOG      0x00000100
 #define SYSTEM_WAKEUP_ALARM         0x00000200
-#define SYSTEM_WAKEUP_TIMEOUT       0x00008000
+#define SYSTEM_WAKEUP_SYNC          0x00000400
+#define SYSTEM_WAKEUP_TIMEOUT       0x00000800
 
 #define SYSTEM_CONFIG_WKUP1_RISING  0x00000001
 #define SYSTEM_CONFIG_WKUP1_FALLING 0x00000101
