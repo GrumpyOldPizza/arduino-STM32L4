@@ -33,9 +33,9 @@
 #include "stm32l4_nvic.h"
 
 typedef struct _armv7m_pendsv_entry_t {
+    armv7m_pendsv_routine_t          routine;
     void                             *context;
     uint32_t                         data;
-    volatile armv7m_pendsv_routine_t routine;
 } armv7m_pendsv_entry_t;
 
 typedef struct _armv7m_pendsv_control_t {
@@ -88,14 +88,15 @@ static __attribute__((used)) void armv7m_pendsv_dequeue(void)
     {
 	pendsv_read = armv7m_pendsv_control.pendsv_read;
 
-	context = pendsv_read->context;
-	data = pendsv_read->data;
 	routine = pendsv_read->routine;
 
 	if (routine == NULL)
 	{
 	    break;
 	}
+
+	context = pendsv_read->context;
+	data = pendsv_read->data;
 
 	pendsv_read->routine = NULL;
 
