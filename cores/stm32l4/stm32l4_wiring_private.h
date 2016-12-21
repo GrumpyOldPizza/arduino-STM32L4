@@ -49,6 +49,7 @@ extern "C" {
 #include "stm32l4_usbd_cdc.h"
 #include "stm32l4_system.h"
 #include "stm32l4_rtc.h"
+#include "stm32l4_sai.h"
 
 #define STM32L4_SVCALL_IRQ_PRIORITY  15
 #define STM32L4_PENDSV_IRQ_PRIORITY  15
@@ -60,8 +61,9 @@ extern "C" {
 #define STM32L4_USB_IRQ_PRIORITY     14
 #define STM32L4_RTC_IRQ_PRIORITY     13
 #define STM32L4_I2C_IRQ_PRIORITY     12
-#define STM32L4_UART_IRQ_PRIORITY    11
-#define STM32L4_SPI_IRQ_PRIORITY     10
+#define STM32L4_SPI_IRQ_PRIORITY     11
+#define STM32L4_UART_IRQ_PRIORITY    10
+#define STM32L4_SAI_IRQ_PRIORITY     9
 
 #define STM32L4_EXTI_IRQ_PRIORITY    4
 #define STM32L4_SYSTICK_IRQ_PRIORITY 3
@@ -114,9 +116,9 @@ extern bool USBD_Suspended(void);
  * DMA_CHANNEL_DMA2_CH2_SPI3_TX
  * DMA_CHANNEL_DMA2_CH3_SPI1_RX
  * DMA_CHANNEL_DMA2_CH4_SPI1_TX
- * DMA_CHANNEL_DMA2_CH5_SDMMC
+ * DMA_CHANNEL_DMA2_CH5_SDMMC (-)
  * DMA_CHANNEL_DMA2_CH6_SAI1_A
- * DMA_CHANNEL_DMA2_CH7_SAI1_B
+ * DMA_CHANNEL_DMA2_CH7_SAI1_B (-)
  *
  *
  ************************************************************************/

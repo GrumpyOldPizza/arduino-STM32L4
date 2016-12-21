@@ -105,7 +105,7 @@ void initVariant() { }
 /*
  * \brief Main entry point of Arduino application
  */
-int main( void )
+extern "C" int main( void )
 {
     init();
 

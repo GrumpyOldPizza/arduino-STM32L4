@@ -12,9 +12,10 @@ LDFLAGS  = -L../../system/STM32L4xx/Lib -L../../system/CMSIS/Lib -Os -Wl,--gc-se
 WARNINGS = -Wall -Wextra -Wno-unused-parameter
 EXTRAS   = -DSTM32L433xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mabi=aapcs -mslow-flash-data
 DEFINES  = -D_SYSTEM_CORE_CLOCK_=80000000L -DARDUINO=10606 -D_ARDUINO_STM32L4 -DARDUINO_ARCH_STM32L4
-INCLUDES = -I../../system/CMSIS/Include -I../../system/CMSIS/Device/ST/STM32L4xx/Include -I../../system/STM32L4xx/Include -I../../variants/STM32L433CC-Butterfly -I../../libraries/RTC/src -I../../libraries/SPI/src -I../../libraries/Wire/src -I../../libraries/Servo/src -I. 
+INCLUDES = -I../../system/CMSIS/Include -I../../system/CMSIS/Device/ST/STM32L4xx/Include -I../../system/STM32L4xx/Include -I../../variants/STM32L433CC-Butterfly -I../../libraries/RTC/src  -I../../libraries/I2S/src -I../../libraries/SPI/src -I../../libraries/Wire/src -I../../libraries/Servo/src -I. 
 
 SRCS = \
+	../../libraries/I2S/src/I2S.cpp \
 	../../libraries/RTC/src/RTC.cpp \
 	../../libraries/Servo/src/Servo.cpp \
 	../../libraries/SPI/src/SPI.cpp \
@@ -48,6 +49,7 @@ SRCS = \
 	stm32l4_wiring_tone.c
 
 OBJS = \
+	../../libraries/I2S/src/I2S.o \
 	../../libraries/RTC/src/RTC.o \
 	../../libraries/Servo/src/Servo.o \
 	../../libraries/SPI/src/SPI.o \

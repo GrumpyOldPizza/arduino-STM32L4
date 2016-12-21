@@ -69,20 +69,7 @@ void UsageFault_Handler(void)
 
 void init( void )
 {
-#if defined(USBCON)
-    stm32l4_gpio_pin_configure(STM32L4_CONFIG_USB_VBUS, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
-
-    armv7m_core_udelay(2);
-
-    if ((_SYSTEM_CORE_CLOCK_ < 16000000) && stm32l4_gpio_pin_read(STM32L4_CONFIG_USB_VBUS))
-    {
-	stm32l4_system_configure(STM32L4_CONFIG_LSECLK, STM32L4_CONFIG_HSECLK, 16000000, 8000000, 8000000);
-    }
-    else
-#endif
-    {
-	stm32l4_system_configure(STM32L4_CONFIG_LSECLK, STM32L4_CONFIG_HSECLK, _SYSTEM_CORE_CLOCK_, _SYSTEM_CORE_CLOCK_/2, _SYSTEM_CORE_CLOCK_/2);
-    }
+    stm32l4_system_initialize(_SYSTEM_CORE_CLOCK_, _SYSTEM_CORE_CLOCK_/2, _SYSTEM_CORE_CLOCK_/2, STM32L4_CONFIG_LSECLK, STM32L4_CONFIG_HSECLK, STM32L4_CONFIG_SYSOPT);
 
     armv7m_svcall_initialize();
     armv7m_pendsv_initialize();

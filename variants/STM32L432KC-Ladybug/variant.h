@@ -38,6 +38,7 @@
 
 #define STM32L4_CONFIG_LSECLK             32768
 #define STM32L4_CONFIG_HSECLK             0
+#define STM32L4_CONFIG_SYSOPT             0
 #define STM32L4_CONFIG_USB_VBUS           GPIO_PIN_PA15
 
 #define USBCON
@@ -148,6 +149,16 @@ static const uint8_t SCK  = PIN_SPI_SCK;
 
 static const uint8_t SDA = PIN_WIRE_SDA;
 static const uint8_t SCL = PIN_WIRE_SCL;
+
+/*
+ * I2S Interfaces
+ */
+#define I2S_INTERFACES_COUNT 1
+
+#define PIN_I2S_SCK          (3u)
+#define PIN_I2S_FS           (PIN_A0)
+#define PIN_I2S_SD           (5u)
+#define PIN_I2S_MCK          (4u)
 
 /*
  * USB

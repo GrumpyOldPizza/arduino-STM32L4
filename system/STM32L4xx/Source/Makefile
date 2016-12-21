@@ -51,6 +51,7 @@ SRCS = \
 	stm32l4_nvic.c \
 	stm32l4_qspi.c \
 	stm32l4_rtc.c \
+	stm32l4_sai.c \
 	stm32l4_spi.c \
 	stm32l4_servo.c \
 	stm32l4_system.c \

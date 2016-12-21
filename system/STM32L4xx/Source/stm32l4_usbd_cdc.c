@@ -66,7 +66,7 @@ static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
     stm32l4_usbd_cdc_info.bDataBits = 8;
     stm32l4_usbd_cdc_info.lineState = 0;
 
-    armv7m_timer_create(&stm32l4_usbd_cdc_device.timeout, (armv7m_timer_callback_t)&stm32l4_system_bootloader);
+    armv7m_timer_create(&stm32l4_usbd_cdc_device.timeout, (armv7m_timer_callback_t)&stm32l4_system_dfu);
 
     USBD_CDC_SetRxBuffer(stm32l4_usbd_cdc_device.USBD, &stm32l4_usbd_cdc_device.rx_data[0]);
     USBD_CDC_ReceivePacket(stm32l4_usbd_cdc_device.USBD);

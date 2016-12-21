@@ -40,17 +40,24 @@ extern uint32_t __databkp_end__;
 extern uint32_t __etextbkp;
 
 typedef struct _stm32l4_system_device_t {
-    uint8_t                   state;
-    uint8_t                   reset;
+    uint16_t                  reset;
     uint16_t                  wakeup;
     uint32_t                  lseclk;
     uint32_t                  hseclk;
     uint32_t                  sysclk;
+    uint32_t                  fclk;
     uint32_t                  hclk;
     uint32_t                  pclk1;
     uint32_t                  pclk2;
-    bool                      clk48;
-    volatile uint32_t         hsi16;
+    uint32_t                  saiclk; 
+    uint8_t                   clk48;
+    uint8_t                   mco;
+    uint8_t                   lsco;
+    uint8_t                   lsi;
+    uint8_t                   hsi16;
+#if defined(STM32L432xx) || defined(STM32L433xx)
+    uint8_t                   hsi48;
+#endif
     volatile uint32_t         lock[SYSTEM_LOCK_COUNT];
     volatile uint32_t         event[SYSTEM_EVENT_COUNT];
     stm32l4_system_callback_t callback[SYSTEM_NOTIFY_COUNT];
@@ -597,11 +604,9 @@ void stm32l4_system_periph_cond_sleep(unsigned int periph, volatile uint32_t *p_
     while (!armv7m_atomic_compare_exchange(p_mask, &o_mask, n_mask));
 }
 
-bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
+void stm32l4_system_initialize(uint32_t hclk, uint32_t pclk1, uint32_t pclk2, uint32_t lseclk, uint32_t hseclk, uint32_t option)
 {
-    uint32_t sysclk, fclk, fvco, fpll, mout, nout, rout, qout, n, r;
-    uint32_t count, msirange, hpre, ppre1, ppre2, latency;
-    uint32_t primask, apb1enr1;
+    uint32_t primask, count;
     uint32_t *data_s, *data_e;
     const uint32_t *data_t;
 
@@ -616,134 +621,135 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
     
     RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
-    /* Detect LSE/HSE on the first pass.
-     */
-
-    if (stm32l4_system_device.state == 0)
-    {
-	stm32l4_system_device.state = 1;
-
-	RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+    RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
 
 #if defined(STM32L432xx) || defined(STM32L433xx)
-	/* Unlock RTCAPBEN (and leave it unlocked for RTC/BKP use).
-	 */
-
-	RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;
+    /* Unlock RTCAPBEN (and leave it unlocked for RTC/BKP use).
+     */
+    RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;
 #endif
 
-	if (PWR->SR1 & PWR_SR1_SBF)
+    /* Switch to Main Flash @ 0x00000000. Make sure the I/D CACHE is
+     * disabled to avoid stale data in the cache.
+     */
+    FLASH->ACR &= ~(FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN);
+	
+    SYSCFG->MEMRMP = 0;
+
+    if (PWR->SR1 & PWR_SR1_SBF)
+    {
+	stm32l4_system_device.reset = SYSTEM_RESET_STANDBY;
+	stm32l4_system_device.wakeup = (PWR->SR1 & PWR_SR1_WUF);
+	
+	if (PWR->SR1 & PWR_SR1_WUFI)
 	{
-	    stm32l4_system_device.reset = SYSTEM_RESET_STANDBY;
-	    stm32l4_system_device.wakeup = (PWR->SR1 & PWR_SR1_WUF);
-
-	    if (PWR->SR1 & PWR_SR1_WUFI)
+	    if (RTC->ISR & (RTC_ISR_ALRAF | RTC_ISR_ALRBF))
 	    {
-		if (RTC->ISR & (RTC_ISR_ALRAF | RTC_ISR_ALRBF))
-		{
-		    stm32l4_system_device.wakeup |= SYSTEM_WAKEUP_ALARM;
-		}
-
-		if (RTC->ISR & RTC_ISR_TSF)
-		{
-		    stm32l4_system_device.wakeup |= SYSTEM_WAKEUP_SYNC;
-		}
-
-		if (RTC->ISR & RTC_ISR_WUTF)
-		{
-		    stm32l4_system_device.wakeup |= SYSTEM_WAKEUP_TIMEOUT;
-		}
-
-		RTC->ISR &= ~(RTC_ISR_ALRAF | RTC_ISR_ALRBF | RTC_ISR_TSF | RTC_ISR_WUTF);
+		stm32l4_system_device.wakeup |= SYSTEM_WAKEUP_ALARM;
 	    }
+	    
+	    if (RTC->ISR & RTC_ISR_TSF)
+	    {
+		stm32l4_system_device.wakeup |= SYSTEM_WAKEUP_SYNC;
+	    }
+	    
+	    if (RTC->ISR & RTC_ISR_WUTF)
+	    {
+		stm32l4_system_device.wakeup |= SYSTEM_WAKEUP_TIMEOUT;
+	    }
+	    
+	    RTC->ISR &= ~(RTC_ISR_ALRAF | RTC_ISR_ALRBF | RTC_ISR_TSF | RTC_ISR_WUTF);
+	}
+    }
+    else
+    {
+	stm32l4_system_device.reset = SYSTEM_RESET_POWERON;
+	stm32l4_system_device.wakeup = 0;
+	
+	if (RCC->CSR & (RCC_CSR_LPWRRSTF | RCC_CSR_OBLRSTF))
+	{
+	    stm32l4_system_device.reset = SYSTEM_RESET_OTHER;
+	}
+	
+	if (RCC->CSR & RCC_CSR_FWRSTF)
+	{
+	    stm32l4_system_device.reset = SYSTEM_RESET_FIREWALL;
+	}
+	
+	if (RCC->CSR & RCC_CSR_BORRSTF)
+	{
+	    stm32l4_system_device.reset = SYSTEM_RESET_BROWNOUT;
+	}
+	
+	if (RCC->CSR & (RCC_CSR_IWDGRSTF | RCC_CSR_WWDGRSTF))
+	{
+	    stm32l4_system_device.reset = SYSTEM_RESET_WATCHDOG;
+	}
+	
+	if (RCC->CSR & RCC_CSR_SFTRSTF)
+	{
+	    stm32l4_system_device.reset = SYSTEM_RESET_SOFTWARE;
+	}
+	
+	if (RCC->CSR & RCC_CSR_PINRSTF)
+	{
+	    stm32l4_system_device.reset = SYSTEM_RESET_EXTERNAL;
+	}
+    }
+    
+    RCC->CSR |= RCC_CSR_RMVF;
+    RCC->CSR &= ~RCC_CSR_RMVF;
+    
+    PWR->SCR = (PWR_SCR_CSBF | PWR_SCR_CWUF5 | PWR_SCR_CWUF4 | PWR_SCR_CWUF3 | PWR_SCR_CWUF2 | PWR_SCR_CWUF1);
+    
+    PWR->CR1 |= PWR_CR1_DBP;
+    
+    while (!(PWR->CR1 & PWR_CR1_DBP))
+    {
+    }
+    
+    if (!(RCC->BDCR & RCC_BDCR_RTCEN))
+    {
+	RCC->BDCR |= RCC_BDCR_BDRST;
+	
+	RCC->BDCR &= ~RCC_BDCR_BDRST;
+    }
+    
+    if (RTC->CR & RTC_CR_BCK)
+    {
+	RTC->WPR = 0xca;
+	RTC->WPR = 0x53;
+	RTC->CR &= ~RTC_CR_BCK;
+	RTC->WPR = 0x00;
+
+	RCC->APB2ENR &= ~RCC_APB2ENR_SYSCFGEN;
+	
+	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
+	
+	SCB->VTOR = 0x1fff0000;
+	
+	/* This needs to be assembly code as GCC catches NULL 
+	 * dereferences ...
+	 */
+	__asm__ volatile (
+	    "   ldr     r2, =0x1fff0000                \n"
+	    "   ldr     r0, [r2, #0]                   \n"
+	    "   ldr     r1, [r2, #4]                   \n"
+	    "   msr     MSP, r0                        \n"
+	    "   isb                                    \n"
+	    "   bx      r1                             \n");
+    }
+    
+    stm32l4_system_device.lseclk = lseclk;
+    stm32l4_system_device.hseclk = hseclk;
+    
+    if (lseclk)
+    {
+	if (option & SYSTEM_OPTION_LSE_BYPASS)
+	{
+	    RCC->BDCR |= RCC_BDCR_LSEBYP;
 	}
 	else
-	{
-	    stm32l4_system_device.reset = SYSTEM_RESET_POWERON;
-	    stm32l4_system_device.wakeup = 0;
-
-	    if (RCC->CSR & (RCC_CSR_LPWRRSTF | RCC_CSR_OBLRSTF))
-	    {
-		stm32l4_system_device.reset = SYSTEM_RESET_OTHER;
-	    }
-
-	    if (RCC->CSR & RCC_CSR_FWRSTF)
-	    {
-		stm32l4_system_device.reset = SYSTEM_RESET_FIREWALL;
-	    }
-
-	    if (RCC->CSR & RCC_CSR_BORRSTF)
-	    {
-		stm32l4_system_device.reset = SYSTEM_RESET_BROWNOUT;
-	    }
-
-	    if (RCC->CSR & (RCC_CSR_IWDGRSTF | RCC_CSR_WWDGRSTF))
-	    {
-		stm32l4_system_device.reset = SYSTEM_RESET_WATCHDOG;
-	    }
-
-	    if (RCC->CSR & RCC_CSR_SFTRSTF)
-	    {
-		stm32l4_system_device.reset = SYSTEM_RESET_SOFTWARE;
-	    }
-
-	    if (RCC->CSR & RCC_CSR_PINRSTF)
-	    {
-		stm32l4_system_device.reset = SYSTEM_RESET_EXTERNAL;
-	    }
-	}
-
-	RCC->CSR |= RCC_CSR_RMVF;
-	RCC->CSR &= ~RCC_CSR_RMVF;
-
-	PWR->SCR = (PWR_SCR_CSBF | PWR_SCR_CWUF5 | PWR_SCR_CWUF4 | PWR_SCR_CWUF3 | PWR_SCR_CWUF2 | PWR_SCR_CWUF1);
-
-	PWR->CR1 |= PWR_CR1_DBP;
-	    
-	while (!(PWR->CR1 & PWR_CR1_DBP))
-	{
-	}
-
-	if (!(RCC->BDCR & RCC_BDCR_RTCEN))
-	{
-	    RCC->BDCR |= RCC_BDCR_BDRST;
-
-	    RCC->BDCR &= ~RCC_BDCR_BDRST;
-	}
-	    
-	if (RTC->CR & RTC_CR_BCK)
-	{
-	    RTC->WPR = 0xca;
-	    RTC->WPR = 0x53;
-	    RTC->CR &= ~RTC_CR_BCK;
-	    RTC->WPR = 0x00;
-
-	    /* Switch to System Memory @ 0x00000000.
-	     */
-
-	    SYSCFG->MEMRMP = (SYSCFG->MEMRMP & ~SYSCFG_MEMRMP_MEM_MODE) | SYSCFG_MEMRMP_MEM_MODE_0;
-	    RCC->APB2ENR &= ~RCC_APB2ENR_SYSCFGEN;
-
-	    RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
-
-	    SCB->VTOR = 0;
-
-	    /* This needs to be assembly code as GCC catches NULL 
-	     * dereferences ...
-	     */
-	    __asm__ volatile (
-		"   mov     r2, #0x00000000                \n"
-		"   ldr     r0, [r2, #0]                   \n"
-		"   ldr     r1, [r2, #4]                   \n"
-		"   msr     MSP, r0                        \n"
-		"   isb                                    \n"
-		"   bx      r1                             \n");
-	}
-
-	stm32l4_system_device.lseclk = lseclk;
-	stm32l4_system_device.hseclk = hseclk;
-
-	if (lseclk)
 	{
 	    if (!(RCC->BDCR & RCC_BDCR_LSEON))
 	    {
@@ -759,80 +765,93 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 		    if (++count >= 10000000)
 		    {
 			stm32l4_system_device.lseclk = 0;
+
+			RCC->BDCR &= ~RCC_BDCR_LSEON;
 			break;
 		    }
 		}
 	    }
 	}
+    }
 
+    if (stm32l4_system_device.lseclk == 0)
+    {
+	RCC->CSR |= RCC_CSR_LSION;
+	
+	while (!(RCC->CSR & RCC_CSR_LSIRDY))
+	{
+	}
+
+	stm32l4_system_device.lsi = 1;
+    }
+    else
+    {
+	RCC->CSR &= ~RCC_CSR_LSION;
+    }
+    
+    /* Enable RTC properly and write protect it. */
+    if (!(RCC->BDCR & RCC_BDCR_RTCEN))
+    {
+	/* Use LSI/LSE as source for RTC */
+	
 	if (stm32l4_system_device.lseclk == 0)
 	{
-	    RCC->BDCR &= ~RCC_BDCR_LSEON;
-			
-	    RCC->CSR |= RCC_CSR_LSION;
-	    
-	    while (!(RCC->CSR & RCC_CSR_LSIRDY))
-	    {
-	    }
+	    RCC->BDCR = (RCC->BDCR & ~RCC_BDCR_RTCSEL) | (RCC_BDCR_RTCSEL_1 | RCC_BDCR_RTCEN);
 	}
 	else
 	{
-	    RCC->CSR &= ~RCC_CSR_LSION;
+	    RCC->BDCR = (RCC->BDCR & ~RCC_BDCR_RTCSEL) | (RCC_BDCR_RTCSEL_0 | RCC_BDCR_RTCEN);
 	}
-
-	/* Enable RTC properly and write protect it. */
-	if (!(RCC->BDCR & RCC_BDCR_RTCEN))
+	
+	RTC->WPR = 0xca;
+	RTC->WPR = 0x53;
+	
+	RTC->ISR |= RTC_ISR_INIT;
+	
+	while (!(RTC->ISR & RTC_ISR_INITF))
 	{
-	    /* Use LSI/LSE as source for RTC */
-
-	    if (stm32l4_system_device.lseclk == 0)
-	    {
-		RCC->BDCR = (RCC->BDCR & ~RCC_BDCR_RTCSEL) | (RCC_BDCR_RTCSEL_1 | RCC_BDCR_RTCEN);
-	    }
-	    else
-	    {
-		RCC->BDCR = (RCC->BDCR & ~RCC_BDCR_RTCSEL) | (RCC_BDCR_RTCSEL_0 | RCC_BDCR_RTCEN);
-	    }
-
-	    RTC->WPR = 0xca;
-	    RTC->WPR = 0x53;
-
-	    RTC->ISR |= RTC_ISR_INIT;
-	    
-	    while (!(RTC->ISR & RTC_ISR_INITF))
-	    {
-	    }
-
-	    RTC->CR = RTC_CR_BYPSHAD;
-
-	    if (stm32l4_system_device.lseclk == 0)
-	    {
-		RTC->PRER = 0x000000ff;
-		RTC->PRER |= 0x007c0000;
-	    }
-	    else
-	    {
-		RTC->PRER = 0x000000ff;
-		RTC->PRER |= 0x007f0000;
-	    }
-
-	    RTC->ISR &= ~RTC_ISR_INIT;
 	}
-
-	/* Clear out pending RTC flags from a STANDBY return */
-	RTC->ISR &= ~(RTC_ISR_WUTF | RTC_ISR_ALRBF | RTC_ISR_ALRAF);
-	RTC->WPR = 0x00;
-
-#if defined(STM32L476xx)
-	/* Enable VBAT charging (for Dragonfly).
+	
+	RTC->CR = RTC_CR_BYPSHAD;
+	
+	if (stm32l4_system_device.lseclk == 0)
+	{
+	    RTC->PRER = 0x000000ff;
+	    RTC->PRER |= 0x007c0000;
+	}
+	else
+	{
+	    RTC->PRER = 0x000000ff;
+	    RTC->PRER |= 0x007f0000;
+	}
+	
+	RTC->ISR &= ~RTC_ISR_INIT;
+    }
+    
+    /* Clear out pending RTC flags from a STANDBY return */
+    RTC->ISR &= ~(RTC_ISR_WUTF | RTC_ISR_ALRBF | RTC_ISR_ALRAF);
+    RTC->WPR = 0x00;
+    
+    if (option & SYSTEM_OPTION_VBAT_CHARGING)
+    {
+	/* Enable VBAT charging.
 	 */
 	PWR->CR4 |= PWR_CR4_VBE;
-#endif
+    }
 
-	if (hseclk)
+    if (hseclk)
+    {
+	if (option & SYSTEM_OPTION_HSE_BYPASS)
+	{
+	    /* Bypasse the HSE oscillator. On L432 the input is PA0 and on
+	     * L476/L433 it's PH0 (which means PH1 is a GPIO).
+	     */
+	    RCC->CR |= RCC_CR_HSEBYP;
+	}
+	else
 	{
 	    RCC->CR |= RCC_CR_HSEON;
-	    
+	
 	    /* The loop below take about 8 cycles per iteration. The startup time for
 	     * HSE is 100ms. At 16MHz this corresponds to about 200000 iterations.
 	     */
@@ -843,78 +862,109 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 		if (++count >= 200000)
 		{
 		    stm32l4_system_device.hseclk = 0;
-
+		    
 		    RCC->CR &= ~RCC_CR_HSEON;
 		    break;
 		}
 	    }
 	}
-
-	/* If not coming back from STANDBY, initialize the .databkp section */
-	if (!(stm32l4_system_device.reset & PWR_SR1_SBF))
-	{
-	    data_s = &__databkp_start__;
-	    data_e = &__databkp_end__;
-	    data_t = &__etextbkp;
-
-	    while (data_s != data_e) { *data_s++ = *data_t++; };
-	}
-
-	/* If there is a non-empty .databkp section enable SRAM2 retention for STANDBY */
-	if (&__databkp_start__ != &__databkp_end__) {
-	    PWR->CR3 |= PWR_CR3_RRS;
-	} else {
-	    PWR->CR3 &= ~PWR_CR3_RRS;
-	}
-
-	/* Write protect .rodata2 in SRAM2 */
-	if (&__rodata2_start__ != &__rodata2_end__) {
-	    SYSCFG->SWPR = 0xffffffff >> (32 - ((((uint8_t*)&__rodata2_end__ - (uint8_t*)&__rodata2_start__) + 1023) / 1024));
-	}
-
-	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
-
-	/* For some reason DWT is enabled per default. Disable it with the proper reset values */
-	if (!(CoreDebug->DHCSR & 0x00000001)) {
-	    DWT->CTRL      = 0x00000000;
-	    DWT->FUNCTION0 = 0x00000000;
-	    DWT->FUNCTION1 = 0x00000000;
-	    DWT->FUNCTION2 = 0x00000000;
-	    DWT->FUNCTION3 = 0x00000000;
-	    
-	    CoreDebug->DEMCR &= ~0x01000000;
-	}
     }
-
-    if (hclk <= 24000000)
+    
+    /* If not coming back from STANDBY, initialize the .databkp section */
+    if (stm32l4_system_device.reset != SYSTEM_RESET_STANDBY)
     {
-	/* Range 2, use MSI.
-	 */
+	data_s = &__databkp_start__;
+	data_e = &__databkp_end__;
+	data_t = &__etextbkp;
 	
-	if      (hclk >= 24000000) { sysclk = 23986176; hclk = 24000000; msirange = RCC_CR_MSIRANGE_9; mout = 6; } /* 732 * 32768 */
-	else if (hclk >= 16000000) { sysclk = 15990784; hclk = 16000000; msirange = RCC_CR_MSIRANGE_8; mout = 4; } /* 488 * 32768 */
-	else if (hclk >=  8000000) { sysclk =  7995392; hclk =  8000000; msirange = RCC_CR_MSIRANGE_7; mout = 2; } /* 244 * 32768 */
-	else if (hclk >=  4000000) { sysclk =  3997696; hclk =  4000000; msirange = RCC_CR_MSIRANGE_6; mout = 1; } /* 122 * 32768 */
-	else if (hclk >=  2000000) { sysclk =  1998848; hclk =  2000000; msirange = RCC_CR_MSIRANGE_5; mout = 1; } /*  61 * 32768 */
-	else                       { sysclk =  1015808; hclk =  1000000; msirange = RCC_CR_MSIRANGE_4; mout = 1; } /*  31 * 32768 */
-
-	if (!stm32l4_system_device.lseclk)
-	{
-	    sysclk = hclk;
-	}
-	
-	/* PLLM is setup so that fclk = 4000000 into N/Q for USB. fvco is 96MHz to work around errata via
-	 * PLLN set to 24, and then divided down to 48MHz via PLLQ set to 2.
-	 */
-	
-	fclk = sysclk / mout;
-	nout = 24;
-	rout = 2;
-	qout = 2;
+	while (data_s != data_e) { *data_s++ = *data_t++; };
+    }
+    
+    /* If there is a non-empty .databkp section enable SRAM2 retention for STANDBY */
+    if (&__databkp_start__ != &__databkp_end__)
+    {
+	PWR->CR3 |= PWR_CR3_RRS;
     }
     else
     {
-	/* Range 1, use PLL with HSE/HSI/MSI */
+	PWR->CR3 &= ~PWR_CR3_RRS;
+    }
+    
+    /* Write protect .rodata2 in SRAM2 */
+    if (&__rodata2_start__ != &__rodata2_end__)
+    {
+	SYSCFG->SWPR = 0xffffffff >> (32 - ((((uint8_t*)&__rodata2_end__ - (uint8_t*)&__rodata2_start__) + 1023) / 1024));
+    }
+
+    RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
+    
+    /* For some reason DWT is enabled per default. Disable it with the proper reset values */
+    if (!(CoreDebug->DHCSR & 0x00000001))
+    {
+	DWT->CTRL      = 0x00000000;
+	DWT->FUNCTION0 = 0x00000000;
+	DWT->FUNCTION1 = 0x00000000;
+	DWT->FUNCTION2 = 0x00000000;
+	DWT->FUNCTION3 = 0x00000000;
+	
+	CoreDebug->DEMCR &= ~0x01000000;
+    }
+
+    RCC->AHB1SMENR &= ~(RCC_AHB1SMENR_FLASHSMEN |
+			RCC_AHB1SMENR_SRAM1SMEN);
+    
+    RCC->AHB2SMENR &= ~(RCC_AHB2SMENR_GPIOASMEN |
+			RCC_AHB2SMENR_GPIOBSMEN |
+#if defined(STM32L433xx) || defined(STM32L476xx)
+			RCC_AHB2SMENR_GPIOCSMEN |
+			RCC_AHB2SMENR_GPIODSMEN |
+			RCC_AHB2SMENR_GPIOESMEN |
+#endif
+#if defined(STM32L476xx)
+			RCC_AHB2SMENR_GPIOFSMEN |
+			RCC_AHB2SMENR_GPIOGSMEN |
+#endif
+			RCC_AHB2SMENR_GPIOHSMEN |
+			RCC_AHB2SMENR_SRAM2SMEN);
+    
+    RCC->APB1SMENR1 &= ~RCC_APB1SMENR1_PWRSMEN;
+
+    RCC->APB2SMENR  &= ~RCC_APB2SMENR_SYSCFGSMEN;
+
+#if defined(STM32L432xx) || defined(STM32L433xx)
+    RCC->APB1SMENR1 &= ~RCC_APB1SMENR1_RTCAPBSMEN;
+#endif
+
+    stm32l4_system_sysclk_configure(hclk, pclk1, pclk2);
+
+    __set_PRIMASK(primask);
+}
+
+bool stm32l4_system_sysclk_configure(uint32_t hclk, uint32_t pclk1, uint32_t pclk2)
+{
+    uint32_t sysclk, fclk, oclk, fvco, fpll, mout, nout, rout, n, r;
+    uint32_t msirange, hpre, ppre1, ppre2, latency;
+    uint32_t primask, apb1enr1, mask, slot;
+    
+    if (hclk <= 24000000)
+    {
+	/* Range 2, use MSI. Always use MSI >= 4MHz, so that SAICLK/CLK48 can be generated.
+	 */
+	
+	if      (hclk >= 24000000) { sysclk = 23986176; fclk = sysclk / 1; hclk = 24000000; hpre = RCC_CFGR_HPRE_DIV1; msirange = RCC_CR_MSIRANGE_9; mout = 6; } /*  732 * 32768 */
+	else if (hclk >= 16000000) { sysclk = 15990784; fclk = sysclk / 1; hclk = 16000000; hpre = RCC_CFGR_HPRE_DIV1; msirange = RCC_CR_MSIRANGE_8; mout = 4; } /*  488 * 32768 */
+	else if (hclk >=  8000000) { sysclk =  7995392; fclk = sysclk / 1; hclk =  8000000; hpre = RCC_CFGR_HPRE_DIV1; msirange = RCC_CR_MSIRANGE_7; mout = 2; } /*  244 * 32768 */
+	else if (hclk >=  4000000) { sysclk =  3997696; fclk = sysclk / 1; hclk =  4000000; hpre = RCC_CFGR_HPRE_DIV1; msirange = RCC_CR_MSIRANGE_6; mout = 1; } /*  122 * 32768 */
+	else if (hclk >=  2000000) { sysclk =  3997696; fclk = sysclk / 2; hclk =  2000000; hpre = RCC_CFGR_HPRE_DIV2; msirange = RCC_CR_MSIRANGE_6; mout = 1; } /*   61 * 32768 */
+	else                       { sysclk =  3997696; fclk = sysclk / 4; hclk =  1000000; hpre = RCC_CFGR_HPRE_DIV4; msirange = RCC_CR_MSIRANGE_6; mout = 1; } /* 30.5 * 32768 */
+	
+	oclk = sysclk / mout;
+	nout = 24;
+	rout = 2;
+    }
+    else
+    {
+	/* Range 1, use PLL with HSE/MSI */
 	
 	if (hclk < 16000000)
 	{
@@ -926,36 +976,30 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	    hclk = 80000000;
 	}
 	
+	hpre = RCC_CFGR_HPRE_DIV1; /* SYCLK == HCLK */
+
 	msirange = RCC_CR_MSIRANGE_6;
 	
 	if (stm32l4_system_device.hseclk)
 	{
-	    fclk = 4000000;
+	    oclk = 4000000;
 	    mout = stm32l4_system_device.hseclk / 4000000; 
 	}
 	else
 	{
-#if defined(STM32L432xx) || defined(STM32L433xx)
-	    /* MSI @4MHz */
-	    fclk = 3997696;
+	    oclk = 3997696;
 	    mout = 1;
-#else /* defined(STM32L432xx) || defined(STM32L433xx) */
-	    /* HSI16 @16MHz */
-	    fclk = 4000000;
-	    mout = 4;
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
 	}
 	
 	sysclk = 0;
 	nout   = 0;
 	rout   = 0;
-	qout   = 2;
 	
 	for (r = 2; r <= 8; r += 2)
 	{
-	    n = (hclk * r) / fclk;
+	    n = (hclk * r) / oclk;
 	    
-	    fvco = fclk * n;
+	    fvco = oclk * n;
 	    
 	    if ((n >= 8) && (n <= 86) && (fvco <= 344000000) && (fvco >= 96000000))
 	    {
@@ -971,18 +1015,14 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 		}
 	    }
 	}
+
+	fclk = sysclk;
+
+	/* Round hclk to the next MHzHz.
+	 */
+	hclk = ((sysclk + 500000) / 1000000) * 1000000;
     }
 
-    if      (hclk >= sysclk)         {                      hpre = RCC_CFGR_HPRE_DIV1;   }
-    else if (hclk >= (sysclk / 2))   { hclk = (hclk / 2);   hpre = RCC_CFGR_HPRE_DIV2;   }
-    else if (hclk >= (sysclk / 4))   { hclk = (hclk / 4);   hpre = RCC_CFGR_HPRE_DIV4;   }
-    else if (hclk >= (sysclk / 8))   { hclk = (hclk / 8);   hpre = RCC_CFGR_HPRE_DIV8;   }
-    else if (hclk >= (sysclk / 16))  { hclk = (hclk / 16);  hpre = RCC_CFGR_HPRE_DIV16;  }
-    else if (hclk >= (sysclk / 64))  { hclk = (hclk / 64);  hpre = RCC_CFGR_HPRE_DIV64;  }
-    else if (hclk >= (sysclk / 128)) { hclk = (hclk / 128); hpre = RCC_CFGR_HPRE_DIV128; }
-    else if (hclk >= (sysclk / 256)) { hclk = (hclk / 256); hpre = RCC_CFGR_HPRE_DIV256; }
-    else                             { hclk = (hclk / 512); hpre = RCC_CFGR_HPRE_DIV512; }
-    
     if      (pclk1 >= hclk)       { pclk1 = hclk;        ppre1 = RCC_CFGR_PPRE1_DIV1;  }
     else if (pclk1 >= (hclk / 2)) { pclk1 = (hclk / 2);  ppre1 = RCC_CFGR_PPRE1_DIV2;  }
     else if (pclk1 >= (hclk / 4)) { pclk1 = (hclk / 4);  ppre1 = RCC_CFGR_PPRE1_DIV4;  }
@@ -994,22 +1034,61 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
     else if (pclk2 >= (hclk / 4)) { pclk2 = (hclk / 4);  ppre2 = RCC_CFGR_PPRE2_DIV4;  }
     else if (pclk2 >= (hclk / 8)) { pclk2 = (hclk / 8);  ppre2 = RCC_CFGR_PPRE2_DIV8;  }
     else                          { pclk2 = (hclk / 16); ppre2 = RCC_CFGR_PPRE2_DIV16; }
+
+    if      (hclk <= 16000000) { latency = FLASH_ACR_LATENCY_0WS; }
+    else if (hclk <= 32000000) { latency = FLASH_ACR_LATENCY_1WS; }
+    else if (hclk <= 48000000) { latency = FLASH_ACR_LATENCY_2WS; }
+    else if (hclk <= 64000000) { latency = FLASH_ACR_LATENCY_3WS; }
+    else                       { latency = FLASH_ACR_LATENCY_4WS; }
     
-    /* #### Add code to prepare the clock switch, and if it fails cancel it.
-     */
-
-    /* First switch to HSI as system clock.
-     */
-
-    apb1enr1 = RCC->APB1ENR1;
-
-    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    if (hclk <= 24000000)
     {
-	armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
+#if defined(STM32L476xx)
+	if (!stm32l4_system_device.saiclk)
+#endif
+	{
+	    if (!(stm32l4_system_device.clk48 & (SYSTEM_CLK48_REFERENCE_USB | SYSTEM_CLK48_REFERENCE_RNG)))
+	    {
+		if      (hclk <=  6000000) { latency = FLASH_ACR_LATENCY_0WS; }
+		else if (hclk <= 12000000) { latency = FLASH_ACR_LATENCY_1WS; }
+		else if (hclk <= 18000000) { latency = FLASH_ACR_LATENCY_2WS; }
+		else                       { latency = FLASH_ACR_LATENCY_3WS; }
+	    }
+	}
+    }
+
+    primask = __get_PRIMASK();
+    
+    __disable_irq();
+    
+    if (stm32l4_system_device.lock[SYSTEM_LOCK_CLOCKS])
+    {
+	__set_PRIMASK(primask);
+	
+	return false;
     }
     
-    /* Select Range 1 to switch clocks */
+    mask = stm32l4_system_device.event[SYSTEM_INDEX_PREPARE_CLOCKS];
     
+    while (mask) 
+    {
+	slot = __builtin_clz(mask);
+	mask &= ~(0x80000000 >> slot);
+	
+	(*stm32l4_system_device.callback[slot])(stm32l4_system_device.context[slot], SYSTEM_EVENT_PREPARE_CLOCKS);
+    }
+    
+    /* First switch to HSI as system clock.
+     */
+    
+    apb1enr1 = RCC->APB1ENR1;
+    
+    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+    {
+	RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+    }
+    
+    /* Leave LPRUN */
     if (PWR->CR1 & PWR_CR1_LPR)
     {
 	PWR->CR1 &= ~PWR_CR1_LPR;
@@ -1019,6 +1098,7 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	}
     }
     
+    /* Switch to Range 1 */
     PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_0;
     
     while (PWR->SR2 & PWR_SR2_VOSF)
@@ -1026,6 +1106,41 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
     }
     
     FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_LATENCY_4WS;
+
+#if defined(STM32L432xx) || defined(STM32L433xx)
+    if (stm32l4_system_device.hsi48)
+    {
+	if (stm32l4_system_device.lseclk)
+	{
+	    /* Disable CRS on HSI48 */
+	    CRS->CR = 0;
+	    
+	    RCC->APB1ENR1 &= ~RCC_APB1ENR1_CRSEN;
+	}
+	
+	/* Disable HSI48 */
+	RCC->CRRCR &= ~RCC_CRRCR_HSI48ON;
+	
+	while(RCC->CRRCR & RCC_CRRCR_HSI48RDY)
+	{
+	}
+    }
+
+    /* Disable PLLSAI1 */
+    RCC->CR &= ~RCC_CR_PLLSAI1ON;
+    
+    while (RCC->CR & RCC_CR_PLLSAI1RDY)
+    {
+    }
+
+#else /* defined(STM32L432xx) || defined(STM32L433xx) */
+    /* Disable PLLSAI1/PLLSAI2 */
+    RCC->CR &= ~(RCC_CR_PLLSAI1ON | RCC_CR_PLLSAI2ON);
+    
+    while (RCC->CR & (RCC_CR_PLLSAI1RDY | RCC_CR_PLLSAI2RDY))
+    {
+    }
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
     
     /* Make sure HSI is on, switch to HSI as clock source */
     RCC->CR |= RCC_CR_HSION;
@@ -1033,6 +1148,10 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
     while (!(RCC->CR & RCC_CR_HSIRDY))
     {
     }
+
+    /* Disable SYSTICK as late as possible.
+     */
+    armv7m_systick_disable();
     
     /* Select the HSI as system clock source */
     RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_HSI;
@@ -1044,55 +1163,31 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
     
     SystemCoreClock = 16000000;
     
-#if defined(STM32L476xx)
-    /* Disable PLL/PLLSAI1/PLLSAI2 */
-    RCC->CR &= ~(RCC_CR_PLLON | RCC_CR_PLLSAI1ON | RCC_CR_PLLSAI2ON);
+    /* Disable PLL */
+    RCC->CR &= ~RCC_CR_PLLON;
     
-    while (RCC->CR & (RCC_CR_PLLRDY | RCC_CR_PLLSAI1RDY | RCC_CR_PLLSAI2RDY))
+    while (RCC->CR & RCC_CR_PLLRDY)
     {
     }
-#else
-    /* Disable PLL/PLLSAI1 */
-    RCC->CR &= ~(RCC_CR_PLLON | RCC_CR_PLLSAI1ON);
-    
-    while (RCC->CR & (RCC_CR_PLLRDY | RCC_CR_PLLSAI1RDY))
-    {
-    }
-#endif
     
     /* Set HCLK/PCLK1/PCLK2 prescalers */
     RCC->CFGR = (RCC->CFGR & ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2)) | (hpre | ppre1 | ppre2);
     
     /* Configure the main PLL */
-    RCC->PLLCFGR = (((mout -1) << 4) |
-		    (nout << 8) |
-		    (((rout >> 1) -1) << 25) |
-		    (((qout >> 1) -1) << 21));
+    RCC->PLLCFGR = (((mout -1) << 4) | (nout << 8) | (((rout >> 1) -1) << 25));
     
     if (hclk <= 24000000)
     {
 	/* Range 2, use MSI */
-
-	stm32l4_system_device.hsi16 &= ~0x80000000;
 	
-	/* Disable HSE */
-	if (RCC->CR & RCC_CR_HSEON)
-	{
-	    RCC->CR &= ~RCC_CR_HSEON;
-	    
-	    while (RCC->CR & RCC_CR_HSERDY)
-	    {
-	    }
-	}
-
 	RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | msirange | RCC_CR_MSIRGSEL | RCC_CR_MSION;
-
+	
 	armv7m_core_udelay(1);
-	    
+	
 	while (!(RCC->CR & RCC_CR_MSIRDY))
 	{
 	}
-
+	
 	if (stm32l4_system_device.lseclk)
 	{
 	    /* Enable the MSI PLL */
@@ -1107,61 +1202,14 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	}
 	
 	RCC->PLLCFGR |= RCC_PLLCFGR_PLLSRC_MSI;
-	
-	if (!stm32l4_system_device.clk48)
-	{
-	    PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_1;
-	    
-	    while (PWR->SR2 & PWR_SR2_VOSF)
-	    {
-	    }
-
-	    /* Entry LPRUN is sysclk is low enough */
-	    if (hclk <= 2000000)
-	    {
-		PWR->CR1 |= PWR_CR1_LPR;
-		
-		while (!(PWR->SR2 & PWR_SR2_REGLPF))
-		{
-		}
-	    }
-	}
-
-	/* Select MSI as stop wakeup clock */
-	RCC->CFGR &= ~RCC_CFGR_STOPWUCK;
-
-#if defined(STM32L432xx) || defined(STM32L433xx)
-	/* Switch CLK48SEL to HSI48 */
-	RCC->CCIPR = (RCC->CCIPR & ~RCC_CCIPR_CLK48SEL);
-
-#else /* defined(STM32L432xx) || defined(STM32L433xx) */
-	if (stm32l4_system_device.clk48)
-	{
-	    /* Enable the main PLL */
-	    RCC->PLLCFGR |= RCC_PLLCFGR_PLLQEN;
-
-	    RCC->CR |= RCC_CR_PLLON;
-	    
-	    /* Wait till the main PLL is ready */
-	    while((RCC->CR & RCC_CR_PLLRDY) == 0)
-	    {
-	    }
-	}
-
-	/* Switch CLK48SEL to PLL48M1CLK */
-	RCC->CCIPR = (RCC->CCIPR & ~RCC_CCIPR_CLK48SEL) | (RCC_CCIPR_CLK48SEL_1);
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
     }
     else
     {
 	/* Range 1, use HSE/PLL or MSI/PLL */
 	
-	/* Be careful not to change HSE/MSI settings which might be shared
-	 * with PLLSAI1/PLLSAI2.
-	 */
 	if (stm32l4_system_device.hseclk)
 	{
-	    if (!(RCC->CR & RCC_CR_HSEON))
+	    if (!(RCC->CR & RCC_CR_HSEBYP))
 	    {
 		RCC->CR |= RCC_CR_HSEON;
 		
@@ -1169,62 +1217,33 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 		{
 		}
 	    }
-
+	    
 	    RCC->PLLCFGR |= (RCC_PLLCFGR_PLLREN | RCC_PLLCFGR_PLLSRC_HSE);
-
-#if defined(STM32L432xx) || defined(STM32L433xx)
-	    /* STM32L432/STML433 use HSI48 for CLK48, so turn off MSI if HSE is present */
-
-	    /* ERRATA 2.1.15. WAR: Switch MSI to <= 16MHz before turing off */
-	    RCC->CR = (RCC->CR & ~(RCC_CR_MSIRANGE | RCC_CR_MSIPLLEN)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL;
-	    
-	    armv7m_core_udelay(1);
-	    
-	    RCC->CR &= ~RCC_CR_MSION;
-	    
-	    while (RCC->CR & RCC_CR_MSIRDY)
-	    {
-	    }
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
-
-	    stm32l4_system_device.hsi16 &= ~0x80000000;
 	}
 	else
 	{
-#if defined(STM32L432xx) || defined(STM32L433xx)
-
-	    /* STM32L432/STML433 use MSI @4MHz for the PLL, and HSI48 for CLK48 */
 	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
-
+	    
 	    armv7m_core_udelay(1);
 	    
 	    while (!(RCC->CR & RCC_CR_MSIRDY))
 	    {
 	    }
-
+	    
 	    if (stm32l4_system_device.lseclk)
 	    {
 		/* Enable the MSI PLL */
 		RCC->CR |= RCC_CR_MSIPLLEN;
 	    }
-
+	    
 	    RCC->PLLCFGR |= (RCC_PLLCFGR_PLLREN | RCC_PLLCFGR_PLLSRC_MSI);
-
-	    stm32l4_system_device.hsi16 &= ~0x80000000;
-#else /* defined(STM32L432xx) || defined(STM32L433xx) */
-
-	    /* STM32L476 uses HSI @ 16MHz for the PLL, and MSI @48Mhz for CLK48 */
-	    RCC->PLLCFGR |= (RCC_PLLCFGR_PLLREN | RCC_PLLCFGR_PLLSRC_HSI);
-
-	    stm32l4_system_device.hsi16 |= 0x80000000;
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
 	}
 	
 	/* Enable the main PLL */
 	RCC->CR |= RCC_CR_PLLON;
 	
 	/* Wait till the main PLL is ready */
-	while((RCC->CR & RCC_CR_PLLRDY) == 0)
+	while ((RCC->CR & RCC_CR_PLLRDY) == 0)
 	{
 	}
 	
@@ -1235,32 +1254,63 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL)
 	{
 	}
+    }
+    
+    SystemCoreClock = hclk;
+    
+    stm32l4_system_device.sysclk = sysclk;
+    stm32l4_system_device.fclk = fclk;
+    stm32l4_system_device.hclk = hclk;
+    stm32l4_system_device.pclk1 = pclk1;
+    stm32l4_system_device.pclk2 = pclk2;
+    
+    /* Enable SYSTICK as early as possible.
+     */
+    
+    armv7m_systick_enable();
 
-	/* Select HSI16 as stop wakeup clock */
-	RCC->CFGR |= RCC_CFGR_STOPWUCK;
-
-#if defined(STM32L432xx) || defined(STM32L433xx)
-	/* Switch CLK48SEL to HSI48 */
-	RCC->CCIPR = (RCC->CCIPR & ~RCC_CCIPR_CLK48SEL);
-
-#else /* defined(STM32L432xx) || defined(STM32L433xx) */
-	if (stm32l4_system_device.clk48)
+    if (hclk <= 24000000)
+    {
+	/* Disable HSE */
+	if (RCC->CR & RCC_CR_HSEON)
 	{
-	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
-
-	    armv7m_core_udelay(1);
-		
-	    while (!(RCC->CR & RCC_CR_MSIRDY))
-	    {
-	    }
+	    RCC->CR &= ~RCC_CR_HSEON;
 	    
-	    if (stm32l4_system_device.lseclk)
+	    while (RCC->CR & RCC_CR_HSERDY)
 	    {
-		/* Enable the MSI PLL */
-		RCC->CR |= RCC_CR_MSIPLLEN;
 	    }
 	}
-	else
+	
+#if defined(STM32L476xx)
+	if (!stm32l4_system_device.saiclk)
+#endif
+	{
+	    if (!(stm32l4_system_device.clk48 & (SYSTEM_CLK48_REFERENCE_USB | SYSTEM_CLK48_REFERENCE_RNG)))
+	    {
+		PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_1;
+		
+		while (PWR->SR2 & PWR_SR2_VOSF)
+		{
+		}
+		
+		/* Enter LPRUN if hclk is low enough */
+		if (hclk <= 2000000)
+		{
+		    PWR->CR1 |= PWR_CR1_LPR;
+		    
+		    while (!(PWR->SR2 & PWR_SR2_REGLPF))
+		    {
+		    }
+		}
+	    }
+	}
+	
+	/* Select MSI as stop wakeup clock */
+	RCC->CFGR &= ~RCC_CFGR_STOPWUCK;
+    }
+    else
+    {
+	if (stm32l4_system_device.hseclk)
 	{
 	    /* ERRATA 2.1.15. WAR: Switch MSI to <= 16MHz before turing off */
 	    RCC->CR = (RCC->CR & ~(RCC_CR_MSIRANGE | RCC_CR_MSIPLLEN)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL;
@@ -1273,99 +1323,257 @@ bool stm32l4_system_configure(uint32_t lseclk, uint32_t hseclk, uint32_t hclk, u
 	    {
 	    }
 	}
-
-	/* Switch CLK48SEL to MSI */
-	RCC->CCIPR = (RCC->CCIPR & ~RCC_CCIPR_CLK48SEL) | (RCC_CCIPR_CLK48SEL_0 | RCC_CCIPR_CLK48SEL_1);
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
+	
+	/* Select HSI16 as stop wakeup clock */
+	RCC->CFGR |= RCC_CFGR_STOPWUCK;
     }
-
+    
+    FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
+    
+#if defined(STM32L432xx) || defined(STM32L433xx)
+    if (stm32l4_system_device.saiclk)
+    {
+	if (hclk <= 24000000)
+	{
+	    if      (stm32l4_system_device.saiclk == SYSTEM_SAICLK_8192000)  { RCC->PLLSAI1CFGR = ((15 << 27) | (31 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); }
+	    else if (stm32l4_system_device.saiclk == SYSTEM_SAICLK_11289600) { RCC->PLLSAI1CFGR = ((11 << 27) | (31 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); }
+	    else                                                             { RCC->PLLSAI1CFGR = (( 5 << 27) | (31 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); }
+	}
+	else
+	{
+	    if      (stm32l4_system_device.saiclk == SYSTEM_SAICLK_8192000)  { RCC->PLLSAI1CFGR = ((21 << 27) | (43 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); }
+	    else if (stm32l4_system_device.saiclk == SYSTEM_SAICLK_11289600) { RCC->PLLSAI1CFGR = ((17 << 27) | (48 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); }
+	    else                                                             { RCC->PLLSAI1CFGR = (( 7 << 27) | (43 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); }
+	}
+	
+	RCC->CR |= RCC_CR_PLLSAI1ON;
+	
+	/* Wait till the PLLSAI1 is ready */
+	while (!(RCC->CR & RCC_CR_PLLSAI1RDY))
+	{
+	}
+    }
+    
+    if (stm32l4_system_device.hsi48)
+    {
+	/* Enable HSI48 */
+	RCC->CRRCR |= RCC_CRRCR_HSI48ON;
+	
+	while(!(RCC->CRRCR & RCC_CRRCR_HSI48RDY))
+	{
+	}
+	
+	if (stm32l4_system_device.lseclk)
+	{
+	    /* Enable/Reset CRS on HSI48 */
+	    RCC->APB1ENR1 |= RCC_APB1ENR1_CRSEN;
+	    
+	    RCC->APB1RSTR1 |= RCC_APB1RSTR1_CRSRST;
+	    RCC->APB1RSTR1 &= ~RCC_APB1RSTR1_CRSRST;
+	    
+	    /* 32768Hz * 1465 = 48005120Hz, Sync Source is LSE */
+	    CRS->CFGR = ((1465 -1) << CRS_CFGR_RELOAD_Pos) | (1 << CRS_CFGR_FELIM_Pos) | CRS_CFGR_SYNCSRC_0;
+	    CRS->CR = CRS_CR_AUTOTRIMEN | CRS_CR_CEN;
+	}
+    }
+    
+    /* Switch CLK48SEL to HSI48, SAI1SEL to SAI1PLL */
+    RCC->CCIPR = (RCC->CCIPR & ~(RCC_CCIPR_CLK48SEL | RCC_CCIPR_SAI1SEL));
+    
+#else /* defined(STM32L432xx) || defined(STM32L433xx) */
+    
+    /* PLLM is setup so that fclk = 4000000 into N/Q for USB. fvco is 192MHz to work around errata via
+     * PLLSAI1N set to 48, and then divided down to 48MHz via PLLSAI1Q set to 4. 192MHz / 17 is also
+     * used to produce 11.2941MHz to serve as 44100Hz * 256.
+     *
+     * PLLSAI2 is set up for 49..1520MHz to serve as 192000Mhz * 256.
+     */
+    
+    RCC->PLLSAI1CFGR = ((48 << 8) |(((4 >> 1) -1) << 21) | RCC_PLLSAI1CFGR_PLLSAI1P);
+    RCC->PLLSAI2CFGR = ((86 << 8));
+    
+    if (stm32l4_system_device.saiclk)
+    {
+	if (stm32l4_system_device.saiclk == SYSTEM_SAICLK_11289600)
+	{
+	    RCC->PLLSAI1CFGR |= RCC_PLLSAI1CFGR_PLLSAI1PEN;
+	    
+	    RCC->CR |= RCC_CR_PLLSAI1ON;
+	    
+	    /* Wait till the PLLSAI1 is ready */
+	    while (!(RCC->CR & RCC_CR_PLLSAI1RDY))
+	    {
+	    }
+	    
+	    /* Switch SAI1/SAI2 to use PLLSAI1 */
+	    RCC->CCIPR = (RCC->CCIPR & ~(RCC_CCIPR_SAI1SEL | RCC_CCIPR_SAI2SEL));
+	}
+	else
+	{
+	    RCC->PLLSAI2CFGR |= RCC_PLLSAI2CFGR_PLLSAI2PEN;
+	    
+	    RCC->CR |= RCC_CR_PLLSAI2ON;
+	    
+	    /* Wait till the PLLSAI2 is ready */
+	    while (!(RCC->CR & RCC_CR_PLLSAI2RDY))
+	    {
+	    }
+	    
+	    /* Switch SAI1/SAI2 to use PLLSAI2 */
+	    RCC->CCIPR = (RCC->CCIPR & ~(RCC_CCIPR_SAI1SEL | RCC_CCIPR_SAI2SEL)) | (RCC_CCIPR_SAI1SEL_0 | RCC_CCIPR_SAI2SEL_0);
+	}
+    }
+    
+    if (stm32l4_system_device.clk48)
+    {
+	RCC->PLLSAI1CFGR |= RCC_PLLSAI1CFGR_PLLSAI1QEN;
+	
+	if (stm32l4_system_device.saiclk != SYSTEM_SAICLK_11289600)
+	{
+	    RCC->CR |= RCC_CR_PLLSAI1ON;
+	    
+	    /* Wait till the PLLSAI1 is ready */
+	    while(!(RCC->CR & RCC_CR_PLLSAI1RDY))
+	    {
+	    }
+	}
+    }
+    
+    /* Switch CLK48SEL to PLL48M2CLK */
+    RCC->CCIPR = (RCC->CCIPR & ~RCC_CCIPR_CLK48SEL) | (RCC_CCIPR_CLK48SEL_0);
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
+    
     if (!stm32l4_system_device.hsi16)
     {
 	RCC->CR &= ~RCC_CR_HSION;
-    
+	
 	while (RCC->CR & RCC_CR_HSIRDY)
 	{
 	}
     }
 
-    SystemCoreClock = hclk;
-
-    if (!stm32l4_system_device.clk48 && (hclk <= 24000000))
-    {
-	if      (hclk <=  6000000) { latency = FLASH_ACR_LATENCY_0WS; }
-	else if (hclk <= 12000000) { latency = FLASH_ACR_LATENCY_1WS; }
-	else if (hclk <= 18000000) { latency = FLASH_ACR_LATENCY_2WS; }
-	else                       { latency = FLASH_ACR_LATENCY_3WS; }
-    }
-    else
-    {
-	if      (hclk <= 16000000) { latency = FLASH_ACR_LATENCY_0WS; }
-	else if (hclk <= 32000000) { latency = FLASH_ACR_LATENCY_1WS; }
-	else if (hclk <= 48000000) { latency = FLASH_ACR_LATENCY_2WS; }
-	else if (hclk <= 64000000) { latency = FLASH_ACR_LATENCY_3WS; }
-	else                       { latency = FLASH_ACR_LATENCY_4WS; }
-    }
-
-    FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
-
     if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
     {
-	armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
+	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
     }
 
-    stm32l4_system_device.sysclk = sysclk;
-    stm32l4_system_device.hclk = hclk;
-    stm32l4_system_device.pclk1 = pclk1;
-    stm32l4_system_device.pclk2 = pclk2;
+    mask = stm32l4_system_device.event[SYSTEM_INDEX_CHANGE_CLOCKS];
 
-    /* #### Add code to complete the switch */
+    while (mask) 
+    {
+	slot = __builtin_clz(mask);
+	mask &= ~(0x80000000 >> slot);
+
+	(*stm32l4_system_device.callback[slot])(stm32l4_system_device.context[slot], SYSTEM_EVENT_CHANGE_CLOCKS);
+    }
 
     __set_PRIMASK(primask);
 
     return true;
 }
 
-bool stm32l4_system_clk48_enable(void)
+static void stm32l4_system_select_range_1(void)
 {
     uint32_t apb1enr1, latency;
 
-    if (!stm32l4_system_device.lseclk || (stm32l4_system_device.hclk < 16000000))
+    if (stm32l4_system_device.hclk <= 24000000)
     {
-	return false;
-    }
-
-    if (!stm32l4_system_device.clk48)
-    {
-	if (stm32l4_system_device.hclk <= 24000000)
-	{
-	    /* Switch to Range 1 */
-
-	    apb1enr1 = RCC->APB1ENR1;
+	apb1enr1 = RCC->APB1ENR1;
 	    
-	    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
-	    {
-		armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
-	    }
-
-	    PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_0;
-    
-	    while (PWR->SR2 & PWR_SR2_VOSF)
-	    {
-	    }
-
-	    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
-	    {
-		armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
-	    }
-
-	    /* Adjust FLASH latency */
-	    if   (stm32l4_system_device.hclk <= 16000000) { latency = FLASH_ACR_LATENCY_0WS; }
-	    else                                          { latency = FLASH_ACR_LATENCY_1WS; }
-
-	    FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
+	if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+	{
+	    RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
 	}
 
+	/* Leave LPRUN */
+	if (PWR->CR1 & PWR_CR1_LPR)
+	{
+	    PWR->CR1 &= ~PWR_CR1_LPR;
+	    
+	    while (PWR->SR2 & PWR_SR2_REGLPF)
+	    {
+	    }
+	}
+
+	/* Switch to Range 1 */
+	PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_0;
+    
+	while (PWR->SR2 & PWR_SR2_VOSF)
+	{
+	}
+
+	if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+	{
+	    RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
+	}
+
+	/* Adjust FLASH latency */
+	if   (stm32l4_system_device.hclk <= 16000000) { latency = FLASH_ACR_LATENCY_0WS; }
+	else                                          { latency = FLASH_ACR_LATENCY_1WS; }
+
+	FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
+    }
+}
+
+static void stm32l4_system_select_range_2(void)
+{
+    uint32_t apb1enr1, latency;
+
+    if (stm32l4_system_device.hclk <= 24000000)
+    {
+	/* Adjust FLASH latency */
+	if      (stm32l4_system_device.hclk <=  6000000) { latency = FLASH_ACR_LATENCY_0WS; }
+	else if (stm32l4_system_device.hclk <= 12000000) { latency = FLASH_ACR_LATENCY_1WS; }
+	else if (stm32l4_system_device.hclk <= 18000000) { latency = FLASH_ACR_LATENCY_2WS; }
+	else                                             { latency = FLASH_ACR_LATENCY_3WS; }
+	
+	FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
+	
+	/* Switch to Range 2 */
+	apb1enr1 = RCC->APB1ENR1;
+	
+	if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+	{
+	    RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+	}
+	
+	PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_1;
+	
+	while (PWR->SR2 & PWR_SR2_VOSF)
+	{
+	}
+
+	/* Enter LPRUN if hclk is low enough */
+	if (stm32l4_system_device.hclk <= 2000000)
+	{
+	    PWR->CR1 |= PWR_CR1_LPR;
+	    
+	    while (!(PWR->SR2 & PWR_SR2_REGLPF))
+	    {
+	    }
+	}
+	
+	if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
+	{
+	    RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
+	}
+    }
+}
+
 #if defined(STM32L432xx) || defined(STM32L433xx)
+
+static void stm32l4_system_hsi48_enable(void)
+{
+    uint32_t primask, hsi48;
+
+    primask = __get_PRIMASK();
+
+    __disable_irq();
+
+    hsi48 = stm32l4_system_device.hsi48;
+    
+    if (!hsi48)
+    {
 	/* Enable HSI48 */
 	RCC->CRRCR |= RCC_CRRCR_HSI48ON;
 
@@ -1385,56 +1593,25 @@ bool stm32l4_system_clk48_enable(void)
 	    CRS->CFGR = ((1465 -1) << CRS_CFGR_RELOAD_Pos) | (1 << CRS_CFGR_FELIM_Pos) | CRS_CFGR_SYNCSRC_0;
 	    CRS->CR = CRS_CR_AUTOTRIMEN | CRS_CR_CEN;
 	}
-
-#else /* defined(STM32L432xx) || defined(STM32L433xx) */
-	if (stm32l4_system_device.hclk <= 24000000)
-	{
-	    /* Enable main PLL to produce PLL48M1CLK */
-	    RCC->PLLCFGR |= RCC_PLLCFGR_PLLQEN;
-
-	    RCC->CR |= RCC_CR_PLLON;
-	
-	    /* Wait till the main PLL is ready */
-	    while(!(RCC->CR & RCC_CR_PLLRDY))
-	    {
-	    }
-	}
-	else
-	{
-	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
-
-	    armv7m_core_udelay(1);
-	    
-	    while (!(RCC->CR & RCC_CR_MSIRDY))
-	    {
-	    }
-	    
-	    if (stm32l4_system_device.lseclk)
-	    {
-		/* Enable the MSI PLL */
-		RCC->CR |= RCC_CR_MSIPLLEN;
-	    }
-	}
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
-
-	stm32l4_system_device.clk48 = true;
     }
 
-    return true;
+    stm32l4_system_device.hsi48 = hsi48 + 1;
+
+    __set_PRIMASK(primask);
 }
 
-bool stm32l4_system_clk48_disable(void)
+static void stm32l4_system_hsi48_disable(void)
 {
-    uint32_t apb1enr1, latency;
+    uint32_t primask, hsi48;
 
-    if (!stm32l4_system_device.lseclk || (stm32l4_system_device.hclk < 16000000))
-    {
-	return false;
-    }
+    primask = __get_PRIMASK();
 
-    if (stm32l4_system_device.clk48)
+    __disable_irq();
+
+    hsi48 = stm32l4_system_device.hsi48 - 1;
+    
+    if (!hsi48)
     {
-#if defined(STM32L432xx) || defined(STM32L433xx)
 	if (stm32l4_system_device.lseclk)
 	{
 	    /* Disable CRS on HSI48 */
@@ -1449,67 +1626,260 @@ bool stm32l4_system_clk48_disable(void)
 	while(RCC->CRRCR & RCC_CRRCR_HSI48RDY)
 	{
 	}
-#else /* defined(STM32L432xx) || defined(STM32L433xx) */
+    }
+
+    stm32l4_system_device.hsi48 = hsi48;
+
+    __set_PRIMASK(primask);
+}
+
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
+
+void stm32l4_system_saiclk_configure(unsigned int clock)
+{
+#if defined(STM32L432xx) || defined(STM32L433xx)
+    RCC->PLLSAI1CFGR &= ~RCC_PLLSAI1CFGR_PLLSAI1PEN;
+
+    RCC->CR &= ~RCC_CR_PLLSAI1ON;
+    
+    /* Wait till the PLLSAI1 is turned off */
+    while (RCC->CR & RCC_CR_PLLSAI1RDY)
+    {
+    }
+
+    if (clock)
+    {
 	if (stm32l4_system_device.hclk <= 24000000)
 	{
-	    /* Disable PLL */
-	    RCC->CR &= ~RCC_CR_PLLON;
-    
-	    while (RCC->CR & RCC_CR_PLLRDY)
-	    {
-	    }
-
-	    RCC->PLLCFGR &= ~RCC_PLLCFGR_PLLQEN;
+	    if      (clock == SYSTEM_SAICLK_8192000)  { RCC->PLLSAI1CFGR = ((15 << 27) | (31 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); }
+	    else if (clock == SYSTEM_SAICLK_11289600) { RCC->PLLSAI1CFGR = ((11 << 27) | (31 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); }
+	    else                                      { RCC->PLLSAI1CFGR = (( 5 << 27) | (31 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); clock = SYSTEM_SAICLK_24576000; }
 	}
 	else
 	{
-	    /* ERRATA 2.1.15. WAR: Switch MSI to <= 16MHz before turing off */
-	    RCC->CR = (RCC->CR & ~(RCC_CR_MSIRANGE | RCC_CR_MSIPLLEN)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL;
+	    if      (clock == SYSTEM_SAICLK_8192000)  { RCC->PLLSAI1CFGR = ((21 << 27) | (43 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); }
+	    else if (clock == SYSTEM_SAICLK_11289600) { RCC->PLLSAI1CFGR = ((17 << 27) | (48 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); }
+	    else                                      { RCC->PLLSAI1CFGR = (( 7 << 27) | (43 << 8) | RCC_PLLSAI1CFGR_PLLSAI1PEN); clock = SYSTEM_SAICLK_24576000; }
+	}
+
+	RCC->CR |= RCC_CR_PLLSAI1ON;
+		
+	/* Wait till the PLLSAI1 is ready */
+	while (!(RCC->CR & RCC_CR_PLLSAI1RDY))
+	{
+	}
+    }
+
+    stm32l4_system_device.saiclk = clock;
+#else /* defined(STM32L432xx) || defined(STM32L433xx) */
+    if (clock)
+    {
+	if (!stm32l4_system_device.saiclk)
+	{
+	    stm32l4_system_select_range_1();
+	}
+
+	if (clock == SYSTEM_SAICLK_11289600)
+	{
+	    RCC->PLLSAI1CFGR |= RCC_PLLSAI1CFGR_PLLSAI1PEN;
 	    
-	    armv7m_core_udelay(1);
+	    if (!stm32l4_system_device.clk48)
+	    {
+		RCC->CR |= RCC_CR_PLLSAI1ON;
+		
+		/* Wait till the PLLSAI1 is ready */
+		while (!(RCC->CR & RCC_CR_PLLSAI1RDY))
+		{
+		}
+	    }
 	    
-	    RCC->CR &= ~RCC_CR_MSION;
+	    /* Switch SAI1/SAI2 to use PLLSAI1 */
+	    RCC->CCIPR = (RCC->CCIPR & ~(RCC_CCIPR_SAI1SEL | RCC_CCIPR_SAI2SEL));
+	}
+	else
+	{
+	    clock = SYSTEM_SAICLK_49152000;
 	    
-	    while (RCC->CR & RCC_CR_MSIRDY)
+	    RCC->PLLSAI2CFGR |= RCC_PLLSAI2CFGR_PLLSAI2PEN;
+		
+	    RCC->CR |= RCC_CR_PLLSAI2ON;
+	    
+	    /* Wait till the PLLSAI2 is ready */
+	    while (!(RCC->CR & RCC_CR_PLLSAI2RDY))
+	    {
+	    }
+	    
+	    /* Switch SAI1/SAI2 to use PLLSAI2 */
+	    RCC->CCIPR = (RCC->CCIPR & ~(RCC_CCIPR_SAI1SEL | RCC_CCIPR_SAI2SEL)) | (RCC_CCIPR_SAI1SEL_0 | RCC_CCIPR_SAI2SEL_0);
+	}
+    }
+	    
+    stm32l4_system_device.saiclk = clock;
+
+    if (stm32l4_system_device.saiclk != SYSTEM_SAICLK_11289600)
+    {
+	RCC->PLLSAI1CFGR &= ~RCC_PLLSAI1CFGR_PLLSAI1PEN;
+
+	if (!stm32l4_system_device.clk48)
+	{
+	    RCC->CR &= ~RCC_CR_PLLSAI1ON;
+	    
+	    /* Wait till the PLLSAI1 is turned off */
+	    while (RCC->CR & RCC_CR_PLLSAI1RDY)
+	    {
+	    }
+	}
+    }
+
+    if (stm32l4_system_device.saiclk != SYSTEM_SAICLK_49152000)
+    {
+	RCC->PLLSAI2CFGR &= ~RCC_PLLSAI2CFGR_PLLSAI2PEN;
+		    
+	RCC->CR &= ~RCC_CR_PLLSAI2ON;
+		    
+	/* Wait till the PLLSAI2 is turned off */
+	while (RCC->CR & RCC_CR_PLLSAI2RDY)
+	{
+	}
+    }
+
+    if (!stm32l4_system_device.saiclk)
+    {
+	if (!(stm32l4_system_device.clk48 & (SYSTEM_CLK48_REFERENCE_USB | SYSTEM_CLK48_REFERENCE_RNG)))
+	{
+	    stm32l4_system_select_range_2();
+	}
+    }
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
+}
+
+void stm32l4_system_clk48_acquire(unsigned int reference)
+{
+    uint32_t primask;
+
+    primask = __get_PRIMASK();
+
+    __disable_irq();
+
+    if ((stm32l4_system_device.clk48 | reference) & (SYSTEM_CLK48_REFERENCE_USB | SYSTEM_CLK48_REFERENCE_RNG))
+    {
+	stm32l4_system_select_range_1();
+    }
+
+    if (!stm32l4_system_device.clk48)
+    {
+#if defined(STM32L432xx) || defined(STM32L433xx)
+	stm32l4_system_hsi48_enable();
+#else /* defined(STM32L432xx) || defined(STM32L433xx) */
+	RCC->PLLSAI1CFGR |= RCC_PLLSAI1CFGR_PLLSAI1QEN;
+
+	if (stm32l4_system_device.saiclk != SYSTEM_SAICLK_11289600)
+	{
+	    RCC->CR |= RCC_CR_PLLSAI1ON;
+	
+	    /* Wait till the PLLSAI1 is ready */
+	    while (!(RCC->CR & RCC_CR_PLLSAI1RDY))
 	    {
 	    }
 	}
 #endif /* defined(STM32L432xx) || defined(STM32L433xx) */
-
-	if (stm32l4_system_device.hclk <= 24000000)
-	{
-	    /* Adjust FLASH latency */
-	    if      (stm32l4_system_device.hclk <=  6000000) { latency = FLASH_ACR_LATENCY_0WS; }
-	    else if (stm32l4_system_device.hclk <= 12000000) { latency = FLASH_ACR_LATENCY_1WS; }
-	    else if (stm32l4_system_device.hclk <= 18000000) { latency = FLASH_ACR_LATENCY_2WS; }
-	    else                                             { latency = FLASH_ACR_LATENCY_3WS; }
-
-	    FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | latency;
-
-	    /* Switch to Range 2 */
-	    apb1enr1 = RCC->APB1ENR1;
-	    
-	    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
-	    {
-		armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_PWREN);
-	    }
-
-	    PWR->CR1 = (PWR->CR1 & ~PWR_CR1_VOS) | PWR_CR1_VOS_1;
-	    
-	    while (PWR->SR2 & PWR_SR2_VOSF)
-	    {
-	    }
-
-	    if (!(apb1enr1 & RCC_APB1ENR1_PWREN))
-	    {
-		armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
-	    }
-	}
-
-	stm32l4_system_device.clk48 = false;
     }
 
-    return true;
+    stm32l4_system_device.clk48 |= reference;
+
+    __set_PRIMASK(primask);
+}
+
+void stm32l4_system_clk48_release(unsigned int reference)
+{
+    uint32_t primask;
+    
+    primask = __get_PRIMASK();
+    
+    __disable_irq();
+
+    if (stm32l4_system_device.clk48)
+    {
+	if (!(stm32l4_system_device.clk48 & ~reference))
+	{
+#if defined(STM32L432xx) || defined(STM32L433xx)
+	    stm32l4_system_hsi48_disable();
+#else /* defined(STM32L432xx) || defined(STM32L433xx) */
+	    RCC->PLLSAI1CFGR &= ~RCC_PLLSAI1CFGR_PLLSAI1QEN;
+	    
+	    if (stm32l4_system_device.saiclk != SYSTEM_SAICLK_11289600)
+	    {
+		RCC->CR &= ~RCC_CR_PLLSAI1ON;
+		
+		while (RCC->CR & RCC_CR_PLLSAI1RDY)
+		{
+		}
+	    }
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
+	}
+    }
+
+    stm32l4_system_device.clk48 &= ~reference;
+    
+#if defined(STM32L476xx)
+    if (!stm32l4_system_device.saiclk)
+#endif
+    {
+	if (!(stm32l4_system_device.clk48 & (SYSTEM_CLK48_REFERENCE_USB | SYSTEM_CLK48_REFERENCE_RNG)))
+	{
+	    stm32l4_system_select_range_2();
+	}
+    }
+    
+    __set_PRIMASK(primask);
+}
+
+void stm32l4_system_lsi_enable(void)
+{
+    uint32_t primask, lsi;
+
+    primask = __get_PRIMASK();
+
+    __disable_irq();
+
+    lsi = stm32l4_system_device.lsi;
+    
+    if (!lsi)
+    {
+	RCC->CSR |= RCC_CSR_LSION;
+	
+	while (!(RCC->CSR & RCC_CSR_LSIRDY))
+	{
+	}
+    }
+
+    stm32l4_system_device.lsi = lsi + 1;
+
+    __set_PRIMASK(primask);
+}
+
+void stm32l4_system_lsi_disable(void)
+{
+    uint32_t primask, lsi;
+
+    primask = __get_PRIMASK();
+
+    __disable_irq();
+
+    lsi = stm32l4_system_device.lsi - 1;
+    
+    if (!lsi)
+    {
+	RCC->CSR &= ~RCC_CSR_LSION;
+	
+	while (RCC->CSR & RCC_CSR_LSIRDY)
+	{
+	}
+    }
+
+    stm32l4_system_device.lsi = lsi;
+
+    __set_PRIMASK(primask);
 }
 
 void stm32l4_system_hsi16_enable(void)
@@ -1560,6 +1930,117 @@ void stm32l4_system_hsi16_disable(void)
     __set_PRIMASK(primask);
 }
 
+void stm32l4_system_mco_configure(unsigned int mode, unsigned int divider)
+{
+    uint32_t primask, mcopre;
+
+    primask = __get_PRIMASK();
+
+    __disable_irq();
+
+    RCC->CFGR &= ~(RCC_CFGR_MCOSEL | RCC_CFGR_MCOPRE);
+
+    if (stm32l4_system_device.mco != mode)
+    {
+	switch (stm32l4_system_device.mco) {
+	case SYSTEM_MCO_MODE_NONE:
+	case SYSTEM_MCO_MODE_SYSCLK:
+	case SYSTEM_MCO_MODE_MSI:
+	case SYSTEM_MCO_MODE_HSE:
+	case SYSTEM_MCO_MODE_PLL:
+	case SYSTEM_MCO_MODE_LSE:
+	    break;
+
+	case SYSTEM_MCO_MODE_LSI:
+	    stm32l4_system_lsi_disable();
+	    break;
+
+	case SYSTEM_MCO_MODE_HSI16:
+	    stm32l4_system_hsi16_disable();
+	    break;
+
+#if defined(STM32L432xx) || defined(STM32L433xx)
+	case SYSTEM_MCO_MODE_HSI48:
+	    stm32l4_system_hsi48_disable();
+	    break;
+#endif
+	}
+
+	stm32l4_system_device.mco = mode;
+
+	switch (stm32l4_system_device.mco) {
+	case SYSTEM_MCO_MODE_NONE:
+	case SYSTEM_MCO_MODE_SYSCLK:
+	case SYSTEM_MCO_MODE_MSI:
+	case SYSTEM_MCO_MODE_HSE:
+	case SYSTEM_MCO_MODE_PLL:
+	case SYSTEM_MCO_MODE_LSE:
+	    break;
+
+	case SYSTEM_MCO_MODE_LSI:
+	    stm32l4_system_lsi_enable();
+	    break;
+
+	case SYSTEM_MCO_MODE_HSI16:
+	    stm32l4_system_hsi16_enable();
+	    break;
+
+#if defined(STM32L432xx) || defined(STM32L433xx)
+	case SYSTEM_MCO_MODE_HSI48:
+	    stm32l4_system_hsi48_enable();
+	    break;
+#endif
+	}
+    }
+
+    if      (divider <=  1) { mcopre = RCC_CFGR_MCOPRE_DIV1;  }
+    else if (divider <=  2) { mcopre = RCC_CFGR_MCOPRE_DIV2;  }
+    else if (divider <=  4) { mcopre = RCC_CFGR_MCOPRE_DIV4;  }
+    else if (divider <=  8) { mcopre = RCC_CFGR_MCOPRE_DIV8;  }
+    else                    { mcopre = RCC_CFGR_MCOPRE_DIV16; }
+
+    RCC->CFGR |= ((mode << RCC_CFGR_MCOSEL_Pos) | mcopre);
+
+    __set_PRIMASK(primask);
+}
+
+void stm32l4_system_lsco_configure(unsigned int mode)
+{
+    uint32_t primask;
+
+    primask = __get_PRIMASK();
+
+    __disable_irq();
+
+    if (stm32l4_system_device.lsco != mode)
+    {
+	RCC->BDCR &= ~RCC_BDCR_LSCOEN;
+
+	if (stm32l4_system_device.lsco == SYSTEM_LSCO_MODE_LSI)
+	{
+	    RCC->BDCR &= ~RCC_BDCR_LSCOSEL;
+
+	    stm32l4_system_lsi_disable();
+	}
+
+	stm32l4_system_device.lsco = mode;
+
+	if (stm32l4_system_device.lsco == SYSTEM_LSCO_MODE_LSI)
+	{
+	    stm32l4_system_lsi_enable();
+
+	    RCC->BDCR |= RCC_BDCR_LSCOSEL;
+	}
+
+	if (stm32l4_system_device.lsco != SYSTEM_LSCO_MODE_NONE)
+	{
+	    RCC->BDCR |= RCC_BDCR_LSCOEN;
+	}
+    }
+
+    __set_PRIMASK(primask);
+}
+
 uint32_t stm32l4_system_reset_cause(void)
 {
     return stm32l4_system_device.reset;
@@ -1585,6 +2066,11 @@ uint32_t stm32l4_system_sysclk(void)
     return stm32l4_system_device.sysclk;
 }
 
+uint32_t stm32l4_system_fclk(void)
+{
+    return stm32l4_system_device.fclk;
+}
+
 uint32_t stm32l4_system_hclk(void)
 {
     return stm32l4_system_device.hclk;
@@ -1598,6 +2084,11 @@ uint32_t stm32l4_system_pclk1(void)
 uint32_t stm32l4_system_pclk2(void)
 {
     return stm32l4_system_device.pclk2;
+}
+
+uint32_t stm32l4_system_saiclk(void)
+{
+    return stm32l4_system_device.saiclk;
 }
 
 void stm32l4_system_notify(uint32_t slot, stm32l4_system_callback_t callback, void *context, uint32_t events)
@@ -1635,9 +2126,9 @@ void stm32l4_system_unlock(uint32_t lock)
 
 static void stm32l4_system_suspend(void)
 {
-    if (stm32l4_system_device.clk48)
-    {
 #if defined(STM32L432xx) || defined(STM32L433xx)
+    if (stm32l4_system_device.hsi48)
+    {
 	if (stm32l4_system_device.lseclk)
 	{
 	    /* Disable CRS on HSI48 */
@@ -1645,42 +2136,19 @@ static void stm32l4_system_suspend(void)
 	    
 	    RCC->APB1ENR1 &= ~RCC_APB1ENR1_CRSEN;
 	}
-
-	/* Disable HSI48 */
-	RCC->CRRCR &= ~RCC_CRRCR_HSI48ON;
-
-	while(RCC->CRRCR & RCC_CRRCR_HSI48RDY)
-	{
-	}
-#else /* defined(STM32L432xx) || defined(STM32L433xx) */
-	if (stm32l4_system_device.hclk <= 24000000)
-	{
-	    /* Disable PLL */
-	    RCC->CR &= ~RCC_CR_PLLON;
-    
-	    while (RCC->CR & RCC_CR_PLLRDY)
-	    {
-	    }
-	}
-	else
-	{
-	    /* ERRATA 2.1.15. WAR: Switch MSI to <= 16MHz before turing off */
-	    RCC->CR = (RCC->CR & ~(RCC_CR_MSIRANGE | RCC_CR_MSIPLLEN)) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL;
-	    
-	    armv7m_core_udelay(1);
-	    
-	    RCC->CR &= ~(RCC_CR_MSIPLLEN | RCC_CR_MSION);
-	    
-	    while (RCC->CR & RCC_CR_MSIRDY)
-	    {
-	    }
-	}
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
     }
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
 
     if (stm32l4_system_device.hclk <= 24000000)
     {
-	RCC->CR &= ~RCC_CR_MSIPLLEN;
+	if (stm32l4_system_device.hsi16)
+	{
+	    RCC->CR |= RCC_CR_HSIASFS;
+	}
+	else
+	{
+	    RCC->CR &= ~RCC_CR_HSIASFS;
+	}
     }
     else
     {
@@ -1702,33 +2170,9 @@ static void stm32l4_system_suspend(void)
 	{
 	}
 
+	RCC->CR &= ~RCC_CR_HSIASFS;
+
 	SystemCoreClock = 16000000;
-
-	/* Disable PLL */
-	RCC->CR &= ~RCC_CR_PLLON;
-	
-	while (RCC->CR & RCC_CR_PLLRDY)
-	{
-	}
-
-	if (stm32l4_system_device.hseclk)
-	{
-	    RCC->CR &= ~RCC_CR_HSEON;
-	    
-	    while (RCC->CR & RCC_CR_HSERDY)
-	    {
-	    }
-	}
-	else
-	{
-#if defined(STM32L432xx) || defined(STM32L433xx)
-	    RCC->CR &= ~(RCC_CR_MSIPLLEN | RCC_CR_MSION);
-
-	    while (RCC->CR & RCC_CR_MSIRDY)
-	    {
-	    }
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
-	}
     }
 
     /* Disable FLASH in sleep/deepsleep */
@@ -1747,15 +2191,6 @@ static void stm32l4_system_resume(void)
 	    /* Enable the MSI PLL */
 	    RCC->CR |= RCC_CR_MSIPLLEN;
 	}
-
-	if (stm32l4_system_device.hsi16)
-	{
-	    RCC->CR |= RCC_CR_HSION;
-	    
-	    while (!(RCC->CR & RCC_CR_HSIRDY))
-	    {
-	    }
-	}
     }
     else
     {
@@ -1764,16 +2199,17 @@ static void stm32l4_system_resume(void)
 	 */
 	if (stm32l4_system_device.hseclk)
 	{
-	    RCC->CR |= RCC_CR_HSEON;
-	    
-	    while (!(RCC->CR & RCC_CR_HSERDY))
+	    if (!(RCC->CR & RCC_CR_HSEBYP))
 	    {
+		RCC->CR |= RCC_CR_HSEON;
+	    
+		while (!(RCC->CR & RCC_CR_HSERDY))
+		{
+		}
 	    }
 	}
 	else
 	{
-#if defined(STM32L432xx) || defined(STM32L433xx)
-	    /* STM32L432/STM32L433 use MSI @4MHz for the PLL, and HSI48 for CLK48 */
 	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_6 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
 	    
 	    while (!(RCC->CR & RCC_CR_MSIRDY))
@@ -1785,9 +2221,8 @@ static void stm32l4_system_resume(void)
 		/* Enable the MSI PLL */
 		RCC->CR |= RCC_CR_MSIPLLEN;
 	    }
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
 	}
-	 
+
 	/* Enable the main PLL */
 	RCC->CR |= RCC_CR_PLLON;
 	
@@ -1816,9 +2251,19 @@ static void stm32l4_system_resume(void)
 	SystemCoreClock = stm32l4_system_device.hclk;
     }
 
-    if (stm32l4_system_device.clk48)
-    {
 #if defined(STM32L432xx) || defined(STM32L433xx)
+    if (stm32l4_system_device.saiclk)
+    {
+	RCC->CR |= RCC_CR_PLLSAI1ON;
+		
+	/* Wait till the PLLSAI1 is ready */
+	while (!(RCC->CR & RCC_CR_PLLSAI1RDY))
+	{
+	}
+    }
+
+    if (stm32l4_system_device.hsi48)
+    {
 	/* Enable HSI48 */
 	RCC->CRRCR |= RCC_CRRCR_HSI48ON;
 
@@ -1838,35 +2283,28 @@ static void stm32l4_system_resume(void)
 	    CRS->CFGR = ((1465 -1) << CRS_CFGR_RELOAD_Pos) | (1 << CRS_CFGR_FELIM_Pos) | CRS_CFGR_SYNCSRC_0;
 	    CRS->CR = CRS_CR_AUTOTRIMEN | CRS_CR_CEN;
 	}
-#else /* defined(STM32L432xx) || defined(STM32L433xx) */
-	if (stm32l4_system_device.hclk <= 24000000)
-	{
-	    /* Enable main PLL to produce PLL48M1CLK */
-	    RCC->CR |= RCC_CR_PLLON;
-	
-	    /* Wait till the main PLL is ready */
-	    while(!(RCC->CR & RCC_CR_PLLRDY))
-	    {
-	    }
-	}
-	else
-	{
-	    RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11 | RCC_CR_MSIRGSEL | RCC_CR_MSION;
-
-	    armv7m_core_udelay(1);
-	    
-	    while (!(RCC->CR & RCC_CR_MSIRDY))
-	    {
-	    }
-	    
-	    if (stm32l4_system_device.lseclk)
-	    {
-		/* Enable the MSI PLL */
-		RCC->CR |= RCC_CR_MSIPLLEN;
-	    }
-	}
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
     }
+#else /* defined(STM32L432xx) || defined(STM32L433xx) */
+    if ((stm32l4_system_device.saiclk == SYSTEM_SAICLK_11289600) || stm32l4_system_device.clk48)
+    {
+	RCC->CR |= RCC_CR_PLLSAI1ON;
+		
+	/* Wait till the PLLSAI1 is ready */
+	while (!(RCC->CR & RCC_CR_PLLSAI1RDY))
+	{
+	}
+    }
+
+    if (stm32l4_system_device.saiclk == SYSTEM_SAICLK_49152000)
+    {
+	RCC->CR |= RCC_CR_PLLSAI2ON;
+	
+	/* Wait till the PLLSAI2 is ready */
+	while (!(RCC->CR & RCC_CR_PLLSAI2RDY))
+	{
+	}
+    }
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
 
     if (RTC->ISR & (RTC_ISR_ALRAF | RTC_ISR_ALRBF | RTC_ISR_TSF | RTC_ISR_WUTF))
     {
@@ -2030,22 +2468,8 @@ static void stm32l4_system_deepsleep(uint32_t lpms, uint32_t config, uint32_t ti
 
     SystemCoreClock = 16000000;
 
-    /* Disable PLL */
-    RCC->CR &= ~RCC_CR_PLLON;
-	
-    while (RCC->CR & RCC_CR_PLLRDY)
-    {
-    }
-
-    /* Disable HSE */
-    RCC->CR &= ~RCC_CR_HSEON;
-	    
-    while (RCC->CR & RCC_CR_HSERDY)
-    {
-    }
-
 #if defined(STM32L432xx) || defined(STM32L433xx)
-    if (RCC->CRRCR & RCC_CRRCR_HSI48ON)
+    if (stm32l4_system_device.hsi48)
     {
 	if (stm32l4_system_device.lseclk)
 	{
@@ -2053,13 +2477,6 @@ static void stm32l4_system_deepsleep(uint32_t lpms, uint32_t config, uint32_t ti
 	    CRS->CR = 0;
 	    
 	    RCC->APB1ENR1 &= ~RCC_APB1ENR1_CRSEN;
-	}
-    
-	/* Disable HSI48 */
-	RCC->CRRCR &= ~RCC_CRRCR_HSI48ON;
-	
-	while(RCC->CRRCR & RCC_CRRCR_HSI48RDY)
-	{
 	}
     }
 #endif /* defined(STM32L432xx) || defined(STM32L433xx) */
@@ -2198,7 +2615,7 @@ void stm32l4_system_reset(void)
     }
 }
 
-void stm32l4_system_bootloader(void)
+void stm32l4_system_dfu(void)
 {
     __disable_irq();
 

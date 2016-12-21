@@ -68,6 +68,8 @@ public:
     void  shutdown(uint32_t timeout = 0);
     void  shutdown(uint32_t pin, uint32_t mode, uint32_t timeout = 0);
     void  reset();
+
+    void  lsco(bool enable);
 };
 
 extern STM32Class STM32;

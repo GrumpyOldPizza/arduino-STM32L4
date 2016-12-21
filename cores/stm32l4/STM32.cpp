@@ -196,4 +196,9 @@ void STM32Class::reset()
     stm32l4_system_reset();
 }
 
+void STM32Class::lsco(bool enable)
+{
+    stm32l4_system_lsco_configure((enable ? SYSTEM_LSCO_MODE_LSE : SYSTEM_LSCO_MODE_NONE));
+}
+
 STM32Class STM32;

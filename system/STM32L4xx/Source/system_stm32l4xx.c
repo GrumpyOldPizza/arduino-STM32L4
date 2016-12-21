@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file    system_stm32l4xx.c
   * @author  MCD Application Team
-  * @version V1.1.0
-  * @date    26-February-2016
+  * @version V1.2.0
+  * @date    28-October-2016
   * @brief   CMSIS Cortex-M4 Device Peripheral Access Layer System Source File
   *
   *   This file provides two functions and one global variable to be called from
@@ -109,8 +109,10 @@
 
 #include "stm32l4xx.h"
 
+#include "stm32l4_system.h"
+
 #if !defined  (HSE_VALUE)
-  #define HSE_VALUE    ((uint32_t)16000000) /*!< Value of the External oscillator in Hz */
+  #define HSE_VALUE    ((uint32_t)stm32l4_system_hseclk()) /*!< Value of the External oscillator in Hz */
 #endif /* HSE_VALUE */
 
 #if !defined  (MSI_VALUE)
@@ -219,33 +221,6 @@ void SystemInit(void)
 
   /* Disable all interrupts */
   RCC->CIER = 0x00000000;
-
-  RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
-
-  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
-  SYSCFG->MEMRMP = (SYSCFG->MEMRMP & ~SYSCFG_MEMRMP_MEM_MODE);
-  RCC->APB2ENR &= ~RCC_APB2ENR_SYSCFGEN;
-
-  RCC->AHB1SMENR &= ~(RCC_AHB1SMENR_FLASHSMEN |
-                      RCC_AHB1SMENR_SRAM1SMEN);
-
-  RCC->AHB2SMENR &= ~(RCC_AHB2SMENR_GPIOASMEN |
-                      RCC_AHB2SMENR_GPIOBSMEN |
-#if defined(STM32L433xx) || defined(STM32L476xx)
-                      RCC_AHB2SMENR_GPIOCSMEN |
-	              RCC_AHB2SMENR_GPIODSMEN |
-                      RCC_AHB2SMENR_GPIOESMEN |
-#endif
-#if defined(STM32L476xx)
-                      RCC_AHB2SMENR_GPIOFSMEN |
-	              RCC_AHB2SMENR_GPIOGSMEN |
-#endif
-	              RCC_AHB2SMENR_GPIOHSMEN |
-                      RCC_AHB2SMENR_SRAM2SMEN);
-
-  RCC->APB1SMENR1 &= ~RCC_APB1SMENR1_PWRSMEN;
-
-  RCC->APB2SMENR  &= ~RCC_APB2SMENR_SYSCFGSMEN;
 
   /* Configure the Vector Table location add offset address ------------------*/
 #ifdef VECT_TAB_SRAM

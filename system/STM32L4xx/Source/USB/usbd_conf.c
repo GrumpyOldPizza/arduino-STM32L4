@@ -55,6 +55,7 @@
 #include "usbd_desc.h"
 
 #include "armv7m.h"
+#include "stm32l4_system.h"
 #include "stm32l4_exti.h"
 #include "stm32l4_gpio.h"
 #include "stm32l4_usbd_cdc.h"
@@ -106,7 +107,14 @@ static void USBD_VBUSCallback(void *context)
     {
 	armv7m_timer_stop(&USBD_DetachTimer);
 
-	if (!usbd_connected) {
+	if (!usbd_connected &&
+#if defined(STM32L476xx)
+	    (stm32l4_system_hclk() >= 16000000)
+#else
+	    (stm32l4_system_pclk1() >= 10000000)
+#endif
+	    )
+	{
 	    armv7m_timer_start(&USBD_AttachTimer, 10);
 	}
     }
@@ -124,8 +132,11 @@ void USBD_Initialize(unsigned int pin_vbus, unsigned int priority)
 {
     usbd_pin_vbus = pin_vbus;
 
-    /* Configure USB FS GPIOs */
-    stm32l4_gpio_pin_configure(usbd_pin_vbus, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
+    if (usbd_pin_vbus != GPIO_PIN_NONE)
+    {
+	/* Configure USB FS GPIOs */
+	stm32l4_gpio_pin_configure(usbd_pin_vbus, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
+    }
 
 #if defined(STM32L476xx)
     stm32l4_gpio_pin_configure(GPIO_PIN_PA11_USB_OTG_FS_DM, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
@@ -148,11 +159,20 @@ void USBD_Initialize(unsigned int pin_vbus, unsigned int priority)
 
 void USBD_Attach(void)
 {
-    stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vbus, EXTI_CONTROL_BOTH_EDGES, USBD_VBUSCallback, NULL);
-
-    if (!usbd_connected)
+    if (usbd_pin_vbus != GPIO_PIN_NONE)
     {
-	if (stm32l4_gpio_pin_read(usbd_pin_vbus))
+	stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vbus, EXTI_CONTROL_BOTH_EDGES, USBD_VBUSCallback, NULL);
+    }
+
+    if ((usbd_pin_vbus == GPIO_PIN_NONE) || stm32l4_gpio_pin_read(usbd_pin_vbus))
+    {
+	if (!usbd_connected &&
+#if defined(STM32L476xx)
+	    (stm32l4_system_hclk() >= 16000000)
+#else
+	    (stm32l4_system_pclk1() >= 10000000)
+#endif
+	    )
 	{
 	    usbd_connected = true;
 	    
@@ -167,10 +187,13 @@ void USBD_Attach(void)
 
 void USBD_Detach(void)
 {
-    stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vbus, EXTI_CONTROL_DISABLE, NULL, NULL);
-
-    armv7m_timer_stop(&USBD_AttachTimer);
-    armv7m_timer_stop(&USBD_DetachTimer);
+    if (usbd_pin_vbus != GPIO_PIN_NONE)
+    {
+	stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vbus, EXTI_CONTROL_DISABLE, NULL, NULL);
+	
+	armv7m_timer_stop(&USBD_AttachTimer);
+	armv7m_timer_stop(&USBD_DetachTimer);
+    }
 
     if (usbd_connected)
     {
@@ -284,7 +307,7 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
 {
   uint32_t apb1enr1;
 
-  stm32l4_system_clk48_enable();
+  stm32l4_system_clk48_acquire(SYSTEM_CLK48_REFERENCE_USB);
   
   /* Peripheral clock enable */
 #if defined(STM32L476xx)
@@ -350,7 +373,7 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef *hpcd)
   NVIC_DisableIRQ(USB_IRQn);
 #endif
 
-  stm32l4_system_clk48_disable();
+  stm32l4_system_clk48_release(SYSTEM_CLK48_REFERENCE_USB);
 }
 
 

@@ -36,7 +36,7 @@
 typedef struct _armv7m_systick_control_t {
     volatile uint64_t         micros;
     volatile uint64_t         millis;
-    uint32_t                  sysclk;
+    uint32_t                  clock;
     uint32_t                  cycle;
     uint32_t                  frac;
     uint32_t                  accum;
@@ -93,60 +93,43 @@ void armv7m_systick_initialize(unsigned int priority)
 {
     NVIC_SetPriority(SysTick_IRQn, priority);
 
-    armv7m_systick_control.sysclk = stm32l4_system_sysclk();
-    armv7m_systick_control.cycle = armv7m_systick_control.sysclk / 1000;
-    armv7m_systick_control.frac = armv7m_systick_control.sysclk - (armv7m_systick_control.cycle * 1000);
-    armv7m_systick_control.accum = 0;
-
-    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
-    SysTick->VAL = (armv7m_systick_control.cycle - 1);
-    SysTick->LOAD = (armv7m_systick_control.cycle - 1);
-    SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
-
-    /* To get from the current counter to the microsecond offset,
-     * the ((cycle - 1) - Systick->VAL) value is scaled so that the resulting
-     * microseconds fit into the upper 10 bits of a 32bit value. Then
-     * this is post diveded by 2^22. That ensures proper scaling.
-     */
-    armv7m_systick_control.scale = (uint64_t)4194304000000ull / (uint64_t)stm32l4_system_sysclk();
-    armv7m_systick_control.millis = 0;
-    armv7m_systick_control.micros = 0;
+    SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
 }
 
 void armv7m_systick_enable(void)
 {
     uint32_t count, cycle;
 
-    if (armv7m_systick_control.sysclk != stm32l4_system_sysclk())
+    if (armv7m_systick_control.clock != stm32l4_system_fclk())
     {
 	cycle = armv7m_systick_control.cycle;
 	count = (armv7m_systick_control.cycle - 1) - SysTick->VAL;
 
-	armv7m_systick_control.sysclk = stm32l4_system_sysclk();
-	armv7m_systick_control.cycle = armv7m_systick_control.sysclk / 1000;
-	armv7m_systick_control.frac = armv7m_systick_control.sysclk - (armv7m_systick_control.cycle * 1000);
+	armv7m_systick_control.clock = stm32l4_system_fclk();
+	armv7m_systick_control.cycle = armv7m_systick_control.clock / 1000;
+	armv7m_systick_control.frac = armv7m_systick_control.clock - (armv7m_systick_control.cycle * 1000);
 	armv7m_systick_control.accum = 0;
 	
 	SysTick->VAL = (armv7m_systick_control.cycle - 1) - ((count * armv7m_systick_control.cycle) / cycle);
 	SysTick->LOAD = (armv7m_systick_control.cycle - 1);
-	SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
+	SysTick->CTRL |= (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk);
 	
 	/* To get from the current counter to the microsecond offset,
 	 * the ((cycle - 1) - Systick->VAL) value is scaled so that the resulting
 	 * microseconds fit into the upper 10 bits of a 32bit value. Then
 	 * this is post diveded by 2^22. That ensures proper scaling.
 	 */
-	armv7m_systick_control.scale = (uint64_t)4194304000000ull / (uint64_t)stm32l4_system_sysclk();
+	armv7m_systick_control.scale = (uint64_t)4194304000000ull / (uint64_t)armv7m_systick_control.clock;
     }
     else
     {
-	SysTick->CTRL = (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
+	SysTick->CTRL |= (SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk);
     }
 }
 
 void armv7m_systick_disable(void)
 {
-    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk;
+    SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
 }
 
 void SysTick_Handler(void)

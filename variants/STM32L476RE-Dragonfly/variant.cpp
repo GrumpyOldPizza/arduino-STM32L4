@@ -167,4 +167,8 @@ extern const stm32l4_i2c_pins_t g_Wire2Pins = { GPIO_PIN_PB13_I2C2_SCL, GPIO_PIN
 extern const unsigned int g_Wire2Instance = I2C_INSTANCE_I2C2;
 extern const unsigned int g_Wire2Mode = 0;
 
+extern const stm32l4_sai_pins_t g_SAIPins = { GPIO_PIN_PB13_SAI2_SCK_A, GPIO_PIN_PB12_SAI2_FS_A, GPIO_PIN_PB15_SAI2_SD_A, GPIO_PIN_PB14_SAI2_MCLK_A };
+extern const unsigned int g_SAIInstance = SAI_INSTANCE_SAI2A;
+extern const unsigned int g_SAIMode = SAI_MODE_DMA;
+
 
