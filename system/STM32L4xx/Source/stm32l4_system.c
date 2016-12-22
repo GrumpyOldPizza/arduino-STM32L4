@@ -722,17 +722,19 @@ void stm32l4_system_initialize(uint32_t hclk, uint32_t pclk1, uint32_t pclk2, ui
 	RTC->CR &= ~RTC_CR_BCK;
 	RTC->WPR = 0x00;
 
+	SYSCFG->MEMRMP = SYSCFG_MEMRMP_MEM_MODE_0;
+
 	RCC->APB2ENR &= ~RCC_APB2ENR_SYSCFGEN;
 	
 	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
-	
-	SCB->VTOR = 0x1fff0000;
+
+	SCB->VTOR = 0x00000000;
 	
 	/* This needs to be assembly code as GCC catches NULL 
 	 * dereferences ...
 	 */
 	__asm__ volatile (
-	    "   ldr     r2, =0x1fff0000                \n"
+	    "   ldr     r2, =0x00000000                \n"
 	    "   ldr     r0, [r2, #0]                   \n"
 	    "   ldr     r1, [r2, #4]                   \n"
 	    "   msr     MSP, r0                        \n"
