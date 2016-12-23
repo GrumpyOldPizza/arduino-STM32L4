@@ -37,7 +37,7 @@ extern "C" {
 
 #include "armv7m.h"
 
-#define retained __attribute__((section(".databkp")))
+#define retained __attribute__((section(".backup")))
 
 static inline void interrupts(void)
 {
@@ -180,6 +180,9 @@ extern const unsigned int g_PWMInstances[] ;
 extern uint32_t SystemCoreClock;
 
 #define F_CPU SystemCoreClock
+
+extern uint32_t __FlashBase;
+extern uint32_t __FlashLimit;
 
 #ifdef __cplusplus
 } // extern "C"

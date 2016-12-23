@@ -59,7 +59,7 @@ static void armv7m_timer_insert(void *context, uint32_t data)
     remaining = data;
     element = armv7m_timer_control.next;
 
-    while (element != (armv7m_timer_t*)&armv7m_timer_control.next)
+    while (element != (armv7m_timer_t*)&armv7m_timer_control)
     {
 	if (remaining < element->remaining)
 	{
@@ -69,9 +69,18 @@ static void armv7m_timer_insert(void *context, uint32_t data)
 	remaining -= element->remaining;
 	element = element->next;
     }
-    
-    timer->previous = element->previous;
-    timer->next = element;
+
+    if (element != (armv7m_timer_t*)&armv7m_timer_control)
+    {
+	timer->previous = element->previous;
+	timer->next = element;
+	
+    }
+    else
+    {
+	timer->previous = element;
+	timer->next = element->next;
+    }
     
     timer->previous->next = timer;
     timer->next->previous = timer;
@@ -168,29 +177,25 @@ static void armv7m_timer_callback(void *context, uint32_t data)
     {
 	timer = armv7m_timer_control.next;
 
-	if (timer != (armv7m_timer_t*)&armv7m_timer_control.next)
+	while (timer != (armv7m_timer_t*)&armv7m_timer_control)
 	{
 	    timer->remaining--;
 
-	    do
+	    if (timer->remaining != 0)
 	    {
-		if (timer->remaining != 0)
-		{
-		    break;
-		}
-
-		callback = timer->callback;
-
-		armv7m_timer_remove(timer, 0);
-
-		if ((uint32_t)callback & 1)
-		{
-		    (*callback)(timer);
-		}
-
-		timer = armv7m_timer_control.next;
+		break;
 	    }
-	    while (timer != (armv7m_timer_t*)&armv7m_timer_control.next);
+
+	    callback = timer->callback;
+
+	    armv7m_timer_remove(timer, 0);
+
+	    if ((uint32_t)callback & 1)
+	    {
+		(*callback)(timer);
+	    }
+	    
+	    timer = armv7m_timer_control.next;
 	}
 
 	armv7m_timer_control.millis++;
@@ -199,8 +204,8 @@ static void armv7m_timer_callback(void *context, uint32_t data)
 
 void armv7m_timer_initialize(void)
 {
-    armv7m_timer_control.next = (armv7m_timer_t*)&armv7m_timer_control.next;
-    armv7m_timer_control.previous = (armv7m_timer_t*)&armv7m_timer_control.previous;
+    armv7m_timer_control.next = (armv7m_timer_t*)&armv7m_timer_control;
+    armv7m_timer_control.previous = (armv7m_timer_t*)&armv7m_timer_control;
     armv7m_timer_control.millis = armv7m_systick_millis();
 
     armv7m_systick_notify(armv7m_timer_callback, NULL);

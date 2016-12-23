@@ -50,7 +50,7 @@ static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm3
     __set_PRIMASK(primask);
 }
 
-static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_program_standard(volatile uint32_t *flash, uint32_t count, const uint8_t *data)
+static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_program_standard(volatile uint32_t *flash, const uint8_t *data, uint32_t count)
 {
     uint32_t primask;
     const uint8_t *data_e;
@@ -88,7 +88,7 @@ static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm3
     while (data != data_e);
 }
 
-static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_program_fast(volatile uint32_t *flash, uint32_t count, const uint8_t *data)
+static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_program_fast(volatile uint32_t *flash, const uint8_t *data, uint32_t count)
 {
     uint32_t primask;
     const uint8_t *data_r, *data_e;
@@ -209,7 +209,7 @@ bool stm32l4_flash_erase(uint32_t address, uint32_t count)
     return success;
 }
 
-bool stm32l4_flash_program(uint32_t address, uint32_t count, const uint8_t *data)
+bool stm32l4_flash_program(uint32_t address, const uint8_t *data, uint32_t count)
 {
     bool success = true;
 
@@ -220,11 +220,11 @@ bool stm32l4_flash_program(uint32_t address, uint32_t count, const uint8_t *data
 
     if ((address & 255) || (count & 255))
     {
-	stm32l4_flash_program_standard((volatile uint32_t *)address, count, data);
+	stm32l4_flash_program_standard((volatile uint32_t *)address, data, count);
     }
     else
     {
-	stm32l4_flash_program_fast((volatile uint32_t *)address, count, data);
+	stm32l4_flash_program_fast((volatile uint32_t *)address, data, count);
     }
 
     if (FLASH->SR & (FLASH_SR_PROGERR | FLASH_SR_SIZERR | FLASH_SR_PGAERR | FLASH_SR_PGSERR | FLASH_SR_WRPERR | FLASH_SR_MISERR | FLASH_SR_FASTERR | FLASH_SR_RDERR))

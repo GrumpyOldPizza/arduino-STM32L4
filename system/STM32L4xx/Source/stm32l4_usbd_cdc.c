@@ -74,6 +74,8 @@ static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
 
 static void stm32l4_usbd_cdc_deinit(void)
 {
+    armv7m_timer_stop(&stm32l4_usbd_cdc_device.timeout);
+
     stm32l4_usbd_cdc_device.USBD = NULL;
     stm32l4_usbd_cdc_device.tx_busy = 0;
 

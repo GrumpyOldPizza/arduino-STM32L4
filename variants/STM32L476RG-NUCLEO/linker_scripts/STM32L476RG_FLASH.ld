@@ -216,18 +216,6 @@ SECTIONS
      __data2_end__ = .;
    } > SRAM2 AT >FLASH
 
-   __etext2 = LOADADDR(.data2);
-
-   .databkp :
-   {
-     __databkp_start__ = .;
-       *(.databkp .databkp.*)
-       . = ALIGN(8);
-     __databkp_end__ = .;
-   } > SRAM2 AT >FLASH
-
-   __etextbkp = LOADADDR(.databkp);
-
    .bss2 (NOLOAD) :
    {
      __bss2_start__ = .;
@@ -241,6 +229,19 @@ SECTIONS
        *(.noinit2 .noinit2.*)
        . = ALIGN(8);
    } > SRAM2
+
+   .backup :
+   {
+     __backup_start__ = .;
+       *(.backup .backup.*)
+       . = ALIGN(8);
+     __backup_end__ = .;
+   } > SRAM2 AT >FLASH
+
+   __etextbkp = LOADADDR(.backup);
+
+   __FlashBase = ALIGN(LOADADDR(.backup) + SIZEOF(.backup), 2048);
+   __FlashLimit = ORIGIN(FLASH) + LENGTH(FLASH);
 
    /* Stabs debugging sections.  */
    .stab          0 : { *(.stab) }

@@ -35,8 +35,8 @@
 
 extern uint32_t __rodata2_start__;
 extern uint32_t __rodata2_end__;
-extern uint32_t __databkp_start__;
-extern uint32_t __databkp_end__;
+extern uint32_t __backup_start__;
+extern uint32_t __backup_end__;
 extern uint32_t __etextbkp;
 
 typedef struct _stm32l4_system_device_t {
@@ -875,15 +875,15 @@ void stm32l4_system_initialize(uint32_t hclk, uint32_t pclk1, uint32_t pclk2, ui
     /* If not coming back from STANDBY, initialize the .databkp section */
     if (stm32l4_system_device.reset != SYSTEM_RESET_STANDBY)
     {
-	data_s = &__databkp_start__;
-	data_e = &__databkp_end__;
+	data_s = &__backup_start__;
+	data_e = &__backup_end__;
 	data_t = &__etextbkp;
 	
 	while (data_s != data_e) { *data_s++ = *data_t++; };
     }
     
     /* If there is a non-empty .databkp section enable SRAM2 retention for STANDBY */
-    if (&__databkp_start__ != &__databkp_end__)
+    if (&__backup_start__ != &__backup_end__)
     {
 	PWR->CR3 |= PWR_CR3_RRS;
     }
@@ -2093,9 +2093,25 @@ uint32_t stm32l4_system_saiclk(void)
     return stm32l4_system_device.saiclk;
 }
 
-void stm32l4_system_notify(uint32_t slot, stm32l4_system_callback_t callback, void *context, uint32_t events)
+int stm32l4_system_notify(int slot, stm32l4_system_callback_t callback, void *context, uint32_t events)
 {
     unsigned int i, mask;
+
+    if (slot < 0)
+    {
+	for (slot = 0; slot < SYSTEM_NOTIFY_COUNT; slot++)
+	{
+	    if (!stm32l4_system_device.callback[slot])
+	    {
+		break;
+	    }
+	}
+
+	if (slot == SYSTEM_NOTIFY_COUNT)
+	{
+	    return -1;
+	}
+    }
 
     mask = 0x80000000 >> slot;
 
@@ -2114,6 +2130,8 @@ void stm32l4_system_notify(uint32_t slot, stm32l4_system_callback_t callback, vo
 	    armv7m_atomic_or(&stm32l4_system_device.event[i], mask);
 	}
     }
+
+    return slot;
 }
 
 void stm32l4_system_lock(uint32_t lock)

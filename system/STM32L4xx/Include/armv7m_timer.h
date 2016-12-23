@@ -53,7 +53,6 @@ extern void armv7m_timer_create(armv7m_timer_t *timer, armv7m_timer_callback_t c
 extern bool armv7m_timer_start(armv7m_timer_t *timer, uint32_t timeout);
 extern bool armv7m_timer_stop(armv7m_timer_t *timer);
 
-extern void armv7m_timer_heartbeat(uint32_t millis);
 extern void armv7m_timer_initialize(void);
 
 #ifdef __cplusplus

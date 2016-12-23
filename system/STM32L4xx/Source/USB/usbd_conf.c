@@ -56,7 +56,6 @@
 
 #include "armv7m.h"
 #include "stm32l4_system.h"
-#include "stm32l4_exti.h"
 #include "stm32l4_gpio.h"
 #include "stm32l4_usbd_cdc.h"
 
@@ -66,10 +65,10 @@
 /* Private variables ---------------------------------------------------------*/
 static PCD_HandleTypeDef hpcd;
 
-extern stm32l4_exti_t stm32l4_exti;
 extern stm32l4_usbd_cdc_t stm32l4_usbd_cdc;
 
 static unsigned int usbd_pin_vbus = GPIO_PIN_NONE;
+static unsigned int usbd_pin_vbus_count = 0;
 static bool usbd_connected = false;
 
 
@@ -80,52 +79,79 @@ extern USBD_StorageTypeDef const dosfs_storage_interface;
 
 static USBD_HandleTypeDef USBD_Device;
 
-static armv7m_timer_t USBD_AttachTimer;
-static armv7m_timer_t USBD_DetachTimer;
+static armv7m_timer_t USBD_VBUSTimer;
 
-static void USBD_AttachCallback(void *context)
+static void USBD_VBUSCallback(void)
 {
-    usbd_connected = true;
+    unsigned int state, timeout;
+    
+    state = stm32l4_gpio_pin_read(usbd_pin_vbus);
 
-    USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
-    USBD_RegisterClass(&USBD_Device, USBD_CDC_MSC_CLASS);
-    USBD_CDC_RegisterInterface(&USBD_Device, &stm32l4_usbd_cdc_interface);
-    USBD_MSC_RegisterStorage(&USBD_Device, &dosfs_storage_interface);
-    USBD_Start(&USBD_Device);
-}
-
-static void USBD_DetachCallback(void *context)
-{
-    USBD_DeInit(&USBD_Device);
-
-    usbd_connected = false;
-}
-
-static void USBD_VBUSCallback(void *context)
-{
-    if (stm32l4_gpio_pin_read(usbd_pin_vbus))
+    if (usbd_pin_vbus_count)
     {
-	armv7m_timer_stop(&USBD_DetachTimer);
-
-	if (!usbd_connected &&
-#if defined(STM32L476xx)
-	    (stm32l4_system_hclk() >= 16000000)
-#else
-	    (stm32l4_system_pclk1() >= 10000000)
-#endif
-	    )
+	if (!state)
 	{
-	    armv7m_timer_start(&USBD_AttachTimer, 10);
+	    usbd_pin_vbus_count = 0;
+
+	    timeout = 50;
+	}
+	else
+	{
+	    usbd_pin_vbus_count--;
+
+	    if (!usbd_pin_vbus_count)
+	    {
+		usbd_connected = true;
+		    
+		USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
+		USBD_RegisterClass(&USBD_Device, USBD_CDC_MSC_CLASS);
+		USBD_CDC_RegisterInterface(&USBD_Device, &stm32l4_usbd_cdc_interface);
+		USBD_MSC_RegisterStorage(&USBD_Device, &dosfs_storage_interface);
+		USBD_Start(&USBD_Device);
+
+		timeout = 50;
+	    }
+	    else
+	    {
+		timeout = 1;
+	    }
 	}
     }
     else
     {
-	armv7m_timer_stop(&USBD_AttachTimer);
+	if (!usbd_connected)
+	{
+	    if (state)
+	    {
+		usbd_pin_vbus_count = 10;
+		
+		timeout = 1;
+	    }
+	    else
+	    {
+		timeout = 50;
+	    }
+	}
+	else
+	{
+	    if (!state)
+	    {
+#if defined(STM32L476xx)
+		NVIC_DisableIRQ(OTG_FS_IRQn);
+#else
+		NVIC_DisableIRQ(USB_IRQn);
+#endif
+		
+		USBD_DeInit(&USBD_Device);
+		
+		usbd_connected = false;
+	    }
 
-	if (usbd_connected) {
-	    armv7m_timer_start(&USBD_DetachTimer, 10);
+	    timeout = 50;
 	}
     }
+
+    armv7m_timer_start(&USBD_VBUSTimer, timeout);
 }
 
 void USBD_Initialize(unsigned int pin_vbus, unsigned int priority)
@@ -153,26 +179,35 @@ void USBD_Initialize(unsigned int pin_vbus, unsigned int priority)
     NVIC_SetPriority(USB_IRQn, priority);
 #endif  
 
-    armv7m_timer_create(&USBD_AttachTimer, (armv7m_timer_callback_t)USBD_AttachCallback);
-    armv7m_timer_create(&USBD_DetachTimer, (armv7m_timer_callback_t)USBD_DetachCallback);
+    armv7m_timer_create(&USBD_VBUSTimer, (armv7m_timer_callback_t)USBD_VBUSCallback);
 }
 
 void USBD_Attach(void)
 {
-    if (usbd_pin_vbus != GPIO_PIN_NONE)
-    {
-	stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vbus, EXTI_CONTROL_BOTH_EDGES, USBD_VBUSCallback, NULL);
-    }
-
-    if ((usbd_pin_vbus == GPIO_PIN_NONE) || stm32l4_gpio_pin_read(usbd_pin_vbus))
-    {
-	if (!usbd_connected &&
+    if (!usbd_connected &&
 #if defined(STM32L476xx)
-	    (stm32l4_system_hclk() >= 16000000)
+	(stm32l4_system_hclk() >= 16000000)
 #else
-	    (stm32l4_system_pclk1() >= 10000000)
+	(stm32l4_system_pclk1() >= 10000000)
 #endif
-	    )
+	)
+    {
+	if (usbd_pin_vbus != GPIO_PIN_NONE)
+	{
+	    if (stm32l4_gpio_pin_read(usbd_pin_vbus))
+	    {
+		usbd_pin_vbus_count = 10;
+		
+		armv7m_timer_start(&USBD_VBUSTimer, 1);
+	    }
+	    else
+	    {
+		usbd_pin_vbus_count = 0;
+
+		armv7m_timer_start(&USBD_VBUSTimer, 50);
+	    }
+	}
+	else
 	{
 	    usbd_connected = true;
 	    
@@ -189,14 +224,17 @@ void USBD_Detach(void)
 {
     if (usbd_pin_vbus != GPIO_PIN_NONE)
     {
-	stm32l4_exti_notify(&stm32l4_exti, usbd_pin_vbus, EXTI_CONTROL_DISABLE, NULL, NULL);
-	
-	armv7m_timer_stop(&USBD_AttachTimer);
-	armv7m_timer_stop(&USBD_DetachTimer);
+	armv7m_timer_stop(&USBD_VBUSTimer);
     }
 
     if (usbd_connected)
     {
+#if defined(STM32L476xx)
+	NVIC_DisableIRQ(OTG_FS_IRQn);
+#else
+	NVIC_DisableIRQ(USB_IRQn);
+#endif
+
 	USBD_DeInit(&USBD_Device);
 
 	usbd_connected = false;

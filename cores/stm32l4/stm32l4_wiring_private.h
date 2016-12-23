@@ -48,6 +48,7 @@ extern "C" {
 #include "stm32l4_system.h"
 #include "stm32l4_rtc.h"
 #include "stm32l4_sai.h"
+#include "stm32l4_flash.h"
 
 #define STM32L4_SVCALL_IRQ_PRIORITY  15
 #define STM32L4_PENDSV_IRQ_PRIORITY  15

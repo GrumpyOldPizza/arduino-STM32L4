@@ -234,7 +234,7 @@ extern uint32_t stm32l4_system_hclk(void);
 extern uint32_t stm32l4_system_pclk1(void);
 extern uint32_t stm32l4_system_pclk2(void);
 extern uint32_t stm32l4_system_saiclk(void);
-extern void     stm32l4_system_notify(uint32_t slot, stm32l4_system_callback_t callback, void *context, uint32_t events); 
+extern int      stm32l4_system_notify(int slot, stm32l4_system_callback_t callback, void *context, uint32_t events); 
 extern void     stm32l4_system_lock(uint32_t lock); 
 extern void     stm32l4_system_unlock(uint32_t lock);
 extern bool     stm32l4_system_stop(uint32_t timeout);

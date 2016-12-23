@@ -50,6 +50,9 @@
 #define WAKEUP_SYNC          0x00000400
 #define WAKEUP_TIMEOUT       0x00000800
 
+#define FLASHSTART           ((uint32_t)(&__FlashBase))
+#define FLASHEND             ((uint32_t)(&__FlashLimit))
+
 class STM32Class {
 public:
     uint64_t getSerial();
@@ -68,6 +71,9 @@ public:
     void  shutdown(uint32_t timeout = 0);
     void  shutdown(uint32_t pin, uint32_t mode, uint32_t timeout = 0);
     void  reset();
+
+    bool  flashErase(uint32_t address);
+    bool  flashProgram(uint32_t address, const void *data, uint32_t count);
 
     void  lsco(bool enable);
 };
