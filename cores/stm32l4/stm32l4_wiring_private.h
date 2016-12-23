@@ -35,8 +35,6 @@
 extern "C" {
 #endif
 
-#include "stm32l4xx.h"
-
 #include "stm32l4_adc.h"
 #include "stm32l4_dac.h"
 #include "stm32l4_exti.h"

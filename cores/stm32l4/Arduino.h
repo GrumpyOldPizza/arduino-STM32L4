@@ -80,6 +80,11 @@ enum BitOrder {
 #define clockCyclesToMicroseconds(a) ( ((a) * 1000L) / (F_CPU / 1000L) )
 #define microsecondsToClockCycles(a) ( (a) * (F_CPU / 1000000L) )
 
+#define ARM_MATH_CM4
+#include "stm32l4xx.h"
+#undef DAC1
+#undef SPI1
+#undef SPI2
 #include "stm32l4_wiring.h"
 
 void yield( void ) ;
