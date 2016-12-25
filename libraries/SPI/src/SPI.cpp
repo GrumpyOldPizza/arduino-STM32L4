@@ -28,8 +28,6 @@
 
 #include "Arduino.h"
 #include "stm32l4_wiring_private.h"
-#undef SPI1
-#undef SPI2
 #include "SPI.h"
 
 /* The code below deserves some explanation. The SPIClass has really 2 modes of operation.

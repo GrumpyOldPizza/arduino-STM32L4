@@ -28,7 +28,6 @@
 
 #include "Arduino.h"
 #include "stm32l4_wiring_private.h"
-#undef RTC
 #include "RTC.h"
 #include <time.h>
 

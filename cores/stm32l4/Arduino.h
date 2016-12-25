@@ -82,6 +82,7 @@ enum BitOrder {
 
 #define ARM_MATH_CM4
 #include "stm32l4xx.h"
+#undef RTC
 #undef DAC1
 #undef SPI1
 #undef SPI2
