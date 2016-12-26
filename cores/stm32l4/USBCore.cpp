@@ -32,38 +32,82 @@
 
 #if defined(USBCON)
 
+#define USB_TYPE_NONE    0
+#define USB_TYPE_CDC     1
+#define USB_TYPE_CDC_MSC 2
+
+#if (USB_TYPE == USB_TYPE_CDC_MSC)
+#define USB_CLASS USBD_CDC_MSC_Initialize
+#elif (USB_TYPE == USB_TYPE_CDC)
+#define USB_CLASS USBD_CDC_Initialize
+#endif
+
+static const uint8_t USBDDeviceDescriptor[] = {
+  0x12,                       /* bLength */
+  0x01,                       /* bDescriptorType */ 
+  0x00, 0x02,                 /* bcdUSB */
+  0xef,                       /* bDeviceClass */
+  0x02,                       /* bDeviceSubClass */
+  0x01,                       /* bDeviceProtocol */
+  64,                         /* bMaxPacketSize */
+  LOBYTE(USB_VID),            /* idVendor */
+  HIBYTE(USB_VID),            /* idVendor */
+  LOBYTE(USB_PID),            /* idVendor */
+  HIBYTE(USB_PID),            /* idVendor */
+  0x00, 0x02,                 /* bcdDevice rel. 2.00 */
+  1,                          /* Index of manufacturer string */
+  2,                          /* Index of product string */
+  3,                          /* Index of serial number string */
+  1,                          /* bNumConfigurations */
+};
+
+static const char16_t * USBManufacturer = USB_MANUFACTURER;
+static const char16_t * USBProduct = USB_PRODUCT;
+
 void USBDeviceClass::init()
 {
-    USBD_Initialize(STM32L4_CONFIG_USB_VBUS, STM32L4_USB_IRQ_PRIORITY);
+#if defined(USB_CLASS)
+    USBD_Initialize(USBDDeviceDescriptor, (const uint8_t*)USBManufacturer, (const uint8_t*)USBProduct, USB_CLASS, STM32L4_CONFIG_USB_VBUS, STM32L4_USB_IRQ_PRIORITY);
+#endif
 
     initialized = true;
 }
 
 bool USBDeviceClass::attach()
 {
+#if defined(USB_CLASS)
     if (!initialized)
 	return false;
 
     USBD_Attach();
 
     return true;
+#else
+    return false;
+#endif
 }
 
 bool USBDeviceClass::detach()
 {
+#if defined(USB_CLASS)
     if (!initialized)
 	return false;
 
     USBD_Detach();
 
     return true;
+#else
+    return false;
+#endif
 }
 
 void USBDeviceClass::poll()
 {
+#if defined(USB_CLASS)
     if (initialized) {
 	USBD_Poll();
     }
+#endif
 }
     
 bool USBDeviceClass::connected()

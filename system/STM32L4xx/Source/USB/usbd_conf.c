@@ -67,15 +67,19 @@ static PCD_HandleTypeDef hpcd;
 
 extern stm32l4_usbd_cdc_t stm32l4_usbd_cdc;
 
-static unsigned int usbd_pin_vbus = GPIO_PIN_NONE;
+static unsigned int usbd_pin_vbus;
 static unsigned int usbd_pin_vbus_count = 0;
 static bool usbd_connected = false;
 
-
 /* Private functions ---------------------------------------------------------*/
 
-extern USBD_CDC_ItfTypeDef const stm32l4_usbd_cdc_interface;
-extern USBD_StorageTypeDef const dosfs_storage_interface;
+const uint8_t * USBD_DeviceDescriptor;
+const uint8_t * USBD_ManufacturerString;
+const uint8_t * USBD_ProductString;
+
+static void (*USBD_ClassInitialize)(struct _USBD_HandleTypeDef *pdev) = NULL;
+
+static void (*USBD_IRQHandler)(PCD_HandleTypeDef *hpcd) = NULL;
 
 static USBD_HandleTypeDef USBD_Device;
 
@@ -102,11 +106,11 @@ static void USBD_VBUSCallback(void)
 	    if (!usbd_pin_vbus_count)
 	    {
 		usbd_connected = true;
-		    
+
 		USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
-		USBD_RegisterClass(&USBD_Device, USBD_CDC_MSC_CLASS);
-		USBD_CDC_RegisterInterface(&USBD_Device, &stm32l4_usbd_cdc_interface);
-		USBD_MSC_RegisterStorage(&USBD_Device, &dosfs_storage_interface);
+
+		(*USBD_ClassInitialize)(&USBD_Device);
+
 		USBD_Start(&USBD_Device);
 
 		timeout = 50;
@@ -154,8 +158,15 @@ static void USBD_VBUSCallback(void)
     armv7m_timer_start(&USBD_VBUSTimer, timeout);
 }
 
-void USBD_Initialize(unsigned int pin_vbus, unsigned int priority)
+void USBD_Initialize(const uint8_t *device, const uint8_t *manufacturer, const uint8_t *product, void(*initialize)(struct _USBD_HandleTypeDef *), unsigned int pin_vbus, unsigned int priority)
 {
+    USBD_IRQHandler = HAL_PCD_IRQHandler;
+
+    USBD_DeviceDescriptor = device;
+    USBD_ManufacturerString = manufacturer;
+    USBD_ProductString = product;
+    USBD_ClassInitialize = initialize;
+
     usbd_pin_vbus = pin_vbus;
 
     if (usbd_pin_vbus != GPIO_PIN_NONE)
@@ -210,11 +221,11 @@ void USBD_Attach(void)
 	else
 	{
 	    usbd_connected = true;
-	    
+
 	    USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
-	    USBD_RegisterClass(&USBD_Device, USBD_CDC_MSC_CLASS);
-	    USBD_CDC_RegisterInterface(&USBD_Device, &stm32l4_usbd_cdc_interface);
-	    USBD_MSC_RegisterStorage(&USBD_Device, &dosfs_storage_interface);
+	    
+	    (*USBD_ClassInitialize)(&USBD_Device);
+
 	    USBD_Start(&USBD_Device);
 	}
     }
@@ -243,7 +254,7 @@ void USBD_Detach(void)
 
 void USBD_Poll(void)
 {
-    HAL_PCD_IRQHandler(&hpcd);
+    if (USBD_IRQHandler) { (*USBD_IRQHandler)(&hpcd); }
 }
 
 bool USBD_Connected(void)
@@ -333,7 +344,7 @@ void OTG_FS_IRQHandler(void)
 void USB_IRQHandler(void)
 #endif
 {
-  HAL_PCD_IRQHandler(&hpcd);
+    if (USBD_IRQHandler) { (*USBD_IRQHandler)(&hpcd); }
 }
 
 /**
@@ -574,9 +585,9 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
    */
   HAL_PCDEx_SetRxFiFo(&hpcd, 0x40);    /* 256 bytes shared receive        */
   HAL_PCDEx_SetTxFiFo(&hpcd, 0, 0x20); /* 128 bytes EP0/control transmit  */
-  HAL_PCDEx_SetTxFiFo(&hpcd, 1, 0x80); /* 512 bytes EP1/MSC transmit      */ 
-  HAL_PCDEx_SetTxFiFo(&hpcd, 2, 0x04); /*  16 bytes EP2/CDC/CTRL transmit */
-  HAL_PCDEx_SetTxFiFo(&hpcd, 3, 0x20); /* 128 bytes EP3/CDC/DATA transmit */
+  HAL_PCDEx_SetTxFiFo(&hpcd, 1, 0x04); /*  16 bytes EP1/CDC/CTRL transmit */
+  HAL_PCDEx_SetTxFiFo(&hpcd, 2, 0x20); /* 128 bytes EP2/CDC/DATA transmit */
+  HAL_PCDEx_SetTxFiFo(&hpcd, 3, 0x80); /* 512 bytes EP3/MSC transmit      */ 
 
 #else /* STM32L476xx */
 
@@ -600,11 +611,11 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
    */
   HAL_PCDEx_PMAConfig(&hpcd, 0x00, PCD_SNG_BUF, 0x020); /*  64 bytes EP0/control out  */
   HAL_PCDEx_PMAConfig(&hpcd, 0x80, PCD_SNG_BUF, 0x060); /*  64 bytes EP0/control in   */
-  HAL_PCDEx_PMAConfig(&hpcd ,0x01, PCD_SNG_BUF, 0x0a0); /*  64 bytes EP1/MSC out      */ 
-  HAL_PCDEx_PMAConfig(&hpcd, 0x81, PCD_SNG_BUF, 0x0e0); /*  64 bytes EP1/MSC in       */ 
-  HAL_PCDEx_PMAConfig(&hpcd, 0x82, PCD_SNG_BUF, 0x120); /*  16 bytes EP2/CDC/CTRL in  */
-  HAL_PCDEx_PMAConfig(&hpcd, 0x03, PCD_SNG_BUF, 0x130); /*  64 bytes EP3/CDC/DATA out */
-  HAL_PCDEx_PMAConfig(&hpcd, 0x83, PCD_SNG_BUF, 0x170); /*  64 bytes EP3/CDC/DATA in  */
+  HAL_PCDEx_PMAConfig(&hpcd, 0x81, PCD_SNG_BUF, 0x0a0); /*  16 bytes EP1/CDC/CTRL in  */
+  HAL_PCDEx_PMAConfig(&hpcd, 0x82, PCD_SNG_BUF, 0x0b0); /*  64 bytes EP2/CDC/DATA in  */
+  HAL_PCDEx_PMAConfig(&hpcd, 0x02, PCD_SNG_BUF, 0x0f0); /*  64 bytes EP2/CDC/DATA out */
+  HAL_PCDEx_PMAConfig(&hpcd, 0x83, PCD_SNG_BUF, 0x130); /*  64 bytes EP3/MSC in       */ 
+  HAL_PCDEx_PMAConfig(&hpcd ,0x03, PCD_SNG_BUF, 0x170); /*  64 bytes EP3/MSC out      */ 
 #endif /* STM32L476xx */
   
   return USBD_OK;

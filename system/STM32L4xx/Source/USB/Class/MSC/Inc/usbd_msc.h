@@ -59,10 +59,10 @@
 #define USB_MSC_CONFIG_DESC_SIZ      32
  
 
-#define MSC_EPIN_ADDR                0x81 
-#define MSC_EPOUT_ADDR               0x01 
+#define MSC_EPIN_ADDR                0x83 
+#define MSC_EPOUT_ADDR               0x03 
 
-#define MSC_INTERFACE                0
+#define MSC_INTERFACE                2
 
 /**
   * @}

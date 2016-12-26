@@ -1,6 +1,6 @@
-# See: http://code.google.com/p/arduino/wiki/Platforms
-
-menu.CpuFrequency=CPU Frequency
+menu.usb=USB Type
+menu.speed=CPU Speed
+menu.opt=Optimize
 
 ##############################################################
 
@@ -26,35 +26,59 @@ Dragonfly-L476RE.build.f_cpu=80000000L
 Dragonfly-L476RE.build.board=Dragonfly-L476RE
 Dragonfly-L476RE.build.arch=STM32L4
 Dragonfly-L476RE.build.core=stm32l4
-Dragonfly-L476RE.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
+Dragonfly-L476RE.build.usb_manufacturer=u"\u0324Tlera Corporation"
+Dragonfly-L476RE.build.usb_product=u"\u0314Dragonfly"
+Dragonfly-L476RE.build.vid=0x1209
+Dragonfly-L476RE.build.pid=0x6667
+Dragonfly-L476RE.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags}
 Dragonfly-L476RE.build.ldscript=linker_scripts/STM32L476RE_FLASH.ld
 Dragonfly-L476RE.build.openocdscript=openocd_scripts/stm32l476re_dragonfly.cfg
 Dragonfly-L476RE.build.variant=STM32L476RE-Dragonfly
 Dragonfly-L476RE.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l476 -larm_cortexM4lf_math
 Dragonfly-L476RE.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/STM32L4xx/Include" 
 
-Dragonfly-L476RE.menu.CpuFrequency.80=80 MHz
-Dragonfly-L476RE.menu.CpuFrequency.80.build.f_cpu=80000000L
-Dragonfly-L476RE.menu.CpuFrequency.72=72 MHz
-Dragonfly-L476RE.menu.CpuFrequency.72.build.f_cpu=72000000L
-Dragonfly-L476RE.menu.CpuFrequency.64=64 MHz
-Dragonfly-L476RE.menu.CpuFrequency.64.build.f_cpu=64000000L
-Dragonfly-L476RE.menu.CpuFrequency.48=48 MHz
-Dragonfly-L476RE.menu.CpuFrequency.48.build.f_cpu=48000000L
-Dragonfly-L476RE.menu.CpuFrequency.32=32 MHz
-Dragonfly-L476RE.menu.CpuFrequency.32.build.f_cpu=32000000L
-Dragonfly-L476RE.menu.CpuFrequency.24=24 MHz
-Dragonfly-L476RE.menu.CpuFrequency.24.build.f_cpu=24000000L
-Dragonfly-L476RE.menu.CpuFrequency.16=16 MHz
-Dragonfly-L476RE.menu.CpuFrequency.16.build.f_cpu=16000000L
-Dragonfly-L476RE.menu.CpuFrequency.8=8 MHz
-Dragonfly-L476RE.menu.CpuFrequency.8.build.f_cpu=8000000L
-Dragonfly-L476RE.menu.CpuFrequency.4=4 MHz
-Dragonfly-L476RE.menu.CpuFrequency.4.build.f_cpu=4000000L
-Dragonfly-L476RE.menu.CpuFrequency.2=2 MHz
-Dragonfly-L476RE.menu.CpuFrequency.2.build.f_cpu=2000000L
-Dragonfly-L476RE.menu.CpuFrequency.1=1 MHz
-Dragonfly-L476RE.menu.CpuFrequency.1.build.f_cpu=1000000L
+Dragonfly-L476RE.menu.usb.cdc=Serial
+Dragonfly-L476RE.menu.usb.cdc.build.usb_type=USB_TYPE_CDC
+Dragonfly-L476RE.menu.usb.cdc_msc=Serial + Mass Storage
+Dragonfly-L476RE.menu.usb.cdc_msc.build.usb_type=USB_TYPE_CDC_MSC
+Dragonfly-L476RE.menu.usb.none=No USB
+Dragonfly-L476RE.menu.usb.none.build.usb_type=USB_TYPE_NONE
+
+Dragonfly-L476RE.menu.speed.80=80 MHz
+Dragonfly-L476RE.menu.speed.80.build.f_cpu=80000000L
+Dragonfly-L476RE.menu.speed.72=72 MHz
+Dragonfly-L476RE.menu.speed.72.build.f_cpu=72000000L
+Dragonfly-L476RE.menu.speed.64=64 MHz
+Dragonfly-L476RE.menu.speed.64.build.f_cpu=64000000L
+Dragonfly-L476RE.menu.speed.48=48 MHz
+Dragonfly-L476RE.menu.speed.48.build.f_cpu=48000000L
+Dragonfly-L476RE.menu.speed.32=32 MHz
+Dragonfly-L476RE.menu.speed.32.build.f_cpu=32000000L
+Dragonfly-L476RE.menu.speed.24=24 MHz
+Dragonfly-L476RE.menu.speed.24.build.f_cpu=24000000L
+Dragonfly-L476RE.menu.speed.16=16 MHz
+Dragonfly-L476RE.menu.speed.16.build.f_cpu=16000000L
+Dragonfly-L476RE.menu.speed.8=8 MHz (No USB)
+Dragonfly-L476RE.menu.speed.8.build.f_cpu=8000000L
+Dragonfly-L476RE.menu.speed.4=4 MHz (No USB)
+Dragonfly-L476RE.menu.speed.4.build.f_cpu=4000000L
+Dragonfly-L476RE.menu.speed.2=2 MHz (No USB)
+Dragonfly-L476RE.menu.speed.2.build.f_cpu=2000000L
+Dragonfly-L476RE.menu.speed.1=1 MHz (No USB)
+Dragonfly-L476RE.menu.speed.1.build.f_cpu=1000000L
+
+Dragonfly-L476RE.menu.opt.os=Smallest Code
+Dragonfly-L476RE.menu.opt.os.build.flags.optimize=-Os
+Dragonfly-L476RE.menu.opt.os.build.flags.ldspecs=--specs=nano.specs
+Dragonfly-L476RE.menu.opt.o1=Fast
+Dragonfly-L476RE.menu.opt.o1.build.flags.optimize=-O1
+Dragonfly-L476RE.menu.opt.o1.build.flags.ldspecs=
+Dragonfly-L476RE.menu.opt.o2=Faster
+Dragonfly-L476RE.menu.opt.o2.build.flags.optimize=-O2
+Dragonfly-L476RE.menu.opt.o2.build.flags.ldspecs=
+Dragonfly-L476RE.menu.opt.o3=Fastest
+Dragonfly-L476RE.menu.opt.o3.build.flags.optimize=-O3
+Dragonfly-L476RE.menu.opt.o3.build.flags.ldspecs=
 
 # Tlera Butterfly
 # ---------------------------------------
@@ -78,35 +102,59 @@ Butterfly-L433CC.build.f_cpu=80000000L
 Butterfly-L433CC.build.board=Butterfly-L433CC
 Butterfly-L433CC.build.arch=STM32L4
 Butterfly-L433CC.build.core=stm32l4
-Butterfly-L433CC.build.extra_flags=-DSTM32L433xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
+Butterfly-L433CC.build.usb_manufacturer=u"\u0324Tlera Corporation"
+Butterfly-L433CC.build.usb_product=u"\u0314Butterfly"
+Butterfly-L433CC.build.vid=0x1209
+Butterfly-L433CC.build.pid=0x6668
+Butterfly-L433CC.build.extra_flags=-DSTM32L433xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags}
 Butterfly-L433CC.build.ldscript=linker_scripts/STM32L433CC_FLASH.ld
 Butterfly-L433CC.build.openocdscript=openocd_scripts/stm32l433cc_butterfly.cfg
 Butterfly-L433CC.build.variant=STM32L433CC-Butterfly
 Butterfly-L433CC.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l433 -larm_cortexM4lf_math
 Butterfly-L433CC.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/STM32L4xx/Include" 
 
-Butterfly-L433CC.menu.CpuFrequency.80=80 MHz
-Butterfly-L433CC.menu.CpuFrequency.80.build.f_cpu=80000000L
-Butterfly-L433CC.menu.CpuFrequency.72=72 MHz
-Butterfly-L433CC.menu.CpuFrequency.72.build.f_cpu=72000000L
-Butterfly-L433CC.menu.CpuFrequency.64=64 MHz
-Butterfly-L433CC.menu.CpuFrequency.64.build.f_cpu=64000000L
-Butterfly-L433CC.menu.CpuFrequency.48=48 MHz
-Butterfly-L433CC.menu.CpuFrequency.48.build.f_cpu=48000000L
-Butterfly-L433CC.menu.CpuFrequency.32=32 MHz
-Butterfly-L433CC.menu.CpuFrequency.32.build.f_cpu=32000000L
-Butterfly-L433CC.menu.CpuFrequency.24=24 MHz
-Butterfly-L433CC.menu.CpuFrequency.24.build.f_cpu=24000000L
-Butterfly-L433CC.menu.CpuFrequency.16=16 MHz
-Butterfly-L433CC.menu.CpuFrequency.16.build.f_cpu=16000000L
-Butterfly-L433CC.menu.CpuFrequency.8=8 MHz
-Butterfly-L433CC.menu.CpuFrequency.8.build.f_cpu=8000000L
-Butterfly-L433CC.menu.CpuFrequency.4=4 MHz
-Butterfly-L433CC.menu.CpuFrequency.4.build.f_cpu=4000000L
-Butterfly-L433CC.menu.CpuFrequency.2=2 MHz
-Butterfly-L433CC.menu.CpuFrequency.2.build.f_cpu=2000000L
-Butterfly-L433CC.menu.CpuFrequency.1=1 MHz
-Butterfly-L433CC.menu.CpuFrequency.1.build.f_cpu=1000000L
+Butterfly-L433CC.menu.usb.cdc=Serial
+Butterfly-L433CC.menu.usb.cdc.build.usb_type=USB_TYPE_CDC
+Butterfly-L433CC.menu.usb.cdc_msc=Serial + Mass Storage
+Butterfly-L433CC.menu.usb.cdc_msc.build.usb_type=USB_TYPE_CDC_MSC
+Butterfly-L433CC.menu.usb.none=No USB
+Butterfly-L433CC.menu.usb.none.build.usb_type=USB_TYPE_NONE
+
+Butterfly-L433CC.menu.speed.80=80 MHz
+Butterfly-L433CC.menu.speed.80.build.f_cpu=80000000L
+Butterfly-L433CC.menu.speed.72=72 MHz
+Butterfly-L433CC.menu.speed.72.build.f_cpu=72000000L
+Butterfly-L433CC.menu.speed.64=64 MHz
+Butterfly-L433CC.menu.speed.64.build.f_cpu=64000000L
+Butterfly-L433CC.menu.speed.48=48 MHz
+Butterfly-L433CC.menu.speed.48.build.f_cpu=48000000L
+Butterfly-L433CC.menu.speed.32=32 MHz
+Butterfly-L433CC.menu.speed.32.build.f_cpu=32000000L
+Butterfly-L433CC.menu.speed.24=24 MHz
+Butterfly-L433CC.menu.speed.24.build.f_cpu=24000000L
+Butterfly-L433CC.menu.speed.16=16 MHz (No USB)
+Butterfly-L433CC.menu.speed.16.build.f_cpu=16000000L
+Butterfly-L433CC.menu.speed.8=8 MHz (No USB)
+Butterfly-L433CC.menu.speed.8.build.f_cpu=8000000L
+Butterfly-L433CC.menu.speed.4=4 MHz (No USB)
+Butterfly-L433CC.menu.speed.4.build.f_cpu=4000000L
+Butterfly-L433CC.menu.speed.2=2 MHz (No USB)
+Butterfly-L433CC.menu.speed.2.build.f_cpu=2000000L
+Butterfly-L433CC.menu.speed.1=1 MHz (No USB)
+Butterfly-L433CC.menu.speed.1.build.f_cpu=1000000L
+
+Butterfly-L433CC.menu.opt.os=Smallest Code
+Butterfly-L433CC.menu.opt.os.build.flags.optimize=-Os
+Butterfly-L433CC.menu.opt.os.build.flags.ldspecs=--specs=nano.specs
+Butterfly-L433CC.menu.opt.o1=Fast
+Butterfly-L433CC.menu.opt.o1.build.flags.optimize=-O1
+Butterfly-L433CC.menu.opt.o1.build.flags.ldspecs=
+Butterfly-L433CC.menu.opt.o2=Faster
+Butterfly-L433CC.menu.opt.o2.build.flags.optimize=-O2
+Butterfly-L433CC.menu.opt.o2.build.flags.ldspecs=
+Butterfly-L433CC.menu.opt.o3=Fastest
+Butterfly-L433CC.menu.opt.o3.build.flags.optimize=-O3
+Butterfly-L433CC.menu.opt.o3.build.flags.ldspecs=
 
 # Tlera Ladybug
 # ---------------------------------------
@@ -130,35 +178,59 @@ Ladybug-L432KC.build.f_cpu=80000000L
 Ladybug-L432KC.build.board=Ladybug-L432KC
 Ladybug-L432KC.build.arch=STM32L4
 Ladybug-L432KC.build.core=stm32l4
-Ladybug-L432KC.build.extra_flags=-DSTM32L432xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
+Ladybug-L432KC.build.usb_manufacturer=u"\u0324Tlera Corporation"
+Ladybug-L432KC.build.usb_product=u"\u0310Ladybug"
+Ladybug-L432KC.build.vid=0x1209
+Ladybug-L432KC.build.pid=0x6669
+Ladybug-L432KC.build.extra_flags=-DSTM32L432xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags}
 Ladybug-L432KC.build.ldscript=linker_scripts/STM32L432KC_FLASH.ld
 Ladybug-L432KC.build.openocdscript=openocd_scripts/stm32l432kc_ladybug.cfg
 Ladybug-L432KC.build.variant=STM32L432KC-Ladybug
 Ladybug-L432KC.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l432 -larm_cortexM4lf_math
 Ladybug-L432KC.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/STM32L4xx/Include" 
 
-Ladybug-L432KC.menu.CpuFrequency.80=80 MHz
-Ladybug-L432KC.menu.CpuFrequency.80.build.f_cpu=80000000L
-Ladybug-L432KC.menu.CpuFrequency.72=72 MHz
-Ladybug-L432KC.menu.CpuFrequency.72.build.f_cpu=72000000L
-Ladybug-L432KC.menu.CpuFrequency.64=64 MHz
-Ladybug-L432KC.menu.CpuFrequency.64.build.f_cpu=64000000L
-Ladybug-L432KC.menu.CpuFrequency.48=48 MHz
-Ladybug-L432KC.menu.CpuFrequency.48.build.f_cpu=48000000L
-Ladybug-L432KC.menu.CpuFrequency.32=32 MHz
-Ladybug-L432KC.menu.CpuFrequency.32.build.f_cpu=32000000L
-Ladybug-L432KC.menu.CpuFrequency.24=24 MHz
-Ladybug-L432KC.menu.CpuFrequency.24.build.f_cpu=24000000L
-Ladybug-L432KC.menu.CpuFrequency.16=16 MHz
-Ladybug-L432KC.menu.CpuFrequency.16.build.f_cpu=16000000L
-Ladybug-L432KC.menu.CpuFrequency.8=8 MHz
-Ladybug-L432KC.menu.CpuFrequency.8.build.f_cpu=8000000L
-Ladybug-L432KC.menu.CpuFrequency.4=4 MHz
-Ladybug-L432KC.menu.CpuFrequency.4.build.f_cpu=4000000L
-Ladybug-L432KC.menu.CpuFrequency.2=2 MHz
-Ladybug-L432KC.menu.CpuFrequency.2.build.f_cpu=2000000L
-Ladybug-L432KC.menu.CpuFrequency.1=1 MHz
-Ladybug-L432KC.menu.CpuFrequency.1.build.f_cpu=1000000L
+Ladybug-L432KC.menu.usb.cdc=Serial
+Ladybug-L432KC.menu.usb.cdc.build.usb_type=USB_TYPE_CDC
+Ladybug-L432KC.menu.usb.cdc_msc=Serial + Mass Storage
+Ladybug-L432KC.menu.usb.cdc_msc.build.usb_type=USB_TYPE_CDC_MSC
+Ladybug-L432KC.menu.usb.none=No USB
+Ladybug-L432KC.menu.usb.none.build.usb_type=USB_TYPE_NONE
+
+Ladybug-L432KC.menu.speed.80=80 MHz
+Ladybug-L432KC.menu.speed.80.build.f_cpu=80000000L
+Ladybug-L432KC.menu.speed.72=72 MHz
+Ladybug-L432KC.menu.speed.72.build.f_cpu=72000000L
+Ladybug-L432KC.menu.speed.64=64 MHz
+Ladybug-L432KC.menu.speed.64.build.f_cpu=64000000L
+Ladybug-L432KC.menu.speed.48=48 MHz
+Ladybug-L432KC.menu.speed.48.build.f_cpu=48000000L
+Ladybug-L432KC.menu.speed.32=32 MHz
+Ladybug-L432KC.menu.speed.32.build.f_cpu=32000000L
+Ladybug-L432KC.menu.speed.24=24 MHz
+Ladybug-L432KC.menu.speed.24.build.f_cpu=24000000L
+Ladybug-L432KC.menu.speed.16=16 MHz (No USB)
+Ladybug-L432KC.menu.speed.16.build.f_cpu=16000000L
+Ladybug-L432KC.menu.speed.8=8 MHz (No USB)
+Ladybug-L432KC.menu.speed.8.build.f_cpu=8000000L
+Ladybug-L432KC.menu.speed.4=4 MHz (No USB)
+Ladybug-L432KC.menu.speed.4.build.f_cpu=4000000L
+Ladybug-L432KC.menu.speed.2=2 MHz (No USB)
+Ladybug-L432KC.menu.speed.2.build.f_cpu=2000000L
+Ladybug-L432KC.menu.speed.1=1 MHz (No USB)
+Ladybug-L432KC.menu.speed.1.build.f_cpu=1000000L
+
+Ladybug-L432KC.menu.opt.os=Smallest Code
+Ladybug-L432KC.menu.opt.os.build.flags.optimize=-Os
+Ladybug-L432KC.menu.opt.os.build.flags.ldspecs=--specs=nano.specs
+Ladybug-L432KC.menu.opt.o1=Fast
+Ladybug-L432KC.menu.opt.o1.build.flags.optimize=-O1
+Ladybug-L432KC.menu.opt.o1.build.flags.ldspecs=
+Ladybug-L432KC.menu.opt.o2=Faster
+Ladybug-L432KC.menu.opt.o2.build.flags.optimize=-O2
+Ladybug-L432KC.menu.opt.o2.build.flags.ldspecs=
+Ladybug-L432KC.menu.opt.o3=Fastest
+Ladybug-L432KC.menu.opt.o3.build.flags.optimize=-O3
+Ladybug-L432KC.menu.opt.o3.build.flags.ldspecs=
 
 
 # ST NUCLEO-L432KC
@@ -186,12 +258,41 @@ NUCLEO-L432KC.build.variant=STM32L432KC-NUCLEO
 NUCLEO-L432KC.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l432 -larm_cortexM4lf_math
 NUCLEO-L432KC.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/STM32L4xx/Include" 
 
-NUCLEO-L432KC.menu.CpuFrequency.80=80 MHz
-NUCLEO-L432KC.menu.CpuFrequency.80.build.f_cpu=80000000L
-NUCLEO-L432KC.menu.CpuFrequency.24=24 MHz
-NUCLEO-L432KC.menu.CpuFrequency.24.build.f_cpu=24000000L
-NUCLEO-L432KC.menu.CpuFrequency.2=2 MHz
-NUCLEO-L432KC.menu.CpuFrequency.2.build.f_cpu=2000000L
+NUCLEO-L432KC.menu.speed.80=80 MHz
+NUCLEO-L432KC.menu.speed.80.build.f_cpu=80000000L
+NUCLEO-L432KC.menu.speed.72=72 MHz
+NUCLEO-L432KC.menu.speed.72.build.f_cpu=72000000L
+NUCLEO-L432KC.menu.speed.64=64 MHz
+NUCLEO-L432KC.menu.speed.64.build.f_cpu=64000000L
+NUCLEO-L432KC.menu.speed.48=48 MHz
+NUCLEO-L432KC.menu.speed.48.build.f_cpu=48000000L
+NUCLEO-L432KC.menu.speed.32=32 MHz
+NUCLEO-L432KC.menu.speed.32.build.f_cpu=32000000L
+NUCLEO-L432KC.menu.speed.24=24 MHz
+NUCLEO-L432KC.menu.speed.24.build.f_cpu=24000000L
+NUCLEO-L432KC.menu.speed.16=16 MHz
+NUCLEO-L432KC.menu.speed.16.build.f_cpu=16000000L
+NUCLEO-L432KC.menu.speed.8=8 MHz
+NUCLEO-L432KC.menu.speed.8.build.f_cpu=8000000L
+NUCLEO-L432KC.menu.speed.4=4 MHz
+NUCLEO-L432KC.menu.speed.4.build.f_cpu=4000000L
+NUCLEO-L432KC.menu.speed.2=2 MHz
+NUCLEO-L432KC.menu.speed.2.build.f_cpu=2000000L
+NUCLEO-L432KC.menu.speed.1=1 MHz
+NUCLEO-L432KC.menu.speed.1.build.f_cpu=1000000L
+
+NUCLEO-L432KC.menu.opt.os=Smallest Code
+NUCLEO-L432KC.menu.opt.os.build.flags.optimize=-Os
+NUCLEO-L432KC.menu.opt.os.build.flags.ldspecs=--specs=nano.specs
+NUCLEO-L432KC.menu.opt.o1=Fast
+NUCLEO-L432KC.menu.opt.o1.build.flags.optimize=-O1
+NUCLEO-L432KC.menu.opt.o1.build.flags.ldspecs=
+NUCLEO-L432KC.menu.opt.o2=Faster
+NUCLEO-L432KC.menu.opt.o2.build.flags.optimize=-O2
+NUCLEO-L432KC.menu.opt.o2.build.flags.ldspecs=
+NUCLEO-L432KC.menu.opt.o3=Fastest
+NUCLEO-L432KC.menu.opt.o3.build.flags.optimize=-O3
+NUCLEO-L432KC.menu.opt.o3.build.flags.ldspecs=
 
 
 # ST NUCLEO-L476RG
@@ -219,10 +320,38 @@ NUCLEO-L476RG.build.variant=STM32L476RG-NUCLEO
 NUCLEO-L476RG.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l476 -larm_cortexM4lf_math
 NUCLEO-L476RG.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/STM32L4xx/Include" 
 
-NUCLEO-L476RG.menu.CpuFrequency.80=80 MHz
-NUCLEO-L476RG.menu.CpuFrequency.80.build.f_cpu=80000000L
-NUCLEO-L476RG.menu.CpuFrequency.24=24 MHz
-NUCLEO-L476RG.menu.CpuFrequency.24.build.f_cpu=24000000L
-NUCLEO-L476RG.menu.CpuFrequency.2=2 MHz
-NUCLEO-L476RG.menu.CpuFrequency.2.build.f_cpu=2000000L
+NUCLEO-L476RG.menu.speed.80=80 MHz
+NUCLEO-L476RG.menu.speed.80.build.f_cpu=80000000L
+NUCLEO-L476RG.menu.speed.72=72 MHz
+NUCLEO-L476RG.menu.speed.72.build.f_cpu=72000000L
+NUCLEO-L476RG.menu.speed.64=64 MHz
+NUCLEO-L476RG.menu.speed.64.build.f_cpu=64000000L
+NUCLEO-L476RG.menu.speed.48=48 MHz
+NUCLEO-L476RG.menu.speed.48.build.f_cpu=48000000L
+NUCLEO-L476RG.menu.speed.32=32 MHz
+NUCLEO-L476RG.menu.speed.32.build.f_cpu=32000000L
+NUCLEO-L476RG.menu.speed.24=24 MHz
+NUCLEO-L476RG.menu.speed.24.build.f_cpu=24000000L
+NUCLEO-L476RG.menu.speed.16=16 MHz
+NUCLEO-L476RG.menu.speed.16.build.f_cpu=16000000L
+NUCLEO-L476RG.menu.speed.8=8 MHz
+NUCLEO-L476RG.menu.speed.8.build.f_cpu=8000000L
+NUCLEO-L476RG.menu.speed.4=4 MHz
+NUCLEO-L476RG.menu.speed.4.build.f_cpu=4000000L
+NUCLEO-L476RG.menu.speed.2=2 MHz
+NUCLEO-L476RG.menu.speed.2.build.f_cpu=2000000L
+NUCLEO-L476RG.menu.speed.1=1 MHz
+NUCLEO-L476RG.menu.speed.1.build.f_cpu=1000000L
 
+NUCLEO-L476RG.menu.opt.os=Smallest Code
+NUCLEO-L476RG.menu.opt.os.build.flags.optimize=-Os
+NUCLEO-L476RG.menu.opt.os.build.flags.ldspecs=--specs=nano.specs
+NUCLEO-L476RG.menu.opt.o1=Fast
+NUCLEO-L476RG.menu.opt.o1.build.flags.optimize=-O1
+NUCLEO-L476RG.menu.opt.o1.build.flags.ldspecs=
+NUCLEO-L476RG.menu.opt.o2=Faster
+NUCLEO-L476RG.menu.opt.o2.build.flags.optimize=-O2
+NUCLEO-L476RG.menu.opt.o2.build.flags.ldspecs=
+NUCLEO-L476RG.menu.opt.o3=Fastest
+NUCLEO-L476RG.menu.opt.o3.build.flags.optimize=-O3
+NUCLEO-L476RG.menu.opt.o3.build.flags.ldspecs=

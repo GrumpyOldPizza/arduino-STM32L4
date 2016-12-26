@@ -69,7 +69,13 @@ extern "C" {
 #define STM32L4_TONE_IRQ_PRIORITY    2
 #define STM32L4_SERVO_IRQ_PRIORITY   1
 
-extern void USBD_Initialize(unsigned int pin_vbus, unsigned int priority);
+#define LOBYTE(x)  ((uint8_t)(x & 0x00FF))
+#define HIBYTE(x)  ((uint8_t)((x & 0xFF00) >>8))
+
+extern void USBD_CDC_Initialize(void *);
+extern void USBD_CDC_MSC_Initialize(void *);
+
+extern void USBD_Initialize(const uint8_t *device, const uint8_t *manufacturer, const uint8_t *product, void(*initialize)(void *), unsigned int pin_vbus, unsigned int priority);
 extern void USBD_Attach(void);
 extern void USBD_Detach(void);
 extern void USBD_Poll(void);

@@ -70,7 +70,7 @@ bool stm32l4_sdcard_spi_init(dosfs_sdcard_t *sdcard)
 	divide++;
     }
 
-    sdcard->option = SPI_OPTION_MODE_0 | (divide << SPI_OPTION_DIV_SHIFT);
+    sdcard->option = SPI_OPTION_MODE_3 | (divide << SPI_OPTION_DIV_SHIFT);
 
     // ### DRAGONFLY vs BUTTERFLY/LADYBUG
 #if defined(STM32L476xx)
@@ -146,7 +146,7 @@ uint32_t stm32l4_sdcard_spi_mode(dosfs_sdcard_t *sdcard, int mode)
 	    divide++;
 	}
 	
-	sdcard->option = SPI_OPTION_MODE_0 | (divide << SPI_OPTION_DIV_SHIFT);
+	sdcard->option = SPI_OPTION_MODE_3 | (divide << SPI_OPTION_DIV_SHIFT);
 
 	if (mode == DOSFS_SDCARD_MODE_IDENTIFY)
 	{

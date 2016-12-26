@@ -52,7 +52,6 @@
   * @{
   */ 
 
-#define USB_CDC_MSC_CONFIG_DESC_SIZ 98
 /**
   * @}
   */ 
@@ -78,8 +77,6 @@
   * @{
   */ 
 
-extern const USBD_ClassTypeDef  USBD_CDC_MSC;
-#define USBD_CDC_MSC_CLASS    &USBD_CDC_MSC
 /**
   * @}
   */ 
