@@ -2475,43 +2475,18 @@ static int dosfs_sflash_format(void *context)
     return status;
 }
 
-static int dosfs_sflash_reclaim(void *context, uint32_t size)
+static int dosfs_sflash_erase(void *context, uint32_t address, uint32_t length)
 {
     dosfs_sflash_t *sflash = (dosfs_sflash_t*)context;
-    uint32_t victim_offset;
     int status = F_NO_ERROR;
 
 #if (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1)
-    printf("SFLASH_RESERVE %d\n", size);
+    printf("SFLASH_ERASE %08x, %d\n", address, length);
 #endif /* (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1) */
 
     if (sflash->state != DOSFS_SFLASH_STATE_READY)
     {
 	status = F_ERR_ONDRIVE;
-    }
-    else
-    {
-	stm32l4_qspi_select(&sflash->qspi);
-
-	if (size < sflash->xlate_count)
-	{
-	    size = size * 3;
-	}
-	else
-	{
-	    size = size + 2 * sflash->xlate_count;
-	}
-
-	size = size + 16;
-
-	while (size > sflash->alloc_free)
-	{
-	    victim_offset = dosfs_sflash_ftl_victim(sflash);
-
-	    dosfs_sflash_ftl_reclaim(sflash, victim_offset);
-	}
-
-	stm32l4_qspi_unselect(&sflash->qspi);
     }
 
     return status;
@@ -2547,38 +2522,13 @@ static int dosfs_sflash_discard(void *context, uint32_t address, uint32_t length
     return status;
 }
 
-static int dosfs_sflash_read(void *context, uint32_t address, uint8_t *data)
+static int dosfs_sflash_read(void *context, uint32_t address, uint32_t length, uint8_t *data)
 {
     dosfs_sflash_t *sflash = (dosfs_sflash_t*)context;
     int status = F_NO_ERROR;
 
 #if (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1)
-    printf("SFLASH_READ %08x\n", address);
-#endif /* (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1) */
-	
-    if (sflash->state != DOSFS_SFLASH_STATE_READY)
-    {
-	status = F_ERR_ONDRIVE;
-    }
-    else
-    {
-	stm32l4_qspi_select(&sflash->qspi);
-
-	dosfs_sflash_ftl_read(sflash, address, data);
-
-	stm32l4_qspi_unselect(&sflash->qspi);
-    }
-
-    return status;
-}
-
-static int dosfs_sflash_read_sequential(void *context, uint32_t address, uint32_t length, uint8_t *data)
-{
-    dosfs_sflash_t *sflash = (dosfs_sflash_t*)context;
-    int status = F_NO_ERROR;
-
-#if (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1)
-    printf("SFLASH_READ_SEQUENTIAL %08x, %d\n", address, length);
+    printf("SFLASH_READ %08x, %d\n", address, length);
 #endif /* (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1) */
 
     if (sflash->state != DOSFS_SFLASH_STATE_READY)
@@ -2602,38 +2552,13 @@ static int dosfs_sflash_read_sequential(void *context, uint32_t address, uint32_
     return status;
 }
 
-static int dosfs_sflash_write(void *context, uint32_t address, const uint8_t *data)
+static int dosfs_sflash_write(void *context, uint32_t address, uint32_t length, const uint8_t *data, volatile uint8_t *p_status)
 {
     dosfs_sflash_t *sflash = (dosfs_sflash_t*)context;
     int status = F_NO_ERROR;
 
 #if (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1)
-    printf("SFLASH_WRITE %08x\n", address);
-#endif /* (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1) */
-	
-    if (sflash->state != DOSFS_SFLASH_STATE_READY)
-    {
-	status = F_ERR_ONDRIVE;
-    }
-    else
-    {
-	stm32l4_qspi_select(&sflash->qspi);
-
-	dosfs_sflash_ftl_write(sflash, address, data);
-
-	stm32l4_qspi_unselect(&sflash->qspi);
-    }
-
-    return status;
-}
-
-static int dosfs_sflash_write_sequential(void *context, uint32_t address, uint32_t length, const uint8_t *data, volatile uint8_t *p_status)
-{
-    dosfs_sflash_t *sflash = (dosfs_sflash_t*)context;
-    int status = F_NO_ERROR;
-
-#if (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1)
-    printf("SFLASH_WRITE_SEQUENTIAL %08x, %d\n", address, length);
+    printf("SFLASH_WRITE %08x, %d\n", address, length);
 #endif /* (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1) */
 
     if (sflash->state != DOSFS_SFLASH_STATE_READY)
@@ -2657,7 +2582,7 @@ static int dosfs_sflash_write_sequential(void *context, uint32_t address, uint32
     return status;
 }
 
-static int dosfs_sflash_sync(void *context, volatile uint8_t *p_status)
+static int dosfs_sflash_sync(void *context)
 {
     dosfs_sflash_t *sflash = (dosfs_sflash_t*)context;
     int status = F_NO_ERROR;
@@ -2674,12 +2599,10 @@ static const F_INTERFACE dosfs_sflash_interface = {
     dosfs_sflash_release,
     dosfs_sflash_info,
     dosfs_sflash_format,
-    dosfs_sflash_reclaim,
+    dosfs_sflash_erase,
     dosfs_sflash_discard,
     dosfs_sflash_read,
-    dosfs_sflash_read_sequential,
     dosfs_sflash_write,
-    dosfs_sflash_write_sequential,
     dosfs_sflash_sync,
 };
 

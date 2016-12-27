@@ -213,11 +213,11 @@ static void stm32l4_spi_dma_callback(stm32l4_spi_t *spi, uint32_t events)
 	    
 	    if ((spi->state == SPI_STATE_RECEIVE_8_DMA) || (spi->state == SPI_STATE_TRANSMIT_8_DMA) || (spi->state == SPI_STATE_TRANSFER_8_DMA))
 	    {
-		stm32l4_dma_start(&spi->rx_dma, (uint32_t)&spi->rx_null, (uint32_t)&SPI->DR, 2, SPI_RX_DMA_OPTION_RECEIVE_8);
+		stm32l4_dma_start(&spi->rx_dma, (uint32_t)&spi->rx_crc16[0], (uint32_t)&SPI->DR, 2, SPI_RX_DMA_OPTION_RECEIVE_8);
 	    }
 	    else
 	    {
-		stm32l4_dma_start(&spi->rx_dma, (uint32_t)&spi->rx_null, (uint32_t)&SPI->DR, 1, SPI_RX_DMA_OPTION_RECEIVE_16);
+		stm32l4_dma_start(&spi->rx_dma, (uint32_t)&spi->rx_crc16[0], (uint32_t)&SPI->DR, 1, SPI_RX_DMA_OPTION_RECEIVE_16);
 	    }
 	    
 	    return;

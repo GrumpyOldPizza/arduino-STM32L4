@@ -152,7 +152,7 @@ static int8_t dosfs_storage_read(uint8_t lun, uint8_t *buf, uint32_t blk_addr, u
 {
     int status;
 
-    status = (*dosfs_volume.interface->read_sequential)(dosfs_volume.context, blk_addr, blk_len, buf);
+    status = (*dosfs_volume.interface->read)(dosfs_volume.context, blk_addr, blk_len, buf);
 
     dosfs_volume.lease = armv7m_systick_millis();
     dosfs_volume.lock |= DOSFS_VOLUME_LOCK_HOST_LEASE;
@@ -178,7 +178,7 @@ static int8_t dosfs_storage_write(uint8_t lun, uint8_t *buf, uint32_t blk_addr, 
 {
     int status;
 
-    status = (*dosfs_volume.interface->write_sequential)(dosfs_volume.context, blk_addr, blk_len, buf, NULL);
+    status = (*dosfs_volume.interface->write)(dosfs_volume.context, blk_addr, blk_len, buf, NULL);
 
     dosfs_volume.lease = armv7m_systick_millis();
     dosfs_volume.lock |= DOSFS_VOLUME_LOCK_HOST_LEASE;
@@ -192,15 +192,6 @@ static int8_t dosfs_storage_write(uint8_t lun, uint8_t *buf, uint32_t blk_addr, 
 
     if (last)
     {
-	status = (*dosfs_volume.interface->sync)(dosfs_volume.context, NULL);
-	
-	if (status != F_NO_ERROR)
-	{
-	    dosfs_volume.lock &= ~DOSFS_VOLUME_LOCK_SCSI_LOCK;
-
-	    return -1;
-	}
-
 	dosfs_volume.lock &= ~DOSFS_VOLUME_LOCK_SCSI_LOCK;
     }
 

@@ -83,8 +83,6 @@ bool stm32l4_sdcard_spi_init(dosfs_sdcard_t *sdcard)
     stm32l4_gpio_pin_write(sdcard->pin_cs, 1);
 
     return true;
-
-    return false;
 }
 
 bool stm32l4_sdcard_spi_present(dosfs_sdcard_t *sdcard)
@@ -115,7 +113,7 @@ uint32_t stm32l4_sdcard_spi_mode(dosfs_sdcard_t *sdcard, int mode)
 
     if (mode == DOSFS_SDCARD_MODE_NONE)
     {
-	speed = 0;
+	clock = 0;
     }
     else
     {
@@ -174,7 +172,7 @@ uint32_t stm32l4_sdcard_spi_mode(dosfs_sdcard_t *sdcard, int mode)
 	stm32l4_sdcard_spi_select(sdcard);
     }
     
-    return speed;
+    return clock;
 }
 
 void stm32l4_sdcard_spi_select(dosfs_sdcard_t *sdcard)
@@ -195,11 +193,6 @@ void stm32l4_sdcard_spi_select(dosfs_sdcard_t *sdcard)
 
 void stm32l4_sdcard_spi_deselect(dosfs_sdcard_t *sdcard)
 {
-    /* Send a dummy idle byte over the bus to help putting
-     * the SDCARD to sleep.
-     */
-    stm32l4_sdcard_spi_send(sdcard, 0xff);
-
     /* CS is output, drive CS to H */
     stm32l4_gpio_pin_write(sdcard->pin_cs, 1);
 
@@ -224,6 +217,23 @@ uint8_t stm32l4_sdcard_spi_receive(dosfs_sdcard_t *sdcard)
 
 void stm32l4_sdcard_spi_send_block(dosfs_sdcard_t *sdcard, const uint8_t *data)
 {
+#if 0
+#if (DOSFS_CONFIG_SDCARD_CRC == 1)
+    uint16_t crc16;
+#endif
+    stm32l4_spi_exchange(&sdcard->spi, data, NULL, 512);
+
+#if (DOSFS_CONFIG_SDCARD_CRC == 1)
+    crc16 = dosfs_compute_crc16(data, 512);
+
+    stm32l4_spi_exchange8(&sdcard->spi, crc16 >> 8);
+    stm32l4_spi_exchange8(&sdcard->spi, crc16);
+#else
+    stm32l4_spi_exchange8(&sdcard->spi, 0x00);
+    stm32l4_spi_exchange8(&sdcard->spi, 0x00);
+#endif
+#endif
+    
     stm32l4_spi_transmit(&sdcard->spi, data, 512, SPI_CONTROL_CRC16);
 
     while (!stm32l4_spi_done(&sdcard->spi))
@@ -234,6 +244,25 @@ void stm32l4_sdcard_spi_send_block(dosfs_sdcard_t *sdcard, const uint8_t *data)
 
 uint32_t stm32l4_sdcard_spi_receive_block(dosfs_sdcard_t *sdcard, uint8_t *data)
 {
+#if 0
+#if (DOSFS_CONFIG_SDCARD_CRC == 1)
+    uint16_t crc16;
+#endif
+    stm32l4_spi_exchange(&sdcard->spi, NULL, data, 512);
+
+#if (DOSFS_CONFIG_SDCARD_CRC == 1)
+    crc16 = stm32l4_spi_exchange8(&sdcard->spi, 0xff) << 8;
+    crc16 |= stm32l4_spi_exchange8(&sdcard->spi, 0xff);
+    
+    return (crc16 ^ dosfs_compute_crc16(data, 512));
+#else
+    stm32l4_spi_exchange8(&sdcard->spi, 0xff);
+    stm32l4_spi_exchange8(&sdcard->spi, 0xff);
+
+    return 0;
+#endif
+#endif
+
     stm32l4_spi_receive(&sdcard->spi, data, 512, SPI_CONTROL_CRC16);
   
     while (!stm32l4_spi_done(&sdcard->spi))
@@ -331,7 +360,7 @@ static int dosfs_sdcard_unlock(dosfs_sdcard_t *sdcard, int status);
 #define SD_DATA_ERROR_CARD_ECC_FAILED  0x04
 #define SD_DATA_ERROR_OUT_OF_RANGE     0x08
 
-#if 1 || (DOSFS_CONFIG_SDCARD_CRC == 1)
+#if (DOSFS_CONFIG_SDCARD_CRC == 1)
 
 const uint8_t dosfs_crc7_table[256]= {
     0x00, 0x09, 0x12, 0x1b, 0x24, 0x2d, 0x36, 0x3f,
@@ -403,7 +432,7 @@ const uint16_t dosfs_crc16_table[256]= {
     0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
 };
 
-uint8_t dosfs_compute_crc7(const uint8_t *data, uint32_t count)
+__attribute__((optimize("O3"))) uint8_t dosfs_compute_crc7(const uint8_t *data, uint32_t count)
 {
     unsigned int n;
     uint8_t crc7 = 0;
@@ -416,7 +445,7 @@ uint8_t dosfs_compute_crc7(const uint8_t *data, uint32_t count)
     return crc7;
 }
 
-uint16_t dosfs_compute_crc16(const uint8_t *data, uint32_t count)
+__attribute__((optimize("O3"))) uint16_t dosfs_compute_crc16(const uint8_t *data, uint32_t count)
 {
     unsigned int n;
     uint16_t crc16 = 0;
@@ -534,7 +563,7 @@ static int dosfs_sdcard_send_command(dosfs_sdcard_t *sdcard, uint8_t index, cons
     else if (index == SD_CMD_SEND_IF_COND)
     {
         crc7 = 0x87;
-    } 
+    }
     else
     {
         crc7 = 0x01;
@@ -1423,18 +1452,8 @@ static int dosfs_sdcard_lock(dosfs_sdcard_t *sdcard, int state, uint32_t address
 		{
 		    /* No special case, move the sdcard to DOSFS_SDCARD_STATE_READY.
 		     */
-		
-		    if (sdcard->state == DOSFS_SDCARD_STATE_READ_SEQUENTIAL)
-		    {
-			status = dosfs_sdcard_send_command(sdcard, SD_CMD_STOP_TRANSMISSION, 0, 0);
-		    
-			if (status == F_NO_ERROR)
-			{
-			    sdcard->state = DOSFS_SDCARD_STATE_READY;
-			}
-		    }
 
-		    if (sdcard->state == DOSFS_SDCARD_STATE_WRITE_SEQUENTIAL)
+		    if (sdcard->state == DOSFS_SDCARD_STATE_WRITE_MULTIPLE)
 		    {
 			status = dosfs_sdcard_write_stop(sdcard);
 		    }
@@ -1663,26 +1682,74 @@ static int dosfs_sdcard_info(void *context, uint8_t *p_media, uint8_t *p_write_p
 
 static int dosfs_sdcard_format(void *context)
 {
-    /* ERASE the whole SDCARD ...
-     */
     return F_NO_ERROR;
 }
 
-static int dosfs_sdcard_reclaim(void *context, uint32_t size)
+static int dosfs_sdcard_erase(void *context, uint32_t address, uint32_t length)
 {
-    /* Enter STREAM mode ?
-     */
-    return F_NO_ERROR;
+    dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
+    int status = F_NO_ERROR;
+
+    status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_READY, 0);
+    
+    if (status == F_NO_ERROR)
+    {
+	status = dosfs_sdcard_send_command(sdcard, SD_CMD_ERASE_WR_BLK_START_ADDR, (address << sdcard->shift), 0);
+	
+	if (status == F_NO_ERROR)
+	{
+	    status = dosfs_sdcard_send_command(sdcard, SD_CMD_ERASE_WR_BLK_END_ADDR, ((address + length -1) << sdcard->shift), 0);
+	
+	    if (status == F_NO_ERROR)
+	    {
+		status = dosfs_sdcard_send_command(sdcard, SD_CMD_ERASE, 0, 0);
+
+		if (status == F_NO_ERROR)
+		{
+		    DOSFS_SDCARD_STATISTICS_COUNT_N(sdcard_erase, length);
+	    
+		    status = dosfs_sdcard_wait_ready(sdcard);
+		
+		    if (status == F_NO_ERROR)
+		    {
+			status = dosfs_sdcard_send_command(sdcard, SD_CMD_SEND_STATUS, 0, 1);
+			
+			if (status == F_NO_ERROR)
+			{
+			    if (sdcard->response[1] != 0x00)
+			    {
+				if (sdcard->response[1] & (SD_R2_CARD_IS_LOCKED | SD_R2_WP_ERASE_SKIP | SD_R2_EXECUTION_ERROR | SD_R2_CC_ERROR | SD_R2_ERASE_PARAM | SD_R2_OUT_OF_RANGE))
+				{
+				    status = F_ERR_ONDRIVE;
+				}
+				else if (sdcard->response[1] & SD_R2_WP_VIOLATION)
+				{
+				    status = F_ERR_WRITEPROTECT;
+				}
+				else
+				{
+				    /* CARD_ECC_FAILED */
+				    status = F_ERR_INVALIDSECTOR;
+				}
+			    }
+			}
+		    }
+		}
+	    }
+	}
+
+	status = dosfs_sdcard_unlock(sdcard, status);
+    }
+
+    return status;
 }
 
 static int dosfs_sdcard_discard(void *context, uint32_t address, uint32_t length)
 {
-    /* Per block erase ?
-     */
     return F_NO_ERROR;
 }
 
-static int dosfs_sdcard_read(void *context, uint32_t address, uint8_t *data)
+static int dosfs_sdcard_read(void *context, uint32_t address, uint32_t length, uint8_t *data)
 {
     dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
     int status = F_NO_ERROR;
@@ -1696,151 +1763,77 @@ static int dosfs_sdcard_read(void *context, uint32_t address, uint8_t *data)
 
     if (status == F_NO_ERROR)
     {
-	do
+	if (length == 1)
 	{
-	    status = dosfs_sdcard_send_command(sdcard, SD_CMD_READ_SINGLE_BLOCK, (address << sdcard->shift), 0);
-
-	    if (status == F_NO_ERROR)
+	    do
 	    {
-		status = dosfs_sdcard_receive_data(sdcard, data, DOSFS_BLK_SIZE, &retries);
+		status = dosfs_sdcard_send_command(sdcard, SD_CMD_READ_SINGLE_BLOCK, (address << sdcard->shift), 0);
 
-		if ((status == F_NO_ERROR) && !retries)
+		if (status == F_NO_ERROR)
 		{
-		    DOSFS_SDCARD_STATISTICS_COUNT(sdcard_read_single);
-		}
-	    }
-	} 
-	while ((status == F_NO_ERROR) && retries);
-
-	status = dosfs_sdcard_unlock(sdcard, status);
-    }
-
-    return status;
-}
-
-static int dosfs_sdcard_read_sequential(void *context, uint32_t address, uint32_t length, uint8_t *data)
-{
-    dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
-    int status = F_NO_ERROR;
+		    status = dosfs_sdcard_receive_data(sdcard, data, DOSFS_BLK_SIZE, &retries);
+		
 #if (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0)
-    unsigned int retries = DOSFS_CONFIG_SDCARD_DATA_RETRIES +1;
-#else /* (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0) */
-    unsigned int retries = 0;
+		    if (retries)
+		    {
+			continue;
+		    }
 #endif /* (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0) */
 
-    status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_READ_SEQUENTIAL, address);
-
-    if (status == F_NO_ERROR)
-    {
-	do
+		    if (status == F_NO_ERROR)
+		    {
+			DOSFS_SDCARD_STATISTICS_COUNT(sdcard_read_single);
+			
+			length--;
+		    }
+		}
+	    }
+	    while ((status == F_NO_ERROR) && length);
+	}
+	else
 	{
-	    if (sdcard->state != DOSFS_SDCARD_STATE_READ_SEQUENTIAL)
+	    do
 	    {
 		status = dosfs_sdcard_send_command(sdcard, SD_CMD_READ_MULTIPLE_BLOCK, (address << sdcard->shift), 0);
-
+	    
 		if (status == F_NO_ERROR)
 		{
-		    sdcard->state = DOSFS_SDCARD_STATE_READ_SEQUENTIAL;
-		    sdcard->address = 0;
-		    sdcard->count = 0;
-		}
-	    }
-	    
-	    if (status == F_NO_ERROR)
-	    {
-		status = dosfs_sdcard_receive_data(sdcard, data, DOSFS_BLK_SIZE, &retries);
-
-		if ((status == F_NO_ERROR) && !retries)
-		{
-		    DOSFS_SDCARD_STATISTICS_COUNT(sdcard_read_sequential);
-
-		    if (sdcard->address == address)
+		    do
 		    {
-			DOSFS_SDCARD_STATISTICS_COUNT(sdcard_read_coalesce);
-		    }
-
-		    address++;
-		    length--;
-			
-		    data += DOSFS_BLK_SIZE;
-
-		    sdcard->address = address;
-		    sdcard->count++;
-
-		    /* A block has been sucessfully read, so the retry counter
-		     * can be reset.
-		     */
-		    retries = DOSFS_CONFIG_SDCARD_DATA_RETRIES;
-		}
-	    }
-	} 
-	while ((status == F_NO_ERROR) && (length != 0));
-
-	status = dosfs_sdcard_unlock(sdcard, status);
-    }
-
-    return status;
-}
-
-static int dosfs_sdcard_write(void *context, uint32_t address, const uint8_t *data)
-{
-    dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
-    int status = F_NO_ERROR;
+			status = dosfs_sdcard_receive_data(sdcard, data, DOSFS_BLK_SIZE, &retries);
+		
 #if (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0)
-    unsigned int retries = DOSFS_CONFIG_SDCARD_DATA_RETRIES +1;
-#else /* (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0) */
-    unsigned int retries = 0;
+			if (retries)
+			{
+			    break;
+			}
 #endif /* (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0) */
 
-    status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_READY, 0);
-
-    if (status == F_NO_ERROR)
-    {
-	do
-	{
-	    status = dosfs_sdcard_send_command(sdcard, SD_CMD_WRITE_SINGLE_BLOCK, (address << sdcard->shift), 0);
-	    
-	    if (status == F_NO_ERROR)
-	    {
-		/* After the CMD_WRITE_SINGLE_BLOCK there needs to be 8 clocks before sending
-		 * the Start Block Token.
-		 */
-		DOSFS_PORT_SDCARD_SPI_RECEIVE(sdcard);
-		    
-		status = dosfs_sdcard_send_data(sdcard, SD_START_WRITE_SINGLE_TOKEN, data, DOSFS_BLK_SIZE, &retries);
-	    }
-	}
-	while ((status == F_NO_ERROR) && retries);
-
-	if (status == F_NO_ERROR)
-	{
-	    DOSFS_SDCARD_STATISTICS_COUNT(sdcard_write_single);
-
-	    status = dosfs_sdcard_wait_ready(sdcard);
-	    
-	    if (status == F_NO_ERROR)
-	    {
-		status = dosfs_sdcard_send_command(sdcard, SD_CMD_SEND_STATUS, 0, 1);
-		
-		if (status == F_NO_ERROR)
-		{
-		    if (sdcard->response[1] != 0x00)
-		    {
-			if (sdcard->response[1] & (SD_R2_CARD_IS_LOCKED | SD_R2_WP_ERASE_SKIP | SD_R2_EXECUTION_ERROR | SD_R2_CC_ERROR | SD_R2_ERASE_PARAM | SD_R2_OUT_OF_RANGE))
+			if (status == F_NO_ERROR)
 			{
-			    status = F_ERR_ONDRIVE;
-			}
-			else if (sdcard->response[1] & SD_R2_WP_VIOLATION)
-			{
-			    status = F_ERR_WRITEPROTECT;
-			}
-			else
-			{
-			    /* CARD_ECC_FAILED */
-			    status = F_ERR_INVALIDSECTOR;
+			    DOSFS_SDCARD_STATISTICS_COUNT(sdcard_read_multiple);
+			
+			    address++;
+			    length--;
+			
+			    data += DOSFS_BLK_SIZE;
+			
+#if (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0)
+			    /* A block has been sucessfully read, so the retry counter
+			     * can be reset.
+			     */
+			    retries = DOSFS_CONFIG_SDCARD_DATA_RETRIES +1;
+#endif /* (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0) */
 			}
 		    }
-		}
+		    while ((status == F_NO_ERROR) && length);
+		} 
+	    }
+	    while ((status == F_NO_ERROR) && length);
+
+	    if (status == F_NO_ERROR)
+	    {
+		status = dosfs_sdcard_send_command(sdcard, SD_CMD_STOP_TRANSMISSION, 0, 0);
 	    }
 	}
 
@@ -1850,7 +1843,7 @@ static int dosfs_sdcard_write(void *context, uint32_t address, const uint8_t *da
     return status;
 }
 
-static int dosfs_sdcard_write_sequential(void *context, uint32_t address, uint32_t length, const uint8_t *data, volatile uint8_t *p_status)
+static int dosfs_sdcard_write(void *context, uint32_t address, uint32_t length, const uint8_t *data, volatile uint8_t *p_status)
 {
     dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
     int status = F_NO_ERROR;
@@ -1862,81 +1855,121 @@ static int dosfs_sdcard_write_sequential(void *context, uint32_t address, uint32
     unsigned int retries = 0;
 #endif /* (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0) */
 
-    status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_WRITE_SEQUENTIAL, address);
-
-    if (status == F_NO_ERROR)
+    if ((length == 1) && (p_status == NULL) && !((sdcard->state == DOSFS_SDCARD_STATE_WRITE_MULTIPLE) && (sdcard->address == address)))
     {
-	sdcard->p_status = p_status;
+	status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_READY, 0);
 
-	do
+	if (status == F_NO_ERROR)
 	{
-	    if (sdcard->state != DOSFS_SDCARD_STATE_WRITE_SEQUENTIAL)
+	    do
 	    {
+		status = dosfs_sdcard_send_command(sdcard, SD_CMD_WRITE_SINGLE_BLOCK, (address << sdcard->shift), 0);
+		
 		if (status == F_NO_ERROR)
 		{
-		    status = dosfs_sdcard_send_command(sdcard, SD_CMD_WRITE_MULTIPLE_BLOCK, (address << sdcard->shift), 0);
+		    /* After the CMD_WRITE_SINGLE_BLOCK there needs to be 8 clocks before sending
+		     * the Start Block Token.
+		     */
+		    DOSFS_PORT_SDCARD_SPI_RECEIVE(sdcard);
+		    
+		    status = dosfs_sdcard_send_data(sdcard, SD_START_WRITE_SINGLE_TOKEN, data, DOSFS_BLK_SIZE, &retries);
 
+#if (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0)
+		    if (retries)
+		    {
+			continue;
+		    }
+#endif /* (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0) */
+		    
 		    if (status == F_NO_ERROR)
 		    {
-			/* After the CMD_WRITE_MULTIPLE_BLOCK there needs to be 8 clocks before sending
-			 * the Start Block Token.
-			 */
-			DOSFS_PORT_SDCARD_SPI_RECEIVE(sdcard);
+			DOSFS_SDCARD_STATISTICS_COUNT(sdcard_write_single);
 			
-			sdcard->state = DOSFS_SDCARD_STATE_WRITE_SEQUENTIAL;
-			sdcard->address = 0;
-			sdcard->count = 0;
-			
-			busy = FALSE;
+			length--;
 		    }
 		}
 	    }
-	    else
-	    {
-		busy = TRUE;
-	    }
-		    
+	    while ((status == F_NO_ERROR) && length);
+	    
 	    if (status == F_NO_ERROR)
 	    {
-		if (busy)
-		{
-		    status = dosfs_sdcard_wait_ready(sdcard);
-		}
-			
+		status = dosfs_sdcard_wait_ready(sdcard);
+		
 		if (status == F_NO_ERROR)
 		{
-		    status = dosfs_sdcard_send_data(sdcard, SD_START_WRITE_MULTIPLE_TOKEN, data, DOSFS_BLK_SIZE, &retries);
-
-		    if ((status == F_NO_ERROR) && !retries)
+		    status = dosfs_sdcard_send_command(sdcard, SD_CMD_SEND_STATUS, 0, 1);
+		    
+		    if (status == F_NO_ERROR)
 		    {
-			DOSFS_SDCARD_STATISTICS_COUNT(sdcard_write_sequential);
-			    
-			if (sdcard->address == address)
+			if (sdcard->response[1] != 0x00)
 			{
-			    DOSFS_SDCARD_STATISTICS_COUNT(sdcard_write_coalesce);
+			    if (sdcard->response[1] & (SD_R2_CARD_IS_LOCKED | SD_R2_WP_ERASE_SKIP | SD_R2_EXECUTION_ERROR | SD_R2_CC_ERROR | SD_R2_ERASE_PARAM | SD_R2_OUT_OF_RANGE))
+			    {
+				status = F_ERR_ONDRIVE;
+			    }
+			    else if (sdcard->response[1] & SD_R2_WP_VIOLATION)
+			    {
+				status = F_ERR_WRITEPROTECT;
+			    }
+			    else
+			    {
+				/* CARD_ECC_FAILED */
+				status = F_ERR_INVALIDSECTOR;
+			    }
 			}
-			    
-			address++;
-			length--;
-			    
-			data += DOSFS_BLK_SIZE;
-			    
-			sdcard->address = address;
-			sdcard->count++;
-
-#if (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0)
-			if (address >= retry_address)
-			{
-			    /* If this write is post the previous retry address,
-			     * then reset the retry counter.
-			     */
-			    retries = DOSFS_CONFIG_SDCARD_DATA_RETRIES +1;
-			}
-#endif /* (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0) */
 		    }
-#if (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0)
-		    else
+		}
+	    }
+	    
+	    status = dosfs_sdcard_unlock(sdcard, status);
+	}
+    }
+    else
+    {
+	status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_WRITE_MULTIPLE, address);
+
+	if (status == F_NO_ERROR)
+	{
+	    sdcard->p_status = p_status;
+
+	    do
+	    {
+		busy = TRUE;
+
+		if (sdcard->state != DOSFS_SDCARD_STATE_WRITE_MULTIPLE)
+		{
+		    if (status == F_NO_ERROR)
 		    {
+			status = dosfs_sdcard_send_command(sdcard, SD_CMD_WRITE_MULTIPLE_BLOCK, (address << sdcard->shift), 0);
+		    
+			if (status == F_NO_ERROR)
+			{
+			    /* After the CMD_WRITE_MULTIPLE_BLOCK there needs to be 8 clocks before sending
+			     * the Start Block Token.
+			     */
+			    DOSFS_PORT_SDCARD_SPI_RECEIVE(sdcard);
+			
+			    sdcard->state = DOSFS_SDCARD_STATE_WRITE_MULTIPLE;
+			    sdcard->address = 0;
+			    sdcard->count = 0;
+			
+			    busy = FALSE;
+			}
+		    }
+		}
+
+		if (status == F_NO_ERROR)
+		{
+		    if (busy)
+		    {
+			status = dosfs_sdcard_wait_ready(sdcard);
+		    }
+			
+		    if (status == F_NO_ERROR)
+		    {
+			status = dosfs_sdcard_send_data(sdcard, SD_START_WRITE_MULTIPLE_TOKEN, data, DOSFS_BLK_SIZE, &retries);
+		    
+#if (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0)
 			if (retries)
 			{
 			    /* CRC errors are retried. Hence one needs to get the number of sucessfully
@@ -1946,15 +1979,15 @@ static int dosfs_sdcard_write_sequential(void *context, uint32_t address, uint32
 			    uint8_t response[4];
 			    uint32_t delta;
 			    unsigned int retries2 = DOSFS_CONFIG_SDCARD_DATA_RETRIES +1;
-
+			
 			    do
 			    {
 				status = dosfs_sdcard_send_command(sdcard, SD_CMD_APP_CMD, 0, 0);
-		
+			    
 				if (status == F_NO_ERROR)
 				{
 				    status = dosfs_sdcard_send_command(sdcard, SD_ACMD_SEND_NUM_WR_BLOCKS, 0, 0);
-					
+				
 				    if (status == F_NO_ERROR)
 				    {
 					status = dosfs_sdcard_receive_data(sdcard, response, 4, &retries2);
@@ -1962,7 +1995,7 @@ static int dosfs_sdcard_write_sequential(void *context, uint32_t address, uint32
 				}
 			    }
 			    while ((status == F_NO_ERROR) && retries2);
-					    
+			
 			    if (status == F_NO_ERROR)
 			    {
 				delta = 
@@ -1971,45 +2004,85 @@ static int dosfs_sdcard_write_sequential(void *context, uint32_t address, uint32
 				      ((uint32_t)response[1] << 16) |
 				      ((uint32_t)response[2] <<  8) |
 				      ((uint32_t)response[3] <<  0)));
-						
+			    
 				if ((address - delta) < retry_address)
 				{
 				    /* This here enforces that we make forward progress, and do
 				     * not try to write data that is not available.
 				     */
-
+				
 				    status = F_ERR_WRITE;
 				}
 				else
 				{
 				    address -= delta;
 				    length += delta;
-					    
+				
 				    data -= (delta << DOSFS_BLK_SHIFT);
-					    
+				
 				    retry_address = address;
+				
+				    continue;
 				}
 			    }
 			}
-		    }
 #endif /* (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0) */
+
+			if (status == F_NO_ERROR)
+			{
+			    DOSFS_SDCARD_STATISTICS_COUNT(sdcard_write_multiple);
+			
+			    if (sdcard->address == address)
+			    {
+				DOSFS_SDCARD_STATISTICS_COUNT(sdcard_write_coalesce);
+			    }
+			
+			    address++;
+			    length--;
+			
+			    data += DOSFS_BLK_SIZE;
+			
+			    sdcard->address = address;
+			    sdcard->count++;
+			
+#if (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0)
+			    if (address >= retry_address)
+			    {
+				/* If this write is post the previous retry address,
+				 * then reset the retry counter.
+				 */
+				retries = DOSFS_CONFIG_SDCARD_DATA_RETRIES +1;
+			    }
+#endif /* (DOSFS_CONFIG_SDCARD_CRC == 1) && (DOSFS_CONFIG_SDCARD_DATA_RETRIES != 0) */
+			}
+		    }
 		}
 	    }
-	}
-	while ((status == F_NO_ERROR) && (length != 0));
+	    while ((status == F_NO_ERROR) && length);
 
-	status = dosfs_sdcard_unlock(sdcard, status);
+	    if (status == F_NO_ERROR)
+	    {
+		if (p_status == NULL)
+		{
+		    sdcard->flags &= ~DOSFS_SDCARD_FLAG_COMMAND_SUBSEQUENT;
+
+		    status = dosfs_sdcard_write_stop(sdcard);
+		}
+	    }
+
+	    status = dosfs_sdcard_unlock(sdcard, status);
+	}
     }
 
     return status;
 }
 
-static int dosfs_sdcard_sync(void *context, volatile uint8_t *p_status)
+static int dosfs_sdcard_sync(void *context)
 {
     dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
     int status = F_NO_ERROR;
 
-    if ((sdcard->state == DOSFS_SDCARD_STATE_WRITE_SEQUENTIAL) && ((p_status == NULL) || (p_status == sdcard->p_status)))
+    if (sdcard->state == DOSFS_SDCARD_STATE_WRITE_MULTIPLE)
     {
 	status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_READY, 0);
 
@@ -2026,12 +2099,10 @@ static const F_INTERFACE dosfs_sdcard_interface = {
     dosfs_sdcard_release,
     dosfs_sdcard_info,
     dosfs_sdcard_format,
-    dosfs_sdcard_reclaim,
+    dosfs_sdcard_erase,
     dosfs_sdcard_discard,
     dosfs_sdcard_read,
-    dosfs_sdcard_read_sequential,
     dosfs_sdcard_write,
-    dosfs_sdcard_write_sequential,
     dosfs_sdcard_sync,
 };
 
@@ -2130,14 +2201,7 @@ static int dosfs_sdcard_lock(dosfs_sdcard_t *sdcard, int state, uint32_t address
 	    /* No special case, move the sdcard to DOSFS_SDCARD_STATE_READY.
 	     */
 	    
-	    if (sdcard->state == DOSFS_SDCARD_STATE_READ_SEQUENTIAL)
-	    {
-#if (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1)
-		printf("SDCARD_READ_STOP\n");
-#endif /* (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1) */
-	    }
-	    
-	    if (sdcard->state == DOSFS_SDCARD_STATE_WRITE_SEQUENTIAL)
+	    if (sdcard->state == DOSFS_SDCARD_STATE_WRITE_MULTIPLE)
 	    {
 #if (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1)
 		printf("SDCARD_WRITE_STOP\n");
@@ -2202,9 +2266,27 @@ static int dosfs_sdcard_format(void *context)
     return F_NO_ERROR;
 }
 
-static int dosfs_sdcard_reclaim(void *context, uint32_t size)
+static int dosfs_sdcard_erase(void *context, uint32_t address, uint32_t length)
 {
-    return F_NO_ERROR;
+    dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
+    int status = F_NO_ERROR;
+
+    status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_READY, 0);
+
+    if (status == F_NO_ERROR)
+    {
+#if (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1)
+	printf("SDCARD_ERASE %08x, %d\n", address, length);
+#endif /* (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1) */
+	    
+	memset(sdcard->image + (DOSFS_BLK_SIZE * address), 0xff, (DOSFS_BLK_SIZE * length));
+	    
+	DOSFS_SDCARD_STATISTICS_COUNT_N(sdcard_erase, length);
+	    
+	status = dosfs_sdcard_unlock(sdcard, status);
+    }
+
+    return status;
 }
 
 static int dosfs_sdcard_discard(void *context, uint32_t address, uint32_t length)
@@ -2212,7 +2294,7 @@ static int dosfs_sdcard_discard(void *context, uint32_t address, uint32_t length
     return F_NO_ERROR;
 }
 
-static int dosfs_sdcard_read(void *context, uint32_t address, uint8_t *data)
+static int dosfs_sdcard_read(void *context, uint32_t address, uint32_t length, uint8_t *data)
 {
     dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
     int status = F_NO_ERROR;
@@ -2222,120 +2304,97 @@ static int dosfs_sdcard_read(void *context, uint32_t address, uint8_t *data)
     if (status == F_NO_ERROR)
     {
 #if (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1)
-        printf("SDCARD_READ %08x\n", address);
-#endif /* (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1) */
-	
-	memcpy(data, sdcard->image + (DOSFS_BLK_SIZE * address), DOSFS_BLK_SIZE);
-
-	DOSFS_SDCARD_STATISTICS_COUNT(sdcard_read_single);
-
-	status = dosfs_sdcard_unlock(sdcard, status);
-    }
-
-    return status;
-}
-
-static int dosfs_sdcard_read_sequential(void *context, uint32_t address, uint32_t length, uint8_t *data)
-{
-    dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
-    int status = F_NO_ERROR;
-
-    status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_READ_SEQUENTIAL, address);
-
-    if (status == F_NO_ERROR)
-    {
-	if (sdcard->state != DOSFS_SDCARD_STATE_READ_SEQUENTIAL)
-	{
-	    sdcard->state = DOSFS_SDCARD_STATE_READ_SEQUENTIAL;
-	    sdcard->address = 0;
-	    sdcard->count = 0;
-	}
-
-#if (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1)
-	printf("SDCARD_READ_SEQUENTIAL %08x, %d\n", address, length);
+	printf("SDCARD_READ %08x, %d\n", address, length);
 #endif /* (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1) */
 	
 	memcpy(data, sdcard->image + (DOSFS_BLK_SIZE * address), (DOSFS_BLK_SIZE * length));
 
-	DOSFS_SDCARD_STATISTICS_COUNT_N(sdcard_read_sequential, length);
-	DOSFS_SDCARD_STATISTICS_COUNT_N(sdcard_read_coalesce, ((sdcard->address == address) ? length : (length -1)));
-
-	address += length;
-
-	sdcard->address = address;
-	sdcard->count += length;
-
-	status = dosfs_sdcard_unlock(sdcard, status);
-    }
-
-    return status;
-}
-
-static int dosfs_sdcard_write(void *context, uint32_t address, const uint8_t *data)
-{
-    dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
-    int status = F_NO_ERROR;
-
-    status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_READY, 0);
-
-    if (status == F_NO_ERROR)
-    {
-#if (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1)
-	printf("SDCARD_WRITE %08x\n", address);
-#endif /* (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1) */
-	
-	memcpy(sdcard->image + (DOSFS_BLK_SIZE * address), data, DOSFS_BLK_SIZE);
-	
-	DOSFS_SDCARD_STATISTICS_COUNT(sdcard_write_single);
-
-	status = dosfs_sdcard_unlock(sdcard, status);
-    }
-
-    return status;
-}
-
-static int dosfs_sdcard_write_sequential(void *context, uint32_t address, uint32_t length, const uint8_t *data, volatile uint8_t *p_status)
-{
-    dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
-    int status = F_NO_ERROR;
-
-    status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_WRITE_SEQUENTIAL, address);
-
-    if (status == F_NO_ERROR)
-    {
-	if  (sdcard->state != DOSFS_SDCARD_STATE_WRITE_SEQUENTIAL)
+	if (length == 1)
 	{
-	    sdcard->state = DOSFS_SDCARD_STATE_WRITE_SEQUENTIAL;
-	    sdcard->address = 0;
-	    sdcard->count = 0;
+	    DOSFS_SDCARD_STATISTICS_COUNT(sdcard_read_single);
+	}
+	else
+	{
+	    DOSFS_SDCARD_STATISTICS_COUNT_N(sdcard_read_multiple, length);
 	}
 
-#if (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1)
-	printf("SDCARD_WRITE_SEQUENTIAL %08x, %d\n", address, length);
-#endif /* (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1) */
-
-	memcpy(sdcard->image + (DOSFS_BLK_SIZE * address), data, (DOSFS_BLK_SIZE * length));
-	
-	DOSFS_SDCARD_STATISTICS_COUNT_N(sdcard_write_sequential, length);
-	DOSFS_SDCARD_STATISTICS_COUNT_N(sdcard_write_coalesce, ((sdcard->address == address) ? length : (length -1)));
-
-	address += length;
-
-	sdcard->address = address;
-	sdcard->count += length;
-
 	status = dosfs_sdcard_unlock(sdcard, status);
     }
 
     return status;
 }
 
-static int dosfs_sdcard_sync(void *context, volatile uint8_t *p_status)
+static int dosfs_sdcard_write(void *context, uint32_t address, uint32_t length, const uint8_t *data, volatile uint8_t *p_status)
 {
     dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
     int status = F_NO_ERROR;
 
-    if ((sdcard->state == DOSFS_SDCARD_STATE_WRITE_SEQUENTIAL) && ((p_status == NULL) || (p_status == sdcard->p_status)))
+    if ((length == 1) && (p_status == NULL) && !((sdcard->state == DOSFS_SDCARD_STATE_WRITE_MULTIPLE) && (sdcard->address == address)))
+    {
+	status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_READY, 0);
+
+	if (status == F_NO_ERROR)
+	{
+#if (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1)
+	    printf("SDCARD_WRITE_SINGLE %08x\n", address);
+#endif /* (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1) */
+	    
+	    memcpy(sdcard->image + (DOSFS_BLK_SIZE * address), data, DOSFS_BLK_SIZE);
+	    
+	    DOSFS_SDCARD_STATISTICS_COUNT(sdcard_write_single);
+	    
+	    status = dosfs_sdcard_unlock(sdcard, status);
+	}
+    }
+    else
+    {
+	status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_WRITE_MULTIPLE, address);
+	
+	if (status == F_NO_ERROR)
+	{
+	    if  (sdcard->state != DOSFS_SDCARD_STATE_WRITE_MULTIPLE)
+	    {
+		sdcard->state = DOSFS_SDCARD_STATE_WRITE_MULTIPLE;
+		sdcard->address = 0;
+		sdcard->count = 0;
+	    }
+	    
+#if (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1)
+	    printf("SDCARD_WRITE_MULTIPLE %08x, %d\n", address, length);
+#endif /* (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1) */
+	    
+	    memcpy(sdcard->image + (DOSFS_BLK_SIZE * address), data, (DOSFS_BLK_SIZE * length));
+	    
+	    DOSFS_SDCARD_STATISTICS_COUNT_N(sdcard_write_multiple, length);
+	    DOSFS_SDCARD_STATISTICS_COUNT_N(sdcard_write_coalesce, ((sdcard->address == address) ? length : (length -1)));
+	    
+	    address += length;
+	    
+	    sdcard->address = address;
+	    sdcard->count += length;
+
+	    if (p_status == NULL)
+	    {
+#if (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1)
+		printf("SDCARD_WRITE_STOP\n");
+#endif /* (DOSFS_CONFIG_SDCARD_SIMULATE_TRACE == 1) */
+
+		sdcard->state = DOSFS_SDCARD_STATE_READY;
+	    }
+	    
+	    status = dosfs_sdcard_unlock(sdcard, status);
+	}
+    }
+
+    return status;
+}
+
+static int dosfs_sdcard_sync(void *context)
+{
+    dosfs_sdcard_t *sdcard = (dosfs_sdcard_t*)context;
+    int status = F_NO_ERROR;
+
+    if (sdcard->state == DOSFS_SDCARD_STATE_WRITE_MULTIPLE)
     {
 	status = dosfs_sdcard_lock(sdcard, DOSFS_SDCARD_STATE_READY, 0);
 
@@ -2352,12 +2411,10 @@ static const F_INTERFACE dosfs_sdcard_interface = {
     dosfs_sdcard_release,
     dosfs_sdcard_info,
     dosfs_sdcard_format,
-    dosfs_sdcard_reclaim,
+    dosfs_sdcard_erase,
     dosfs_sdcard_discard,
     dosfs_sdcard_read,
-    dosfs_sdcard_read_sequential,
     dosfs_sdcard_write,
-    dosfs_sdcard_write_sequential,
     dosfs_sdcard_sync,
 };
 

@@ -62,7 +62,6 @@ static inline void stm32l4_system_timedate(uint16_t *p_time, uint16_t *p_date)
 #define DOSFS_PORT_SDCARD_SPI_DESELECT(_sdcard)              stm32l4_sdcard_spi_deselect((_sdcard))
 #define DOSFS_PORT_SDCARD_SPI_SEND(_sdcard, _data)           stm32l4_sdcard_spi_send((_sdcard), (_data))
 #define DOSFS_PORT_SDCARD_SPI_RECEIVE(_sdcard)               stm32l4_sdcard_spi_receive((_sdcard))
-
 #define DOSFS_PORT_SDCARD_SPI_SEND_BLOCK(_sdcard, _data)     stm32l4_sdcard_spi_send_block((_sdcard), (_data))
 #define DOSFS_PORT_SDCARD_SPI_RECEIVE_BLOCK(_sdcard, _data)  stm32l4_sdcard_spi_receive_block((_sdcard), (_data))
 

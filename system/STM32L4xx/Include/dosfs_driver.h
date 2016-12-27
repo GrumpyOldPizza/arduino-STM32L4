@@ -54,13 +54,11 @@ typedef struct _dosfs_interface_t {
     int                     (*release)(void *context);
     int                     (*info)(void *context, uint8_t *p_type, uint8_t *p_write_protected, uint32_t *p_block_count, uint32_t *p_au_size, uint32_t *p_serial);
     int                     (*format)(void *context);
-    int                     (*reclaim)(void *context, uint32_t size);
+    int                     (*erase)(void *context, uint32_t address, uint32_t length);
     int                     (*discard)(void *context, uint32_t address, uint32_t length);
-    int                     (*read)(void *context, uint32_t address, uint8_t *data);
-    int                     (*read_sequential)(void *context, uint32_t address, uint32_t length, uint8_t *data);
-    int                     (*write)(void *context, uint32_t address, const uint8_t *data);
-    int                     (*write_sequential)(void *context, uint32_t address, uint32_t length, const uint8_t *data, volatile uint8_t *p_status);
-    int                     (*sync)(void *context, volatile uint8_t *p_status);
+    int                     (*read)(void *context, uint32_t address, uint32_t length, uint8_t *data);
+    int                     (*write)(void *context, uint32_t address, uint32_t length, const uint8_t *data, volatile uint8_t *p_status);
+    int                     (*sync)(void *context);
 } dosfs_interface_t;
 
 #ifdef __cplusplus

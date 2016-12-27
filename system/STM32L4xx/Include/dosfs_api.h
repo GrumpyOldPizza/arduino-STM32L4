@@ -174,7 +174,6 @@ extern int     f_delvolume(void);
 extern int     f_checkvolume(void);
 extern int     f_format(int fattype);
 extern int     f_hardformat(int fattype);
-extern int     f_reclaim(long size);
 extern int     f_getfreespace(F_SPACE *pspace);
 extern int     f_getserial(unsigned long *p_serial);
 extern int     f_setlabel(const char *volname);

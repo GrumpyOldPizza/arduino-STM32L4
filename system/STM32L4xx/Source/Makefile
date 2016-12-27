@@ -110,6 +110,8 @@ _out/stm32l476/%.o: %.S
 clean::
 	rm -rf libstm32l432.a libstm32l433.a libstm32l476.a _out
 
--include $(OBJS:.o=.d)
+-include $(OBJS_L432:.o=.d)
+-include $(OBJS_L433:.o=.d)
+-include $(OBJS_L476:.o=.d)
 
 

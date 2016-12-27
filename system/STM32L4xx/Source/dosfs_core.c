@@ -1100,7 +1100,7 @@ static int dosfs_volume_read(dosfs_volume_t *volume, uint32_t address, uint8_t *
 
     do
     {
-	status = (*volume->interface->read_sequential)(volume->context, address, 1, data);
+	status = (*volume->interface->read)(volume->context, address, 1, data);
 		
 	if ((status == F_ERR_ONDRIVE) && (retries >= 1))
 	{
@@ -1143,7 +1143,7 @@ static int dosfs_volume_write(dosfs_volume_t *volume, uint32_t address, const ui
 
     do
     {
-	status = (*volume->interface->write)(volume->context, address, data);
+	status = (*volume->interface->write)(volume->context, address, 1, data, NULL);
 		
 	if ((status == F_ERR_ONDRIVE) && (retries >= 1))
 	{
@@ -1183,7 +1183,7 @@ static int dosfs_volume_write(dosfs_volume_t *volume, uint32_t address, const ui
 static int  dosfs_volume_zero(dosfs_volume_t *volume, uint32_t address, uint32_t length, volatile uint8_t *p_status)
 {
     int status = F_NO_ERROR;
-    uint8_t *data;
+    uint8_t *data, zero_status;
 
     status = dosfs_dir_cache_flush(volume);
 
@@ -1194,9 +1194,11 @@ static int  dosfs_volume_zero(dosfs_volume_t *volume, uint32_t address, uint32_t
 	
 	memset(data, 0, DOSFS_BLK_SIZE);
 
+	zero_status = F_NO_ERROR;
+
 	do
 	{
-	    status = (*volume->interface->write_sequential)(volume->context, address, 1, data, p_status);
+	    status = (*volume->interface->write)(volume->context, address, 1, data, (p_status ? p_status : &zero_status));
 
 	    if (status == F_NO_ERROR)
 	    {
@@ -1207,6 +1209,19 @@ static int  dosfs_volume_zero(dosfs_volume_t *volume, uint32_t address, uint32_t
 	    length--;
 	}
 	while ((status == F_NO_ERROR) && length);
+
+	if (p_status == NULL)
+	{
+	    if (status == F_NO_ERROR)
+	    {
+		status = (*volume->interface->sync)(volume->context);
+
+		if (status == F_NO_ERROR)
+		{
+		    status = zero_status;
+		}
+	    }
+	}
     }
 
 #if (DOSFS_CONFIG_MEDIA_FAILURE_SUPPORTED == 1)
@@ -1218,11 +1233,6 @@ static int  dosfs_volume_zero(dosfs_volume_t *volume, uint32_t address, uint32_t
 
     if (p_status == NULL)
     {
-	if (status == F_NO_ERROR)
-	{
-	    status = (*volume->interface->sync)(volume->context, NULL);
-	}
-
 	if (status != F_NO_ERROR)
 	{
 	    if (status != F_ERR_CARDREMOVED)
@@ -2738,7 +2748,7 @@ static int dosfs_dir_cache_write(dosfs_volume_t *volume)
     {
 	dosfs_file_t *file = volume->data_file;
 
-	status = (*volume->interface->write_sequential)(volume->context, volume->dir_cache.blkno, 1, volume->dir_cache.data, &file->status);
+	status = (*volume->interface->write)(volume->context, volume->dir_cache.blkno, 1, volume->dir_cache.data, &file->status);
 
 #if (DOSFS_CONFIG_MEDIA_FAILURE_SUPPORTED == 1)
 	if (status == F_ERR_INVALIDSECTOR)
@@ -3682,7 +3692,7 @@ static int dosfs_data_cache_write(dosfs_volume_t *volume, dosfs_file_t *file)
 {
     int status = F_NO_ERROR;
 
-    status = (*volume->interface->write_sequential)(volume->context, file->data_cache.blkno, 1, file->data_cache.data, &file->status);
+    status = (*volume->interface->write)(volume->context, file->data_cache.blkno, 1, file->data_cache.data, &file->status);
 
 #if (DOSFS_CONFIG_MEDIA_FAILURE_SUPPORTED == 1)
     if (status == F_ERR_INVALIDSECTOR)
@@ -3738,7 +3748,7 @@ static int dosfs_data_cache_fill(dosfs_volume_t *volume, dosfs_file_t *file, uin
 	}
 	else
 	{
-            status = (*volume->interface->read_sequential)(volume->context, blkno, 1, file->data_cache.data);
+            status = (*volume->interface->read)(volume->context, blkno, 1, file->data_cache.data);
 
 #if (DOSFS_CONFIG_MEDIA_FAILURE_SUPPORTED == 1)
 	    if (status == F_ERR_INVALIDSECTOR)
@@ -3844,7 +3854,7 @@ static int dosfs_data_cache_write(dosfs_volume_t *volume, dosfs_file_t *file)
 {
     int status = F_NO_ERROR;
 
-    status = (*volume->interface->write_sequential)(volume->context, volume->data_cache.blkno, 1, volume->data_cache.data, &file->status);
+    status = (*volume->interface->write)(volume->context, volume->data_cache.blkno, 1, volume->data_cache.data, &file->status);
 
 #if (DOSFS_CONFIG_MEDIA_FAILURE_SUPPORTED == 1)
     if (status == F_ERR_INVALIDSECTOR)
@@ -3899,7 +3909,7 @@ static int dosfs_data_cache_fill(dosfs_volume_t *volume, dosfs_file_t *file, uin
 	}
 	else
 	{
-            status = (*volume->interface->read_sequential)(volume->context, blkno, 1, volume->data_cache.data);
+            status = (*volume->interface->read)(volume->context, blkno, 1, volume->data_cache.data);
 
 #if (DOSFS_CONFIG_MEDIA_FAILURE_SUPPORTED == 1)
 	    if (status == F_ERR_INVALIDSECTOR)
@@ -4043,7 +4053,7 @@ static int dosfs_data_cache_fill(dosfs_volume_t *volume, dosfs_file_t *file, uin
 	}
 	else
 	{
-            status = (*volume->interface->read_sequential)(volume->context, blkno, 1, volume->dir_cache.data);
+            status = (*volume->interface->read)(volume->context, blkno, 1, volume->dir_cache.data);
 
 #if (DOSFS_CONFIG_MEDIA_FAILURE_SUPPORTED == 1)
 	    if (status == F_ERR_INVALIDSECTOR)
@@ -7865,7 +7875,7 @@ static int dosfs_file_flush(dosfs_volume_t *volume, dosfs_file_t *file, int clos
 
 	if (status == F_NO_ERROR)
 	{
-	    status = (*volume->interface->sync)(volume->context, &file->status);
+	    status = (*volume->interface->sync)(volume->context);
 	}
 
 	if (file->status == F_NO_ERROR)
@@ -8515,7 +8525,7 @@ static int dosfs_file_extend(dosfs_volume_t *volume, dosfs_file_t *file, uint32_
 static int dosfs_file_reserve(dosfs_volume_t *volume, dosfs_file_t *file, uint32_t size)
 {
     int status = F_NO_ERROR;
-    uint32_t clsno_a, clscnt;
+    uint32_t clsno_a, clscnt, blkno, blkno_e;
 
     clscnt = DOSFS_SIZE_TO_CLSCNT(size);
     clscnt = ((((clscnt << volume->cls_blk_shift) + (volume->blk_unit_size -1)) / volume->blk_unit_size) * volume->blk_unit_size) >> volume->cls_blk_shift;
@@ -8543,6 +8553,19 @@ static int dosfs_file_reserve(dosfs_volume_t *volume, dosfs_file_t *file, uint32
 	     */
 	    
 	    status = dosfs_file_sync(volume, file, FALSE, FALSE, file->first_clsno, file->length);
+
+	    if (status == F_NO_ERROR)
+	    {
+		for (blkno = file->blkno, blkno_e = blkno + (clscnt << volume->cls_blk_shift); blkno < blkno_e; blkno += volume->blk_unit_size)
+		{
+		    status = (*volume->interface->erase)(volume->context, blkno, volume->blk_unit_size);
+
+		    if (status != F_NO_ERROR)
+		    {
+			break;
+		    }
+		}
+	    }
 	}
     }
 
@@ -9040,7 +9063,7 @@ static int dosfs_file_read(dosfs_volume_t *volume, dosfs_file_t *file, uint8_t *
 
                             if (status == F_NO_ERROR)
                             {
-                                status = (*volume->interface->read_sequential)(volume->context, blkno, blkcnt, data);
+                                status = (*volume->interface->read)(volume->context, blkno, blkcnt, data);
 
 #if (DOSFS_CONFIG_MEDIA_FAILURE_SUPPORTED == 1)
 				if (status == F_ERR_INVALIDSECTOR)
@@ -9336,7 +9359,7 @@ static int dosfs_file_write(dosfs_volume_t *volume, dosfs_file_t *file, const ui
 
 					if (status == F_NO_ERROR)
 					{
-					    status = (*volume->interface->write_sequential)(volume->context, blkno, blkcnt, data, &file->status);
+					    status = (*volume->interface->write)(volume->context, blkno, blkcnt, data, &file->status);
 
 #if (DOSFS_CONFIG_MEDIA_FAILURE_SUPPORTED == 1)
 					    if (status == F_ERR_INVALIDSECTOR)
@@ -9372,7 +9395,12 @@ static int dosfs_file_write(dosfs_volume_t *volume, dosfs_file_t *file, const ui
 		    {
 			if (file->mode & DOSFS_FILE_MODE_COMMIT)
 			{
-			    status = (*volume->interface->sync)(volume->context, &file->status);
+			    status = (*volume->interface->sync)(volume->context);
+			}
+
+			if (file->status != F_NO_ERROR)
+			{
+			    status = file->status;
 			}
 
 			if (status == F_NO_ERROR)
@@ -9521,36 +9549,6 @@ int f_hardformat(int fattype)
 	    status = dosfs_volume_format(volume);
         }
         
-	status = dosfs_volume_unlock(volume, status);
-    }
-
-    return status;
-}
-
-
-int f_reclaim(long size)
-{
-    int status = F_NO_ERROR;
-    dosfs_volume_t *volume;
-
-    volume = DOSFS_DEFAULT_VOLUME();
-
-    status = dosfs_volume_lock(volume);
-    
-    if (status == F_NO_ERROR)
-    {
-	if (volume->flags & DOSFS_VOLUME_FLAG_WRITE_PROTECTED)
-	{
-	    status = F_ERR_WRITEPROTECT;
-	}
-	else
-	{
-	    if (status == F_NO_ERROR)
-	    {
-	      status = (*volume->interface->reclaim)(volume->context, (size + (DOSFS_BLK_SIZE-1)) / DOSFS_BLK_SIZE);
-	    }
-	}
-
 	status = dosfs_volume_unlock(volume, status);
     }
 
@@ -11579,7 +11577,7 @@ int f_rewind(F_FILE *file)
 
 	    if (status == F_NO_ERROR)
 	    {
-		status = (*volume->interface->sync)(volume->context, &file->status);
+		status = (*volume->interface->sync)(volume->context);
 
 		if (status == F_NO_ERROR)
 		{

@@ -48,8 +48,7 @@ typedef struct _dosfs_sdcard_t dosfs_sdcard_t;
 #define DOSFS_SDCARD_STATE_INIT              1
 #define DOSFS_SDCARD_STATE_RESET             2
 #define DOSFS_SDCARD_STATE_READY             3
-#define DOSFS_SDCARD_STATE_READ_SEQUENTIAL   4
-#define DOSFS_SDCARD_STATE_WRITE_SEQUENTIAL  5
+#define DOSFS_SDCARD_STATE_WRITE_MULTIPLE    4
 
 #define DOSFS_SDCARD_TYPE_NONE               0
 #define DOSFS_SDCARD_TYPE_SDSC               1
@@ -89,11 +88,11 @@ struct _dosfs_sdcard_t {
         uint32_t                sdcard_receive_data;
         uint32_t                sdcard_receive_data_retry;
         uint32_t                sdcard_receive_data_fail;
+	uint32_t                sdcard_erase;
 	uint32_t                sdcard_read_single;
-	uint32_t                sdcard_read_sequential;
-	uint32_t                sdcard_read_coalesce;
+	uint32_t                sdcard_read_multiple;
 	uint32_t                sdcard_write_single;
-	uint32_t                sdcard_write_sequential;
+	uint32_t                sdcard_write_multiple;
 	uint32_t                sdcard_write_coalesce;
     }                       statistics;
 #endif /* (DOSFS_CONFIG_STATISTICS == 1) */
