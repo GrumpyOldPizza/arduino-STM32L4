@@ -1,4 +1,4 @@
-; dragonfly-dfu.inf
+; stm32-bootloader.inf
 
 [Strings]
 DeviceName = "STM32 BOOTLOADER"
