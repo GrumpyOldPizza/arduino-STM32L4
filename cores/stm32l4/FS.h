@@ -93,7 +93,9 @@ public:
     FS();
 
     bool begin();
+    void end();
 
+    bool check();
     bool format();
     bool info(FSInfo& info);
 

@@ -29,7 +29,7 @@
 #if !defined(_DOSFS_CORE_H)
 #define _DOSFS_CORE_H
 
-#include "dosfs_driver.h"
+#include "dosfs_device.h"
 
 #ifdef __cplusplus
  extern "C" {
@@ -324,7 +324,6 @@ struct _dosfs_cache_entry_t {
 #define DOSFS_FILE_MODE_APPEND               0x04
 #define DOSFS_FILE_MODE_CREATE               0x08
 #define DOSFS_FILE_MODE_TRUNCATE             0x10
-#define DOSFS_FILE_MODE_COMMIT               0x20
 #define DOSFS_FILE_MODE_SEQUENTIAL           0x40
 #define DOSFS_FILE_MODE_RANDOM               0x80
 
@@ -403,23 +402,10 @@ struct _dosfs_cluster_entry_t {
 #endif /* (DOSFS_CONFIG_VOLUME_DIRTY_SUPPORTED == 1) */
 #define DOSFS_VOLUME_FLAG_WRITE_PROTECTED    0x0100
 
-#define DOSFS_VOLUME_LOCK_FILE_LOCK          0x0000ffff
-#define DOSFS_VOLUME_LOCK_FIND_LOCK          0x00010000
-#define DOSFS_VOLUME_LOCK_API_LOCK           0x00020000
-#define DOSFS_VOLUME_LOCK_DEVICE_LEASE       0x00400000
-#define DOSFS_VOLUME_LOCK_DEVICE_MODIFIED    0x00800000
-#define DOSFS_VOLUME_LOCK_WRITE_LOCK         0x01000000
-#define DOSFS_VOLUME_LOCK_SCSI_LOCK          0x02000000
-#define DOSFS_VOLUME_LOCK_HOST_ACCESSED      0x10000000
-#define DOSFS_VOLUME_LOCK_HOST_LEASE         0x20000000
-#define DOSFS_VOLUME_LOCK_HOST_MODIFIED      0x40000000
-
 struct _dosfs_volume_t {
     uint8_t                 state;
     uint8_t                 type;
     uint16_t                flags;
-    volatile uint32_t       lock;
-    volatile uint32_t       lease;
     uint32_t                product;                      /* product serial number */
     uint32_t                serial;                       /* volume serial number */
     uint32_t                boot_blkno;
@@ -464,7 +450,8 @@ struct _dosfs_volume_t {
 
     uint32_t                cwd_clsno;                /* put this first of the work area to align the rest */
 #if (DOSFS_CONFIG_SEQUENTIAL_SUPPORTED == 1) || (DOSFS_CONFIG_CONTIGUOUS_SUPPORTED == 1)
-    uint32_t                blk_unit_size;            /* size to align a clsno to an AU */
+    uint32_t                au_size;
+    uint32_t                erase_size;
     uint32_t                start_clsno;              /* first valid cluster for sequential/contiguous allocation */
     uint32_t                end_clsno;                /* last valid cluster for sequential/contiguous allocation */
 #if (DOSFS_CONFIG_SEQUENTIAL_SUPPORTED == 1)
@@ -533,8 +520,6 @@ struct _dosfs_volume_t {
     /* WORK AREA ABOVE */
 
     uint8_t                 media;
-    const F_INTERFACE       *interface;
-    void                    *context;
     dosfs_file_t            file_table[DOSFS_CONFIG_MAX_FILES];
 
 #if (DOSFS_CONFIG_STATISTICS == 1)
@@ -594,10 +579,11 @@ extern dosfs_volume_t dosfs_volume;
 #define DOSFS_INDEX_TO_BLKOFS(_index)      (((_index) << DOSFS_DIR_SHIFT) & DOSFS_BLK_MASK)
 
 
-#define DOSFS_DEFAULT_VOLUME()    (&dosfs_volume)
-#define DOSFS_PATH_VOLUME(_path)  (&dosfs_volume)
-#define DOSFS_FIND_VOLUME(_find)  (&dosfs_volume)
-#define DOSFS_FILE_VOLUME(_file)  (&dosfs_volume)
+#define DOSFS_DEFAULT_VOLUME()       (&dosfs_volume)
+#define DOSFS_PATH_VOLUME(_path)     (&dosfs_volume)
+#define DOSFS_FIND_VOLUME(_find)     (&dosfs_volume)
+#define DOSFS_FILE_VOLUME(_file)     (&dosfs_volume)
+#define DOSFS_VOLUME_DEVICE(_volume) (&dosfs_device)
 
 #if (DOSFS_CONFIG_STATISTICS == 1)
 

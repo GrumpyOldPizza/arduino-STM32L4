@@ -129,36 +129,24 @@ static stm32l4_spi_driver_t stm32l4_spi_driver;
      DMA_OPTION_MEMORY_DATA_INCREMENT |	  \
      DMA_OPTION_PRIORITY_MEDIUM)
 
-#define SPI_CR1_BR_DIV2   (0)
-#define SPI_CR1_BR_DIV4   (SPI_CR1_BR_0)
-#define SPI_CR1_BR_DIV8   (SPI_CR1_BR_1)
-#define SPI_CR1_BR_DIV16  (SPI_CR1_BR_0 | SPI_CR1_BR_1)
-#define SPI_CR1_BR_DIV32  (SPI_CR1_BR_2)
-#define SPI_CR1_BR_DIV64  (SPI_CR1_BR_0 | SPI_CR1_BR_2)
-#define SPI_CR1_BR_DIV128 (SPI_CR1_BR_1 | SPI_CR1_BR_2)
-#define SPI_CR1_BR_DIV256 (SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_BR_2)
-
-#define SPI_CR2_DS_8BIT   (SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2)
-#define SPI_CR2_DS_16BIT  (SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2 | SPI_CR2_DS_3)
-
 static void stm32l4_spi_dma_callback(stm32l4_spi_t *spi, uint32_t events);
 
-static inline void stm32l4_spi_read8(SPI_TypeDef *SPI, void *rx_data)
+static inline __attribute__((optimize("O3"),always_inline)) void stm32l4_spi_rd8(SPI_TypeDef *SPI, void *rx_data)
 {
     *((uint8_t*)rx_data) = *((volatile uint8_t*)(&SPI->DR));
 }
 
-static inline void stm32l4_spi_read16(SPI_TypeDef *SPI, void *rx_data)
+static inline __attribute__((optimize("O3"),always_inline)) void stm32l4_spi_rd16(SPI_TypeDef *SPI, void *rx_data)
 {
     *((uint16_t*)rx_data) = SPI->DR;
 }
 
-static inline void stm32l4_spi_write8(SPI_TypeDef *SPI, const void *tx_data)
+static inline __attribute__((optimize("O3"),always_inline)) void stm32l4_spi_wr8(SPI_TypeDef *SPI, const void *tx_data)
 {
     *((volatile uint8_t*)(&SPI->DR)) = *((const uint8_t*)tx_data);
 }
 
-static inline void stm32l4_spi_write16(SPI_TypeDef *SPI, const void *tx_data)
+static inline __attribute__((optimize("O3"),always_inline)) void stm32l4_spi_wr16(SPI_TypeDef *SPI, const void *tx_data)
 {
     SPI->DR = *((const uint16_t*)tx_data);
 }
@@ -311,7 +299,7 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_HALFDUPLEX_8_M:
-	stm32l4_spi_read8(SPI, spi->rx_data);
+	stm32l4_spi_rd8(SPI, spi->rx_data);
 	spi->rx_data += 1;
 
 	if (spi->rx_data == spi->rx_data_e)
@@ -325,13 +313,13 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
     case SPI_STATE_HALFDUPLEX_8_1:
 	SPI->CR2 &= ~SPI_CR2_RXNEIE;
 
-	stm32l4_spi_read8(SPI, spi->rx_data);
+	stm32l4_spi_rd8(SPI, spi->rx_data);
 
 	while (SPI->SR & SPI_SR_BSY) { }
 
 	while (SPI->SR & SPI_SR_FRLVL)
 	{
-	    stm32l4_spi_read8(SPI, &rx_null);
+	    stm32l4_spi_rd8(SPI, &rx_null);
 	}
 	
 	SPI->CR1 &= ~SPI_CR1_BIDIMODE;
@@ -341,21 +329,21 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_RECEIVE_8_3:
-	stm32l4_spi_read8(SPI, spi->rx_data);
+	stm32l4_spi_rd8(SPI, spi->rx_data);
 	spi->rx_data += 1;
 
 	spi->state = SPI_STATE_RECEIVE_8_2;
 	break;
 
     case SPI_STATE_RECEIVE_8_2:
-	stm32l4_spi_read8(SPI, spi->rx_data);
+	stm32l4_spi_rd8(SPI, spi->rx_data);
 	spi->rx_data += 1;
 
 	spi->state = SPI_STATE_RECEIVE_8_1;
 	break;
 
     case SPI_STATE_RECEIVE_8_1:
-	stm32l4_spi_read8(SPI, spi->rx_data);
+	stm32l4_spi_rd8(SPI, spi->rx_data);
 
 	if (SPI->CR1 & SPI_CR1_CRCEN)
 	{
@@ -369,8 +357,8 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	    SPI->CR1 = spi_cr1;
 	    SPI->CR1 = spi_cr1 | SPI_CR1_SPE;
 	    
-	    stm32l4_spi_write8(SPI, &tx_default);
-	    stm32l4_spi_write8(SPI, &tx_default);
+	    stm32l4_spi_wr8(SPI, &tx_default);
+	    stm32l4_spi_wr8(SPI, &tx_default);
 
 	    spi->state = SPI_STATE_RECEIVE_8_CRC16_H;
 	}
@@ -381,13 +369,13 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_RECEIVE_8_CRC16_H:
-	stm32l4_spi_read8(SPI, &spi->rx_crc16[0]);
+	stm32l4_spi_rd8(SPI, &spi->rx_crc16[0]);
 
 	spi->state = SPI_STATE_RECEIVE_8_CRC16_L;
 	break;
 
     case SPI_STATE_RECEIVE_8_CRC16_L:
-	stm32l4_spi_read8(SPI, &spi->rx_crc16[1]);
+	stm32l4_spi_rd8(SPI, &spi->rx_crc16[1]);
 
 	spi->crc16 ^= (spi->rx_crc16[0] << 8);
 	spi->crc16 ^= (spi->rx_crc16[1] << 0);
@@ -396,7 +384,7 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_RECEIVE_16_S:
-	stm32l4_spi_read8(SPI, spi->rx_data);
+	stm32l4_spi_rd8(SPI, spi->rx_data);
 	spi->rx_data += 1;
 
 	spi_cr2 = SPI->CR2;
@@ -406,8 +394,8 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 		
 	SPI->CR2 = spi_cr2;
 
-	stm32l4_spi_write16(SPI, &tx_default);
-	stm32l4_spi_write16(SPI, &tx_default);
+	stm32l4_spi_wr16(SPI, &tx_default);
+	stm32l4_spi_wr16(SPI, &tx_default);
 
 	if (spi->rx_data == spi->rx_data_e)
 	{
@@ -420,10 +408,10 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_RECEIVE_16_M:
-	stm32l4_spi_read16(SPI, spi->rx_data);
+	stm32l4_spi_rd16(SPI, spi->rx_data);
 	spi->rx_data += 2;
 
-	stm32l4_spi_write16(SPI, &tx_default);
+	stm32l4_spi_wr16(SPI, &tx_default);
 
 	if (spi->rx_data == spi->rx_data_e)
 	{
@@ -432,14 +420,14 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_RECEIVE_16_2:
-	stm32l4_spi_read16(SPI, spi->rx_data);
+	stm32l4_spi_rd16(SPI, spi->rx_data);
 	spi->rx_data += 2;
 
 	spi->state = SPI_STATE_RECEIVE_16_1;
 	break;
 
     case SPI_STATE_RECEIVE_16_1:
-	stm32l4_spi_read16(SPI, spi->rx_data);
+	stm32l4_spi_rd16(SPI, spi->rx_data);
 
 	if (SPI->CR1 & SPI_CR1_CRCEN)
 	{
@@ -453,7 +441,7 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	    SPI->CR1 = spi_cr1;
 	    SPI->CR1 = spi_cr1 | SPI_CR1_SPE;
 	    
-	    stm32l4_spi_write16(SPI, &tx_default);
+	    stm32l4_spi_wr16(SPI, &tx_default);
 
 	    spi->state = SPI_STATE_RECEIVE_16_CRC16;
 	}
@@ -464,7 +452,7 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_RECEIVE_16_CRC16:
-	stm32l4_spi_read16(SPI, &spi->rx_crc16[0]);
+	stm32l4_spi_rd16(SPI, &spi->rx_crc16[0]);
 
 	spi->crc16 ^= (spi->rx_crc16[0] << 8);
 	spi->crc16 ^= (spi->rx_crc16[1] << 0);
@@ -473,19 +461,19 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 	
     case SPI_STATE_TRANSMIT_8_3:
-	stm32l4_spi_read8(SPI, &rx_null);
+	stm32l4_spi_rd8(SPI, &rx_null);
 
 	spi->state = SPI_STATE_TRANSMIT_8_2;
 	break;
 
     case SPI_STATE_TRANSMIT_8_2:
-	stm32l4_spi_read8(SPI, &rx_null);
+	stm32l4_spi_rd8(SPI, &rx_null);
 
 	spi->state = SPI_STATE_TRANSMIT_8_1;
 	break;
 
     case SPI_STATE_TRANSMIT_8_1:
-	stm32l4_spi_read8(SPI, &rx_null);
+	stm32l4_spi_rd8(SPI, &rx_null);
 
 	if (SPI->CR1 & SPI_CR1_CRCEN)
 	{
@@ -500,8 +488,8 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	    SPI->CR1 = spi_cr1;
 	    SPI->CR1 = spi_cr1 | SPI_CR1_SPE;
 	    
-	    stm32l4_spi_write8(SPI, &tx_crc16[0]);
-	    stm32l4_spi_write8(SPI, &tx_crc16[1]);
+	    stm32l4_spi_wr8(SPI, &tx_crc16[0]);
+	    stm32l4_spi_wr8(SPI, &tx_crc16[1]);
 
 	    spi->state = SPI_STATE_TRANSMIT_8_CRC16_H;
 	}
@@ -512,13 +500,13 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_TRANSMIT_8_CRC16_H:
-	stm32l4_spi_read8(SPI, &rx_null);
+	stm32l4_spi_rd8(SPI, &rx_null);
 
 	spi->state = SPI_STATE_TRANSMIT_8_CRC16_L;
 	break;
 
     case SPI_STATE_TRANSMIT_8_CRC16_L:
-	stm32l4_spi_read8(SPI, &rx_null);
+	stm32l4_spi_rd8(SPI, &rx_null);
 
 	spi->crc16 = 0;
 	
@@ -526,7 +514,7 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 	
     case SPI_STATE_TRANSMIT_16_S:
-	stm32l4_spi_read8(SPI, &rx_null);
+	stm32l4_spi_rd8(SPI, &rx_null);
 
 	spi_cr2 = SPI->CR2;
 
@@ -535,10 +523,10 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 		
 	SPI->CR2 = spi_cr2;
 
-	stm32l4_spi_write16(SPI, spi->tx_data);
+	stm32l4_spi_wr16(SPI, spi->tx_data);
 	spi->tx_data += 2;
 
-	stm32l4_spi_write16(SPI, spi->tx_data);
+	stm32l4_spi_wr16(SPI, spi->tx_data);
 	spi->tx_data += 2;
 
 	if (spi->tx_data == spi->tx_data_e)
@@ -552,9 +540,9 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_TRANSMIT_16_M:
-	stm32l4_spi_read16(SPI, &rx_null);
+	stm32l4_spi_rd16(SPI, &rx_null);
 
-	stm32l4_spi_write16(SPI, spi->tx_data);
+	stm32l4_spi_wr16(SPI, spi->tx_data);
 	spi->tx_data += 2;
 
 	if (spi->tx_data == spi->tx_data_e)
@@ -564,13 +552,13 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_TRANSMIT_16_2:
-	stm32l4_spi_read16(SPI, &rx_null);
+	stm32l4_spi_rd16(SPI, &rx_null);
 
 	spi->state = SPI_STATE_TRANSMIT_16_1;
 	break;
 
     case SPI_STATE_TRANSMIT_16_1:
-	stm32l4_spi_read16(SPI, &rx_null);
+	stm32l4_spi_rd16(SPI, &rx_null);
 
 	if (SPI->CR1 & SPI_CR1_CRCEN)
 	{
@@ -585,7 +573,7 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	    SPI->CR1 = spi_cr1;
 	    SPI->CR1 = spi_cr1 | SPI_CR1_SPE;
 	    
-	    stm32l4_spi_write16(SPI, &tx_crc16[0]);
+	    stm32l4_spi_wr16(SPI, &tx_crc16[0]);
 
 	    spi->state = SPI_STATE_TRANSMIT_16_CRC16;
 	}
@@ -596,7 +584,7 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_TRANSMIT_16_CRC16:
-	stm32l4_spi_read16(SPI, &rx_null);
+	stm32l4_spi_rd16(SPI, &rx_null);
 
 	spi->crc16 = 0;
 	
@@ -604,21 +592,21 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_TRANSFER_8_3:
-	stm32l4_spi_read8(SPI, spi->rx_data);
+	stm32l4_spi_rd8(SPI, spi->rx_data);
 	spi->rx_data += 1;
 
 	spi->state = SPI_STATE_TRANSFER_8_2;
 	break;
 
     case SPI_STATE_TRANSFER_8_2:
-	stm32l4_spi_read8(SPI, spi->rx_data);
+	stm32l4_spi_rd8(SPI, spi->rx_data);
 	spi->rx_data += 1;
 
 	spi->state = SPI_STATE_TRANSFER_8_1;
 	break;
 
     case SPI_STATE_TRANSFER_8_1:
-	stm32l4_spi_read8(SPI, spi->rx_data);
+	stm32l4_spi_rd8(SPI, spi->rx_data);
 	
 	if (SPI->CR1 & SPI_CR1_CRCEN)
 	{
@@ -635,8 +623,8 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	    SPI->CR1 = spi_cr1;
 	    SPI->CR1 = spi_cr1 | SPI_CR1_SPE;
 	    
-	    stm32l4_spi_write8(SPI, &tx_crc16[0]);
-	    stm32l4_spi_write8(SPI, &tx_crc16[1]);
+	    stm32l4_spi_wr8(SPI, &tx_crc16[0]);
+	    stm32l4_spi_wr8(SPI, &tx_crc16[1]);
 
 	    spi->state = SPI_STATE_TRANSFER_8_CRC16_H;
 	}
@@ -647,13 +635,13 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_TRANSFER_8_CRC16_H:
-	stm32l4_spi_read8(SPI, &spi->rx_crc16[0]);
+	stm32l4_spi_rd8(SPI, &spi->rx_crc16[0]);
 
 	spi->state = SPI_STATE_TRANSFER_8_CRC16_L;
 	break;
 
     case SPI_STATE_TRANSFER_8_CRC16_L:
-	stm32l4_spi_read8(SPI, &spi->rx_crc16[1]);
+	stm32l4_spi_rd8(SPI, &spi->rx_crc16[1]);
 
 	spi->crc16 ^= (spi->rx_crc16[0] << 8);
 	spi->crc16 ^= (spi->rx_crc16[1] << 0);
@@ -662,7 +650,7 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_TRANSFER_16_S:
-	stm32l4_spi_read8(SPI, spi->rx_data);
+	stm32l4_spi_rd8(SPI, spi->rx_data);
 	spi->rx_data += 1;
 
 	spi_cr2 = SPI->CR2;
@@ -672,10 +660,10 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 		
 	SPI->CR2 = spi_cr2;
 
-	stm32l4_spi_write16(SPI, spi->tx_data);
+	stm32l4_spi_wr16(SPI, spi->tx_data);
 	spi->tx_data += 2;
 
-	stm32l4_spi_write16(SPI, spi->tx_data);
+	stm32l4_spi_wr16(SPI, spi->tx_data);
 	spi->tx_data += 2;
 
 	if (spi->tx_data == spi->tx_data_e)
@@ -689,10 +677,10 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_TRANSFER_16_M:
-	stm32l4_spi_read16(SPI, spi->rx_data);
+	stm32l4_spi_rd16(SPI, spi->rx_data);
 	spi->rx_data += 2;
 
-	stm32l4_spi_write16(SPI, spi->tx_data);
+	stm32l4_spi_wr16(SPI, spi->tx_data);
 
 	spi->tx_data += 2;
 	
@@ -703,14 +691,14 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_TRANSFER_16_2:
-	stm32l4_spi_read16(SPI, spi->rx_data);
+	stm32l4_spi_rd16(SPI, spi->rx_data);
 	spi->rx_data += 2;
 
 	spi->state = SPI_STATE_TRANSFER_16_1;
 	break;
 
     case SPI_STATE_TRANSFER_16_1:
-	stm32l4_spi_read16(SPI, spi->rx_data);
+	stm32l4_spi_rd16(SPI, spi->rx_data);
 
 	if (SPI->CR1 & SPI_CR1_CRCEN)
 	{
@@ -727,7 +715,7 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	    SPI->CR1 = spi_cr1;
 	    SPI->CR1 = spi_cr1 | SPI_CR1_SPE;
 	    
-	    stm32l4_spi_write16(SPI, &tx_crc16[0]);
+	    stm32l4_spi_wr16(SPI, &tx_crc16[0]);
 
 	    spi->state = SPI_STATE_TRANSFER_16_CRC16;
 	}
@@ -738,7 +726,7 @@ static void stm32l4_spi_interrupt(stm32l4_spi_t *spi)
 	break;
 
     case SPI_STATE_TRANSFER_16_CRC16:
-	stm32l4_spi_read16(SPI, &spi->rx_crc16[0]);
+	stm32l4_spi_rd16(SPI, &spi->rx_crc16[0]);
 
 	spi->crc16 ^= (spi->rx_crc16[0] << 8);
 	spi->crc16 ^= (spi->rx_crc16[1] << 0);
@@ -1058,59 +1046,59 @@ __attribute__((optimize("O3"))) void stm32l4_spi_exchange(stm32l4_spi_t *spi, co
 	    {
 		if (count == 2)
 		{
-		    stm32l4_spi_write8(SPI, tx_data);
+		    stm32l4_spi_wr8(SPI, tx_data);
 		    tx_data += 1;
 		    
-		    stm32l4_spi_write8(SPI, tx_data);
+		    stm32l4_spi_wr8(SPI, tx_data);
 		    
 		    while (!(SPI->SR & SPI_SR_RXNE)) { }
-		    stm32l4_spi_read8(SPI, rx_data);
+		    stm32l4_spi_rd8(SPI, rx_data);
 		    rx_data += 1;
 		    
 		    while (!(SPI->SR & SPI_SR_RXNE)) { }
-		    stm32l4_spi_read8(SPI, rx_data);
+		    stm32l4_spi_rd8(SPI, rx_data);
 		}
 		else
 		{
-		    stm32l4_spi_write8(SPI, tx_data);
+		    stm32l4_spi_wr8(SPI, tx_data);
 		    
 		    while (!(SPI->SR & SPI_SR_RXNE)) { }
-		    stm32l4_spi_read8(SPI, rx_data);
+		    stm32l4_spi_rd8(SPI, rx_data);
 		}
 	    }
 	    else
 	    {
 		tx_data_e = tx_data + count;
 	
-		stm32l4_spi_write8(SPI, tx_data);
+		stm32l4_spi_wr8(SPI, tx_data);
 		tx_data += 1;
 		
-		stm32l4_spi_write8(SPI, tx_data);
+		stm32l4_spi_wr8(SPI, tx_data);
 		tx_data += 1;
 		
-		stm32l4_spi_write8(SPI, tx_data);
+		stm32l4_spi_wr8(SPI, tx_data);
 		tx_data += 1;
 		
 		while (tx_data != tx_data_e)
 		{
 		    while (!(SPI->SR & SPI_SR_RXNE)) { }
-		    stm32l4_spi_read8(SPI, rx_data);
+		    stm32l4_spi_rd8(SPI, rx_data);
 		    rx_data += 1;
 		    
-		    stm32l4_spi_write8(SPI, tx_data);
+		    stm32l4_spi_wr8(SPI, tx_data);
 		    tx_data += 1;
 		}
 		
 		while (!(SPI->SR & SPI_SR_RXNE)) { }
-		stm32l4_spi_read8(SPI, rx_data);
+		stm32l4_spi_rd8(SPI, rx_data);
 		rx_data += 1;
 		
 		while (!(SPI->SR & SPI_SR_RXNE)) { }
-		stm32l4_spi_read8(SPI, rx_data);
+		stm32l4_spi_rd8(SPI, rx_data);
 		rx_data += 1;
 		
 		while (!(SPI->SR & SPI_SR_RXNE)) { }
-		stm32l4_spi_read8(SPI, rx_data);
+		stm32l4_spi_rd8(SPI, rx_data);
 	    }
 	}
 	else
@@ -1119,51 +1107,51 @@ __attribute__((optimize("O3"))) void stm32l4_spi_exchange(stm32l4_spi_t *spi, co
 	    {
 		if (count == 2)
 		{
-		    stm32l4_spi_write8(SPI, &tx_default);
-		    stm32l4_spi_write8(SPI, &tx_default);
+		    stm32l4_spi_wr8(SPI, &tx_default);
+		    stm32l4_spi_wr8(SPI, &tx_default);
 		    
 		    while (!(SPI->SR & SPI_SR_RXNE)) { }
-		    stm32l4_spi_read8(SPI, rx_data);
+		    stm32l4_spi_rd8(SPI, rx_data);
 		    rx_data += 1;
 		    
 		    while (!(SPI->SR & SPI_SR_RXNE)) { }
-		    stm32l4_spi_read8(SPI, rx_data);
+		    stm32l4_spi_rd8(SPI, rx_data);
 		}
 		else
 		{
-		    stm32l4_spi_write8(SPI, &tx_default);
+		    stm32l4_spi_wr8(SPI, &tx_default);
 		    
 		    while (!(SPI->SR & SPI_SR_RXNE)) { }
-		    stm32l4_spi_read8(SPI, rx_data);
+		    stm32l4_spi_rd8(SPI, rx_data);
 		}
 	    }
 	    else
 	    {
 		rx_data_e = rx_data + count - 3;
 	
-		stm32l4_spi_write8(SPI, &tx_default);
-		stm32l4_spi_write8(SPI, &tx_default);
-		stm32l4_spi_write8(SPI, &tx_default);
+		stm32l4_spi_wr8(SPI, &tx_default);
+		stm32l4_spi_wr8(SPI, &tx_default);
+		stm32l4_spi_wr8(SPI, &tx_default);
 		
 		while (rx_data != rx_data_e)
 		{
 		    while (!(SPI->SR & SPI_SR_RXNE)) { }
-		    stm32l4_spi_read8(SPI, rx_data);
+		    stm32l4_spi_rd8(SPI, rx_data);
 		    rx_data += 1;
 		    
-		    stm32l4_spi_write8(SPI, &tx_default);
+		    stm32l4_spi_wr8(SPI, &tx_default);
 		}
 		
 		while (!(SPI->SR & SPI_SR_RXNE)) { }
-		stm32l4_spi_read8(SPI, rx_data);
+		stm32l4_spi_rd8(SPI, rx_data);
 		rx_data += 1;
 		
 		while (!(SPI->SR & SPI_SR_RXNE)) { }
-		stm32l4_spi_read8(SPI, rx_data);
+		stm32l4_spi_rd8(SPI, rx_data);
 		rx_data += 1;
 		
 		while (!(SPI->SR & SPI_SR_RXNE)) { }
-		stm32l4_spi_read8(SPI, rx_data);
+		stm32l4_spi_rd8(SPI, rx_data);
 	    }
 	}
     }
@@ -1173,55 +1161,55 @@ __attribute__((optimize("O3"))) void stm32l4_spi_exchange(stm32l4_spi_t *spi, co
 	{
 	    if (count == 2)
 	    {
-		stm32l4_spi_write8(SPI, tx_data);
+		stm32l4_spi_wr8(SPI, tx_data);
 		tx_data += 1;
 		    
-		stm32l4_spi_write8(SPI, tx_data);
+		stm32l4_spi_wr8(SPI, tx_data);
 		    
 		while (!(SPI->SR & SPI_SR_RXNE)) { }
-		stm32l4_spi_read8(SPI, &rx_null);
+		stm32l4_spi_rd8(SPI, &rx_null);
 		    
 		while (!(SPI->SR & SPI_SR_RXNE)) { }
-		stm32l4_spi_read8(SPI, &rx_null);
+		stm32l4_spi_rd8(SPI, &rx_null);
 	    }
 	    else
 	    {
-		stm32l4_spi_write8(SPI, tx_data);
+		stm32l4_spi_wr8(SPI, tx_data);
 		    
 		while (!(SPI->SR & SPI_SR_RXNE)) { }
-		stm32l4_spi_read8(SPI, &rx_null);
+		stm32l4_spi_rd8(SPI, &rx_null);
 	    }
 	}
 	else
 	{
 	    tx_data_e = tx_data + count;
 	
-	    stm32l4_spi_write8(SPI, tx_data);
+	    stm32l4_spi_wr8(SPI, tx_data);
 	    tx_data += 1;
 		
-	    stm32l4_spi_write8(SPI, tx_data);
+	    stm32l4_spi_wr8(SPI, tx_data);
 	    tx_data += 1;
 		
-	    stm32l4_spi_write8(SPI, tx_data);
+	    stm32l4_spi_wr8(SPI, tx_data);
 	    tx_data += 1;
 		
 	    while (tx_data != tx_data_e)
 	    {
 		while (!(SPI->SR & SPI_SR_RXNE)) { }
-		stm32l4_spi_read8(SPI, &rx_null);
+		stm32l4_spi_rd8(SPI, &rx_null);
 		    
-		stm32l4_spi_write8(SPI, tx_data);
+		stm32l4_spi_wr8(SPI, tx_data);
 		tx_data += 1;
 	    }
 		
 	    while (!(SPI->SR & SPI_SR_RXNE)) { }
-	    stm32l4_spi_read8(SPI, &rx_null);
+	    stm32l4_spi_rd8(SPI, &rx_null);
 		
 	    while (!(SPI->SR & SPI_SR_RXNE)) { }
-	    stm32l4_spi_read8(SPI, &rx_null);
+	    stm32l4_spi_rd8(SPI, &rx_null);
 		
 	    while (!(SPI->SR & SPI_SR_RXNE)) { }
-	    stm32l4_spi_read8(SPI, &rx_null);
+	    stm32l4_spi_rd8(SPI, &rx_null);
 	}
     }
 }
@@ -1230,10 +1218,10 @@ uint8_t stm32l4_spi_exchange8(stm32l4_spi_t *spi, uint8_t data)
 {
     SPI_TypeDef *SPI = spi->SPI;
 
-    stm32l4_spi_write8(SPI, &data);
+    stm32l4_spi_wr8(SPI, &data);
 	
     while (!(SPI->SR & SPI_SR_RXNE)) { }
-    stm32l4_spi_read8(SPI, &data);
+    stm32l4_spi_rd8(SPI, &data);
 	
     return data;
 }
@@ -1244,25 +1232,25 @@ uint16_t stm32l4_spi_exchange16(stm32l4_spi_t *spi, uint16_t data)
 
     if (spi->cr1 & SPI_CR1_LSBFIRST)
     {
-	stm32l4_spi_write8(SPI, &((uint8_t*)&data)[0]);
-	stm32l4_spi_write8(SPI, &((uint8_t*)&data)[1]);
+	stm32l4_spi_wr8(SPI, &((uint8_t*)&data)[0]);
+	stm32l4_spi_wr8(SPI, &((uint8_t*)&data)[1]);
 	
 	while (!(SPI->SR & SPI_SR_RXNE)) { }
-	stm32l4_spi_read8(SPI, &((uint8_t*)&data)[0]);
+	stm32l4_spi_rd8(SPI, &((uint8_t*)&data)[0]);
 	
 	while (!(SPI->SR & SPI_SR_RXNE)) { }
-	stm32l4_spi_read8(SPI, &((uint8_t*)&data)[1]);
+	stm32l4_spi_rd8(SPI, &((uint8_t*)&data)[1]);
     }
     else
     {
-	stm32l4_spi_write8(SPI, &((uint8_t*)&data)[1]);
-	stm32l4_spi_write8(SPI, &((uint8_t*)&data)[0]);
+	stm32l4_spi_wr8(SPI, &((uint8_t*)&data)[1]);
+	stm32l4_spi_wr8(SPI, &((uint8_t*)&data)[0]);
 	
 	while (!(SPI->SR & SPI_SR_RXNE)) { }
-	stm32l4_spi_read8(SPI, &((uint8_t*)&data)[1]);
+	stm32l4_spi_rd8(SPI, &((uint8_t*)&data)[1]);
 	
 	while (!(SPI->SR & SPI_SR_RXNE)) { }
-	stm32l4_spi_read8(SPI, &((uint8_t*)&data)[0]);
+	stm32l4_spi_rd8(SPI, &((uint8_t*)&data)[0]);
     }
 
     return data;
@@ -1417,9 +1405,9 @@ bool stm32l4_spi_receive(stm32l4_spi_t *spi, uint8_t *rx_data, unsigned int rx_c
 		{
 		    spi->state = SPI_STATE_RECEIVE_8_3;
 		    
-		    stm32l4_spi_write8(SPI, &tx_default);
-		    stm32l4_spi_write8(SPI, &tx_default);
-		    stm32l4_spi_write8(SPI, &tx_default);
+		    stm32l4_spi_wr8(SPI, &tx_default);
+		    stm32l4_spi_wr8(SPI, &tx_default);
+		    stm32l4_spi_wr8(SPI, &tx_default);
 		    
 		    spi->xf_count += 3;
 		}
@@ -1427,8 +1415,8 @@ bool stm32l4_spi_receive(stm32l4_spi_t *spi, uint8_t *rx_data, unsigned int rx_c
 		{
 		    spi->state = SPI_STATE_RECEIVE_8_2;
 		    
-		    stm32l4_spi_write8(SPI, &tx_default);
-		    stm32l4_spi_write8(SPI, &tx_default);
+		    stm32l4_spi_wr8(SPI, &tx_default);
+		    stm32l4_spi_wr8(SPI, &tx_default);
 		    
 		    spi->xf_count += 2;
 		}
@@ -1436,7 +1424,7 @@ bool stm32l4_spi_receive(stm32l4_spi_t *spi, uint8_t *rx_data, unsigned int rx_c
 		{
 		    spi->state = SPI_STATE_RECEIVE_8_1;
 		    
-		    stm32l4_spi_write8(SPI, &tx_default);
+		    stm32l4_spi_wr8(SPI, &tx_default);
 		    
 		    spi->xf_count += 1;
 		}
@@ -1454,7 +1442,7 @@ bool stm32l4_spi_receive(stm32l4_spi_t *spi, uint8_t *rx_data, unsigned int rx_c
 		    
 		    spi->state = SPI_STATE_RECEIVE_16_S;
 		    
-		    stm32l4_spi_write8(SPI, &tx_default);
+		    stm32l4_spi_wr8(SPI, &tx_default);
 		}
 		else
 		{
@@ -1472,8 +1460,8 @@ bool stm32l4_spi_receive(stm32l4_spi_t *spi, uint8_t *rx_data, unsigned int rx_c
 			spi->state = SPI_STATE_RECEIVE_16_M;
 		    }
 		    
-		    stm32l4_spi_write16(SPI, &tx_default);
-		    stm32l4_spi_write16(SPI, &tx_default);
+		    stm32l4_spi_wr16(SPI, &tx_default);
+		    stm32l4_spi_wr16(SPI, &tx_default);
 		}
 	    }
 	    
@@ -1568,13 +1556,13 @@ bool stm32l4_spi_transmit(stm32l4_spi_t *spi, const uint8_t *tx_data, unsigned i
 	    {
 		spi->state = SPI_STATE_TRANSMIT_8_3;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
 		spi->xf_count += 3;
@@ -1583,10 +1571,10 @@ bool stm32l4_spi_transmit(stm32l4_spi_t *spi, const uint8_t *tx_data, unsigned i
 	    {
 		spi->state = SPI_STATE_TRANSMIT_8_2;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
 		spi->xf_count += 2;
@@ -1595,7 +1583,7 @@ bool stm32l4_spi_transmit(stm32l4_spi_t *spi, const uint8_t *tx_data, unsigned i
 	    {
 		spi->state = SPI_STATE_TRANSMIT_8_1;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
 		spi->xf_count += 1;
@@ -1614,7 +1602,7 @@ bool stm32l4_spi_transmit(stm32l4_spi_t *spi, const uint8_t *tx_data, unsigned i
 		
 		spi->state = SPI_STATE_TRANSMIT_16_S;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data++;
 	    }
 	    else
@@ -1633,10 +1621,10 @@ bool stm32l4_spi_transmit(stm32l4_spi_t *spi, const uint8_t *tx_data, unsigned i
 		    spi->state = SPI_STATE_TRANSMIT_16_M;
 		}
 		
-		stm32l4_spi_write16(SPI, spi->tx_data);
+		stm32l4_spi_wr16(SPI, spi->tx_data);
 		spi->tx_data += 2;
 		
-		stm32l4_spi_write16(SPI, spi->tx_data);
+		stm32l4_spi_wr16(SPI, spi->tx_data);
 		spi->tx_data += 2;
 	    }
 	}
@@ -1732,13 +1720,13 @@ bool stm32l4_spi_transfer(stm32l4_spi_t *spi, const uint8_t *tx_data, uint8_t *r
 	    {
 		spi->state = SPI_STATE_TRANSFER_8_3;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
 		spi->xf_count += 3;
@@ -1747,10 +1735,10 @@ bool stm32l4_spi_transfer(stm32l4_spi_t *spi, const uint8_t *tx_data, uint8_t *r
 	    {
 		spi->state = SPI_STATE_TRANSFER_8_2;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
 		spi->xf_count += 2;
@@ -1759,7 +1747,7 @@ bool stm32l4_spi_transfer(stm32l4_spi_t *spi, const uint8_t *tx_data, uint8_t *r
 	    {
 		spi->state = SPI_STATE_TRANSFER_8_1;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data += 1;
 		
 		spi->xf_count += 1;
@@ -1778,7 +1766,7 @@ bool stm32l4_spi_transfer(stm32l4_spi_t *spi, const uint8_t *tx_data, uint8_t *r
 		
 		spi->state = SPI_STATE_TRANSFER_16_S;
 		
-		stm32l4_spi_write8(SPI, spi->tx_data);
+		stm32l4_spi_wr8(SPI, spi->tx_data);
 		spi->tx_data++;
 	    }
 	    else
@@ -1797,10 +1785,10 @@ bool stm32l4_spi_transfer(stm32l4_spi_t *spi, const uint8_t *tx_data, uint8_t *r
 		    spi->state = SPI_STATE_TRANSFER_16_M;
 		}
 		
-		stm32l4_spi_write16(SPI, spi->tx_data);
+		stm32l4_spi_wr16(SPI, spi->tx_data);
 		spi->tx_data += 2;
 		
-		stm32l4_spi_write16(SPI, spi->tx_data);
+		stm32l4_spi_wr16(SPI, spi->tx_data);
 		spi->tx_data += 2;
 	    }
 	}

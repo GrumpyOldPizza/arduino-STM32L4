@@ -178,6 +178,16 @@ FS::FS() {
 
 bool FS::begin()
 {
+    return (f_initvolume() == F_NO_ERROR);
+}
+
+void FS::end()
+{
+    f_delvolume();
+}
+
+bool FS::check()
+{
     return (f_checkvolume() == F_NO_ERROR);
 }
 

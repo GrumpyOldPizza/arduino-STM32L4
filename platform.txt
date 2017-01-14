@@ -68,6 +68,10 @@ compiler.elf2hex.extra_flags=
 # ---------
 build.usb_flags=-DUSB_VID={build.vid} -DUSB_PID={build.pid} '-DUSB_MANUFACTURER={build.usb_manufacturer}' '-DUSB_PRODUCT={build.usb_product}' '-DUSB_TYPE={build.usb_type}'
 
+# DOSFS Flags
+# ---------
+build.dosfs_flags='-DDOSFS_SDCARD={build.dosfs_sdcard}' '-DDOSFS_SFLASH={build.dosfs_sflash}'
+
 # Compile patterns
 # ----------------
 

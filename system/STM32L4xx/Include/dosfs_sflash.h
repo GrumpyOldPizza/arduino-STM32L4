@@ -33,7 +33,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "dosfs_driver.h"
+#include "dosfs_device.h"
 
 #include "stm32l4_qspi.h"
 

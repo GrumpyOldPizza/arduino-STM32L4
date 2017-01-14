@@ -1,4 +1,5 @@
 menu.usb=USB Type
+menu.dosfs=DOSFS
 menu.speed=CPU Speed
 menu.opt=Optimize
 
@@ -30,7 +31,7 @@ Dragonfly-L476RE.build.usb_manufacturer=u"\u0324Tlera Corporation"
 Dragonfly-L476RE.build.usb_product=u"\u0314Dragonfly"
 Dragonfly-L476RE.build.vid=0x1209
 Dragonfly-L476RE.build.pid=0x6667
-Dragonfly-L476RE.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags}
+Dragonfly-L476RE.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags} {build.dosfs_flags}
 Dragonfly-L476RE.build.ldscript=linker_scripts/STM32L476RE_FLASH.ld
 Dragonfly-L476RE.build.openocdscript=openocd_scripts/stm32l476re_dragonfly.cfg
 Dragonfly-L476RE.build.variant=STM32L476RE-Dragonfly
@@ -43,6 +44,22 @@ Dragonfly-L476RE.menu.usb.cdc_msc=Serial + Mass Storage
 Dragonfly-L476RE.menu.usb.cdc_msc.build.usb_type=USB_TYPE_CDC_MSC
 Dragonfly-L476RE.menu.usb.none=No USB
 Dragonfly-L476RE.menu.usb.none.build.usb_type=USB_TYPE_NONE
+
+Dragonfly-L476RE.menu.dosfs.sflash=SFLASH (QSPI)
+Dragonfly-L476RE.menu.dosfs.sflash.build.dosfs_sdcard=0
+Dragonfly-L476RE.menu.dosfs.sflash.build.dosfs_sflash=2
+Dragonfly-L476RE.menu.dosfs.sdspi=SDCARD (SPI)
+Dragonfly-L476RE.menu.dosfs.sdspi.build.dosfs_sdcard=1
+Dragonfly-L476RE.menu.dosfs.sdspi.build.dosfs_sflash=0
+Dragonfly-L476RE.menu.dosfs.sdmmc=SDCARD (SDIO Default Speed)
+Dragonfly-L476RE.menu.dosfs.sdmmc.build.dosfs_sdcard=2
+Dragonfly-L476RE.menu.dosfs.sdmmc.build.dosfs_sflash=0
+Dragonfly-L476RE.menu.dosfs.sdmmc1=SDCARD (SDIO High Speed)
+Dragonfly-L476RE.menu.dosfs.sdmmc1.build.dosfs_sdcard=3
+Dragonfly-L476RE.menu.dosfs.sdmmc1.build.dosfs_sflash=0
+Dragonfly-L476RE.menu.dosfs.none=None
+Dragonfly-L476RE.menu.dosfs.none.build.dosfs_sdcard=0
+Dragonfly-L476RE.menu.dosfs.none.build.dosfs_sflash=0
 
 Dragonfly-L476RE.menu.speed.80=80 MHz
 Dragonfly-L476RE.menu.speed.80.build.f_cpu=80000000L
@@ -106,7 +123,7 @@ Butterfly-L433CC.build.usb_manufacturer=u"\u0324Tlera Corporation"
 Butterfly-L433CC.build.usb_product=u"\u0314Butterfly"
 Butterfly-L433CC.build.vid=0x1209
 Butterfly-L433CC.build.pid=0x6668
-Butterfly-L433CC.build.extra_flags=-DSTM32L433xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags}
+Butterfly-L433CC.build.extra_flags=-DSTM32L433xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags} {build.dosfs_flags}
 Butterfly-L433CC.build.ldscript=linker_scripts/STM32L433CC_FLASH.ld
 Butterfly-L433CC.build.openocdscript=openocd_scripts/stm32l433cc_butterfly.cfg
 Butterfly-L433CC.build.variant=STM32L433CC-Butterfly
@@ -119,6 +136,13 @@ Butterfly-L433CC.menu.usb.cdc_msc=Serial + Mass Storage
 Butterfly-L433CC.menu.usb.cdc_msc.build.usb_type=USB_TYPE_CDC_MSC
 Butterfly-L433CC.menu.usb.none=No USB
 Butterfly-L433CC.menu.usb.none.build.usb_type=USB_TYPE_NONE
+
+Butterfly-L433CC.menu.dosfs.none=None
+Butterfly-L433CC.menu.dosfs.none.build.dosfs_sdcard=0
+Butterfly-L433CC.menu.dosfs.none.build.dosfs_sflash=0
+Butterfly-L433CC.menu.dosfs.sdspi=SDCARD (SPI)
+Butterfly-L433CC.menu.dosfs.sdspi.build.dosfs_sdcard=1
+Butterfly-L433CC.menu.dosfs.sdspi.build.dosfs_sflash=0
 
 Butterfly-L433CC.menu.speed.80=80 MHz
 Butterfly-L433CC.menu.speed.80.build.f_cpu=80000000L
@@ -182,7 +206,7 @@ Ladybug-L432KC.build.usb_manufacturer=u"\u0324Tlera Corporation"
 Ladybug-L432KC.build.usb_product=u"\u0310Ladybug"
 Ladybug-L432KC.build.vid=0x1209
 Ladybug-L432KC.build.pid=0x6669
-Ladybug-L432KC.build.extra_flags=-DSTM32L432xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags}
+Ladybug-L432KC.build.extra_flags=-DSTM32L432xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags} {build.dosfs_flags}
 Ladybug-L432KC.build.ldscript=linker_scripts/STM32L432KC_FLASH.ld
 Ladybug-L432KC.build.openocdscript=openocd_scripts/stm32l432kc_ladybug.cfg
 Ladybug-L432KC.build.variant=STM32L432KC-Ladybug
@@ -195,6 +219,13 @@ Ladybug-L432KC.menu.usb.cdc_msc=Serial + Mass Storage
 Ladybug-L432KC.menu.usb.cdc_msc.build.usb_type=USB_TYPE_CDC_MSC
 Ladybug-L432KC.menu.usb.none=No USB
 Ladybug-L432KC.menu.usb.none.build.usb_type=USB_TYPE_NONE
+
+Ladybug-L432KC.menu.dosfs.none=None
+Ladybug-L432KC.menu.dosfs.none.build.dosfs_sdcard=0
+Ladybug-L432KC.menu.dosfs.none.build.dosfs_sflash=0
+Ladybug-L432KC.menu.dosfs.sdspi=SDCARD (SPI)
+Ladybug-L432KC.menu.dosfs.sdspi.build.dosfs_sdcard=1
+Ladybug-L432KC.menu.dosfs.sdspi.build.dosfs_sflash=0
 
 Ladybug-L432KC.menu.speed.80=80 MHz
 Ladybug-L432KC.menu.speed.80.build.f_cpu=80000000L
@@ -251,7 +282,7 @@ NUCLEO-L432KC.build.f_cpu=80000000L
 NUCLEO-L432KC.build.board=NUCLEO-L432KC
 NUCLEO-L432KC.build.arch=STM32L4
 NUCLEO-L432KC.build.core=stm32l4
-NUCLEO-L432KC.build.extra_flags=-DSTM32L432xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
+NUCLEO-L432KC.build.extra_flags=-DSTM32L432xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.dosfs_flags}
 NUCLEO-L432KC.build.ldscript=linker_scripts/STM32L432KC_FLASH.ld
 NUCLEO-L432KC.build.openocdscript=openocd_scripts/stm32l432kc_nucleo.cfg
 NUCLEO-L432KC.build.variant=STM32L432KC-NUCLEO
@@ -319,6 +350,19 @@ NUCLEO-L476RG.build.openocdscript=openocd_scripts/stm32l476rg_nucleo.cfg
 NUCLEO-L476RG.build.variant=STM32L476RG-NUCLEO
 NUCLEO-L476RG.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l476 -larm_cortexM4lf_math
 NUCLEO-L476RG.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/STM32L4xx/Include" 
+
+NUCLEO-L476RG.menu.dosfs.none=None
+NUCLEO-L476RG.menu.dosfs.none.build.dosfs_sdcard=0
+NUCLEO-L476RG.menu.dosfs.none.build.dosfs_sflash=0
+NUCLEO-L476RG.menu.dosfs.sdspi=SDCARD (SPI)
+NUCLEO-L476RG.menu.dosfs.sdspi.build.dosfs_sdcard=1
+NUCLEO-L476RG.menu.dosfs.sdspi.build.dosfs_sflash=0
+NUCLEO-L476RG.menu.dosfs.sdmmc=SDCARD (SDIO Default Speed)
+NUCLEO-L476RG.menu.dosfs.sdmmc.build.dosfs_sdcard=2
+NUCLEO-L476RG.menu.dosfs.sdmmc.build.dosfs_sflash=0
+NUCLEO-L476RG.menu.dosfs.sdmmc1=SDCARD (SDIO High Speed)
+NUCLEO-L476RG.menu.dosfs.sdmmc1.build.dosfs_sdcard=3
+NUCLEO-L476RG.menu.dosfs.sdmmc1.build.dosfs_sflash=0
 
 NUCLEO-L476RG.menu.speed.80=80 MHz
 NUCLEO-L476RG.menu.speed.80.build.f_cpu=80000000L

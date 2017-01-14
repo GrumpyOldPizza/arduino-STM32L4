@@ -127,6 +127,19 @@ typedef void (*stm32l4_spi_callback_t)(void *context, uint32_t events);
 #define SPI_STATE_TRANSFER_16_1        42
 #define SPI_STATE_TRANSFER_16_CRC16    43
 
+
+#define SPI_CR1_BR_DIV2   (0)
+#define SPI_CR1_BR_DIV4   (SPI_CR1_BR_0)
+#define SPI_CR1_BR_DIV8   (SPI_CR1_BR_1)
+#define SPI_CR1_BR_DIV16  (SPI_CR1_BR_0 | SPI_CR1_BR_1)
+#define SPI_CR1_BR_DIV32  (SPI_CR1_BR_2)
+#define SPI_CR1_BR_DIV64  (SPI_CR1_BR_0 | SPI_CR1_BR_2)
+#define SPI_CR1_BR_DIV128 (SPI_CR1_BR_1 | SPI_CR1_BR_2)
+#define SPI_CR1_BR_DIV256 (SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_BR_2)
+
+#define SPI_CR2_DS_8BIT   (SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2)
+#define SPI_CR2_DS_16BIT  (SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2 | SPI_CR2_DS_3)
+
 typedef struct _stm32l4_spi_pins_t {
     uint16_t                    mosi;
     uint16_t                    miso;

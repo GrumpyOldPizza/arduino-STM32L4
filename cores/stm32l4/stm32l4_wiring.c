@@ -81,14 +81,16 @@ void init( void )
     stm32l4_exti_create(&stm32l4_exti, STM32L4_EXTI_IRQ_PRIORITY);
     stm32l4_exti_enable(&stm32l4_exti);
 
-#if defined(STM32L4_CONFIG_DOSFS_SDCARD)
-    f_initvolume(&dosfs_sdcard_init, 0);
-    f_checkvolume();
-#endif /* STM32L4_CONFIG_DOSFS_SDCARD */
-#if defined(STM32L4_CONFIG_DOSFS_SFLASH)
-    f_initvolume(&dosfs_sflash_init, 0);
-    f_checkvolume();
-#endif /* STM32L4_CONFIG_DOSFS_SFLASH */
+#if (DOSFS_SDCARD == 1)
+    stm32l4_sdspi_initialize();
+#elif (DOSFS_SDCARD == 2)
+    stm32l4_sdmmc_initialize(0);
+#elif (DOSFS_SDCARD == 3)
+    stm32l4_sdmmc_initialize(STM32L4_SDMMC_OPTION_HIGH_SPEED);
+#endif
+#if (DOSFS_SFLASH >= 1)
+    dosfs_sflash_init();
+#endif
 
     /* This is here to work around a linker issue in avr/fdevopen.c */
     asm(".global stm32l4_stdio_put");

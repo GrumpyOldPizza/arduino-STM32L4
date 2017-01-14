@@ -49,6 +49,8 @@ extern "C" {
 #include "stm32l4_rtc.h"
 #include "stm32l4_sai.h"
 #include "stm32l4_flash.h"
+#include "stm32l4_sdmmc.h"
+#include "stm32l4_sdspi.h"
 
 #define STM32L4_SVCALL_IRQ_PRIORITY  15
 #define STM32L4_PENDSV_IRQ_PRIORITY  15
@@ -99,10 +101,10 @@ extern bool USBD_Suspended(void);
  * DMA_CHANNEL_DMA2_CH1_SPI3_RX
  * DMA_CHANNEL_DMA2_CH2_SPI3_TX
  * DMA_CHANNEL_DMA2_CH3_SPI1_RX
- * DMA_CHANNEL_DMA2_CH4_SPI1_TX / DMA_CHANNEL_DMA2_CH4_SDMMC
+ * DMA_CHANNEL_DMA2_CH4_SPI1_TX
  * DMA_CHANNEL_DMA2_CH5_UART4_RX
- * DMA_CHANNEL_DMA2_CH6_SAI1_A
- * DMA_CHANNEL_DMA2_CH7_QUADSPI
+ * DMA_CHANNEL_DMA2_CH6_SAI1_A (-)
+ * DMA_CHANNEL_DMA2_CH7_QUADSPI (-)
  *
  * (SDMMC shares PC10/PC11/PC12 with SPI3, hence is SDMMC is in use,
  * then PB3/PB4/PB5 switch from SPI1 to SPI3 to avoid DMA conflicts)

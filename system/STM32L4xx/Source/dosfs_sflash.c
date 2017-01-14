@@ -2440,7 +2440,7 @@ static int dosfs_sflash_info(void *context, uint8_t *p_media, uint8_t *p_write_p
     *p_media = DOSFS_MEDIA_SFLASH;
     *p_write_protected = false;
     *p_block_count = blkcnt;
-    *p_au_size = 0;
+    *p_au_size = 1;
     *p_serial = 0;
 
     return status;
@@ -2477,19 +2477,7 @@ static int dosfs_sflash_format(void *context)
 
 static int dosfs_sflash_erase(void *context, uint32_t address, uint32_t length)
 {
-    dosfs_sflash_t *sflash = (dosfs_sflash_t*)context;
-    int status = F_NO_ERROR;
-
-#if (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1)
-    printf("SFLASH_ERASE %08x, %d\n", address, length);
-#endif /* (DOSFS_CONFIG_SFLASH_SIMULATE_TRACE == 1) */
-
-    if (sflash->state != DOSFS_SFLASH_STATE_READY)
-    {
-	status = F_ERR_ONDRIVE;
-    }
-
-    return status;
+    return F_NO_ERROR;
 }
 
 static int dosfs_sflash_discard(void *context, uint32_t address, uint32_t length)
@@ -2522,7 +2510,7 @@ static int dosfs_sflash_discard(void *context, uint32_t address, uint32_t length
     return status;
 }
 
-static int dosfs_sflash_read(void *context, uint32_t address, uint32_t length, uint8_t *data)
+static int dosfs_sflash_read(void *context, uint32_t address, uint8_t *data, uint32_t length, bool prefetch)
 {
     dosfs_sflash_t *sflash = (dosfs_sflash_t*)context;
     int status = F_NO_ERROR;
@@ -2552,7 +2540,7 @@ static int dosfs_sflash_read(void *context, uint32_t address, uint32_t length, u
     return status;
 }
 
-static int dosfs_sflash_write(void *context, uint32_t address, uint32_t length, const uint8_t *data, volatile uint8_t *p_status)
+static int dosfs_sflash_write(void *context, uint32_t address, const uint8_t *data, uint32_t length, volatile uint8_t *p_status)
 {
     dosfs_sflash_t *sflash = (dosfs_sflash_t*)context;
     int status = F_NO_ERROR;
@@ -2582,7 +2570,7 @@ static int dosfs_sflash_write(void *context, uint32_t address, uint32_t length, 
     return status;
 }
 
-static int dosfs_sflash_sync(void *context)
+static int dosfs_sflash_sync(void *context, bool wait)
 {
     dosfs_sflash_t *sflash = (dosfs_sflash_t*)context;
     int status = F_NO_ERROR;
@@ -2595,7 +2583,7 @@ static int dosfs_sflash_sync(void *context)
     return status;
 }
 
-static const F_INTERFACE dosfs_sflash_interface = {
+static const dosfs_device_interface_t dosfs_sflash_interface = {
     dosfs_sflash_release,
     dosfs_sflash_info,
     dosfs_sflash_format,
@@ -2606,10 +2594,15 @@ static const F_INTERFACE dosfs_sflash_interface = {
     dosfs_sflash_sync,
 };
 
-int dosfs_sflash_init(uint32_t param, const F_INTERFACE **p_interface, void **p_context)
+int dosfs_sflash_init(void)
 {
     dosfs_sflash_t *sflash = (dosfs_sflash_t*)&dosfs_sflash;
     int status = F_NO_ERROR;
+    uint8_t data[DOSFS_BLK_SIZE];
+
+    dosfs_device.lock = DOSFS_DEVICE_LOCK_INIT;
+    dosfs_device.context = (void*)sflash;
+    dosfs_device.interface = &dosfs_sflash_interface;
     
     if (sflash->state == DOSFS_SFLASH_STATE_NONE)
     {
@@ -2630,21 +2623,31 @@ int dosfs_sflash_init(uint32_t param, const F_INTERFACE **p_interface, void **p_
 	    
 	    if (!dosfs_sflash_ftl_mount(sflash))
 	    {
-		sflash->state = DOSFS_SFLASH_STATE_NOT_FORMATTED;
+		stm32l4_qspi_unselect(&sflash->qspi);
 
-		status = F_ERR_NOTFORMATTED;
+		status = dosfs_device_format(&dosfs_device, data);
+
+		if (status == F_NO_ERROR)
+		{
+		    sflash->state = DOSFS_SFLASH_STATE_READY;
+		}
+		else
+		{
+		    sflash->state = DOSFS_SFLASH_STATE_NOT_FORMATTED;
+
+		    status = F_ERR_NOTFORMATTED;
+		}
 	    }
 	    else
 	    {
+		stm32l4_qspi_unselect(&sflash->qspi);
+
 		sflash->state = DOSFS_SFLASH_STATE_READY;
 	    }
-
-	    stm32l4_qspi_unselect(&sflash->qspi);
 	}
     }
 
-    *p_interface = &dosfs_sflash_interface;
-    *p_context = (void*)sflash;
+    dosfs_device.lock = 0;
 
     return status;
 }

@@ -5,8 +5,8 @@ CXX      = $(TOOLS)/bin/arm-none-eabi-g++
 AS       = $(TOOLS)/bin/arm-none-eabi-as
 AR       = $(TOOLS)/bin/arm-none-eabi-ar
 LD       = $(TOOLS)/bin/arm-none-eabi-ld
-CFLAGS   = -mcpu=cortex-m4 -mthumb -c -g -Os $(WARNINGS) -std=gnu11 -ffunction-sections -fdata-sections -nostdlib --param max-inline-insns-single=500 -MMD $(EXTRAS) $(DEFINES) $(INCLUDES)
-CXXFLAGS = -mcpu=cortex-m4 -mthumb -c -g -Os $(WARNINGS) -std=gnu++11 -ffunction-sections -fdata-sections -fno-threadsafe-statics -nostdlib --param max-inline-insns-single=500 -fno-rtti -fno-exceptions -MMD $(EXTRAS) $(DEFINES) $(INCLUDES)
+CFLAGS   = -mcpu=cortex-m4 -mthumb -c -g -Os $(WARNINGS) -std=gnu11 -ffunction-sections -fdata-sections -nostdlib -MMD $(EXTRAS) $(DEFINES) $(INCLUDES)
+CXXFLAGS = -mcpu=cortex-m4 -mthumb -c -g -Os $(WARNINGS) -std=gnu++11 -ffunction-sections -fdata-sections -fno-threadsafe-statics -nostdlib -fno-rtti -fno-exceptions -MMD $(EXTRAS) $(DEFINES) $(INCLUDES)
 ASFLAGS  = -c -g -x assembler-with-cpp $(EXTRAS) $(DEFINES) $(INCLUDES)
 WARNINGS = -Wall -Wextra -Wno-unused-parameter
 EXTRAS   = -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mabi=aapcs -mslow-flash-data
@@ -37,7 +37,7 @@ SRCS = \
 	armv7m_systick.c \
 	armv7m_timer.c \
 	dosfs_core.c \
-	dosfs_sdcard.c \
+	dosfs_device.c \
 	dosfs_sflash.c \
 	dosfs_storage.c \
 	stm32l4_adc.c \
@@ -52,6 +52,8 @@ SRCS = \
 	stm32l4_qspi.c \
 	stm32l4_rtc.c \
 	stm32l4_sai.c \
+	stm32l4_sdmmc.c \
+	stm32l4_sdspi.c \
 	stm32l4_spi.c \
 	stm32l4_servo.c \
 	stm32l4_system.c \

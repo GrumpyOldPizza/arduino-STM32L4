@@ -71,7 +71,7 @@ uint64_t armv7m_systick_micros(void)
 
 void armv7m_systick_delay(uint32_t delay)
 {
-    uint32_t millis;
+    uint64_t millis;
 
     millis = armv7m_systick_control.millis;
     

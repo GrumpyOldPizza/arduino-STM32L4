@@ -121,10 +121,6 @@
 #define F_CLUSTER_LAST               ((unsigned long)0x0ffffff8)
 #define F_CLUSTER_LASTF32R           ((unsigned long)0x0fffffff)
 
-typedef struct _dosfs_interface_t    F_INTERFACE;
-
-typedef int (*F_DRIVERINIT)(uint32_t param, const F_INTERFACE **p_interface_return, void **p_context_return);
-
 typedef struct _dosfs_file_t         F_FILE;
 
 typedef struct {
@@ -169,7 +165,7 @@ typedef struct {
     unsigned int   bad_high;
 } F_SPACE;
 
-extern int     f_initvolume(F_DRIVERINIT initfunc, unsigned long param);
+extern int     f_initvolume(void);
 extern int     f_delvolume(void);
 extern int     f_checkvolume(void);
 extern int     f_format(int fattype);
@@ -211,10 +207,6 @@ extern int     f_putc(int c, F_FILE *file);
 extern int     f_getc(F_FILE *file);
 extern int     f_seteof(F_FILE *file);
 extern F_FILE *f_truncate(const char *filename, long length);
-
-
-extern int dosfs_sflash_init(uint32_t param, const F_INTERFACE **p_interface, void **p_context);
-extern int dosfs_sdcard_init(uint32_t param, const F_INTERFACE **p_interface, void **p_context);
 
 #ifdef __cplusplus
 }

@@ -50,17 +50,17 @@ extern const PinDescription g_APinDescription[NUM_TOTAL_PINS] =
     { NULL,  0,                            GPIO_PIN_NONE,            0,                                               PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA3),  GPIO_PIN_PA3_TIM2_CH4,    (PIN_ATTR_PWM | PIN_ATTR_EXTI),                  PWM_INSTANCE_TIM2,  PWM_CHANNEL_1,    ADC_INPUT_NONE },
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA2),  GPIO_PIN_PA2_TIM2_CH3,    (PIN_ATTR_PWM | PIN_ATTR_EXTI | PIN_ATTR_WKUP4), PWM_INSTANCE_TIM2,  PWM_CHANNEL_3,    ADC_INPUT_NONE },
-#if defined(STM32L4_CONFIG_DOSFS_SDCARD)
+#if defined(DOSFS_SDCARD)
     { NULL,  GPIO_PIN_MASK(GPIO_PIN_PA8),  GPIO_PIN_PA8,             0,                                               PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { NULL,  GPIO_PIN_MASK(GPIO_PIN_PA7),  GPIO_PIN_PA7,             0,                                               PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { NULL,  GPIO_PIN_MASK(GPIO_PIN_PA6),  GPIO_PIN_PA6,             0,                                               PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { NULL,  GPIO_PIN_MASK(GPIO_PIN_PA1),  GPIO_PIN_PA1,             0,                                               PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
-#else /* STM32L4_CONFIG_DOSFS_SDCARD */
+#else /* DOSFS_SDCARD */
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA8),  GPIO_PIN_PA8,             (PIN_ATTR_EXTI),                                 PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA7),  GPIO_PIN_PA7_TIM1_CH1N,   (PIN_ATTR_PWM | PIN_ATTR_EXTI),                  PWM_INSTANCE_TIM1,  PWM_CHANNEL_1,    ADC_INPUT_NONE },
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA6),  GPIO_PIN_PA6,             (PIN_ATTR_EXTI),                                 PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA1),  GPIO_PIN_PA1_TIM15_CH1N,  (PIN_ATTR_PWM | PIN_ATTR_EXTI),                  PWM_INSTANCE_TIM15, PWM_CHANNEL_1,    ADC_INPUT_NONE },
-#endif /* STM32L4_CONFIG_DOSFS_SDCARD */
+#endif /* DOSFS_SDCARD */
 
     // 14..19 - Analog pins
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA4),  GPIO_PIN_PA4,             (PIN_ATTR_ADC | PIN_ATTR_DAC | PIN_ATTR_EXTI),   PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_9    },
