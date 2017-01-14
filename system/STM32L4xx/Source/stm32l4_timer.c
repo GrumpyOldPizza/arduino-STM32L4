@@ -732,12 +732,12 @@ void TIM1_CC_IRQHandler(void)
     stm32l4_timer_interrupt(stm32l4_timer_driver.instances[TIMER_INSTANCE_TIM1]);
 }
 
-#if defined(STM32L476xx)
-
 void TIM2_IRQHandler(void)
 {
     stm32l4_timer_interrupt(stm32l4_timer_driver.instances[TIMER_INSTANCE_TIM2]);
 }
+
+#if defined(STM32L476xx)
 
 void TIM3_IRQHandler(void)
 {
