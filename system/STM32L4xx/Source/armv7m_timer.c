@@ -63,6 +63,7 @@ static void armv7m_timer_insert(void *context, uint32_t data)
     {
 	if (remaining < element->remaining)
 	{
+	    element->remaining -= remaining;
 	    break;
 	}
 	
@@ -70,18 +71,9 @@ static void armv7m_timer_insert(void *context, uint32_t data)
 	element = element->next;
     }
 
-    if (element != (armv7m_timer_t*)&armv7m_timer_control)
-    {
-	timer->previous = element->previous;
-	timer->next = element;
-	
-    }
-    else
-    {
-	timer->previous = element;
-	timer->next = element->next;
-    }
-    
+    timer->previous = element->previous;
+    timer->next = element;
+
     timer->previous->next = timer;
     timer->next->previous = timer;
     
@@ -177,25 +169,28 @@ static void armv7m_timer_callback(void *context, uint32_t data)
     {
 	timer = armv7m_timer_control.next;
 
-	while (timer != (armv7m_timer_t*)&armv7m_timer_control)
+	if (timer != (armv7m_timer_t*)&armv7m_timer_control)
 	{
 	    timer->remaining--;
 
-	    if (timer->remaining != 0)
+	    while (timer != (armv7m_timer_t*)&armv7m_timer_control)
 	    {
-		break;
+		if (timer->remaining)
+		{
+		    break;
+		}
+		
+		callback = timer->callback;
+		
+		armv7m_timer_remove(timer, 0);
+		
+		if ((uint32_t)callback & 1)
+		{
+		    (*callback)(timer);
+		}
+		
+		timer = armv7m_timer_control.next;
 	    }
-
-	    callback = timer->callback;
-
-	    armv7m_timer_remove(timer, 0);
-
-	    if ((uint32_t)callback & 1)
-	    {
-		(*callback)(timer);
-	    }
-	    
-	    timer = armv7m_timer_control.next;
 	}
 
 	armv7m_timer_control.millis++;
