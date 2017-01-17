@@ -46,10 +46,6 @@ Uart::Uart(struct _stm32l4_uart_t *uart, unsigned int instance, const struct _st
     _tx_count = 0;
     _tx_size = 0;
 
-    _tx_data2 = NULL;
-    _tx_size2 = 0;
-  
-    _completionCallback = NULL;
     _receiveCallback = NULL;
 
     stm32l4_uart_create(uart, instance, pins, priority, mode);
@@ -91,10 +87,6 @@ int Uart::availableForWrite()
 {
     if (_uart->state < UART_STATE_READY) {
 	return 0;
-    }
-
-    if (_tx_size2 != 0) {
-      return 0;
     }
 
     return UART_TX_BUFFER_SIZE - _tx_count;
@@ -168,10 +160,6 @@ void Uart::flush()
 	    stm32l4_uart_poll(_uart);
 	}
 
-	while (_tx_size2 != 0) {
-	    stm32l4_uart_poll(_uart);
-	}
-    
 	while (!stm32l4_uart_done(_uart)) {
 	    stm32l4_uart_poll(_uart);
 	}
@@ -180,10 +168,6 @@ void Uart::flush()
 	    armv7m_core_yield();
 	}
 
-	while (_tx_size2 != 0) {
-	    armv7m_core_yield();
-	}
-    
 	while (!stm32l4_uart_done(_uart)) {
 	    armv7m_core_yield();
 	}
@@ -208,17 +192,6 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
 	return 0;
     }
 
-    // If there is an async write pending, wait till it's done
-    if (_tx_size2 != 0) {
-	if (!_blocking || (__get_IPSR() != 0)) {
-	    return 0;
-	}
-	
-	while (_tx_size2 != 0) {
-	    armv7m_core_yield();
-	}
-    }
-      
     count = 0;
 
     while (count < size) {
@@ -293,50 +266,6 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
     }
 
     return count;
-}
-
-bool Uart::write(const uint8_t *buffer, size_t size, void(*callback)(void))
-{
-    if (_uart->state < UART_STATE_READY) {
-	return false;
-    }
-
-    if (size == 0) {
-	return false;
-    }
-
-    if (_tx_size2 != 0) {
-	return false;
-    }
-
-    _completionCallback = callback;
-    _tx_data2 = buffer;
-    _tx_size2 = size;
-
-    if (stm32l4_uart_done(_uart)) {
-	if (_tx_size2 != 0) {
-	    stm32l4_uart_transmit(_uart, _tx_data2, _tx_size2);
-	}
-    }
-
-    return true;
-}
-
-bool Uart::done()
-{
-    if (_tx_count) {
-	return false;
-    }
-
-    if (_tx_size2) {
-	return false;
-    }
-
-    if (!stm32l4_uart_done(_uart)) {
-	return false;
-    }
-
-    return true;
 }
 
 void Uart::onReceive(void(*callback)(int))
@@ -427,20 +356,6 @@ void Uart::EventCallback(uint32_t events)
 		_tx_size = tx_size;
 	  
 		stm32l4_uart_transmit(_uart, &_tx_data[tx_read], tx_size);
-	    } else {
-		if (_tx_size2 != 0) {
-		    stm32l4_uart_transmit(_uart, _tx_data2, _tx_size2);
-		}
-	    }
-	} else {
-	    _tx_size2 = 0;
-	    _tx_data2 = NULL;
-
-	    callback = _completionCallback;
-	    _completionCallback = NULL;
-
-	    if (callback) {
-		(*callback)();
 	    }
 	}
     }

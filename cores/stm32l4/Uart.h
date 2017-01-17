@@ -54,10 +54,6 @@ public:
     // STM32L4 EXTENSTION: non-blocking multi-byte read
     size_t read(uint8_t *buffer, size_t size);
 
-    // STM32L4 EXTENSTION: asynchronous write with callback
-    bool write(const uint8_t *buffer, size_t size, void(*callback)(void));
-    bool done(void);
-
     // STM32L4 EXTENSTION: asynchronous receive
     void onReceive(void(*callback)(int));
 
@@ -81,10 +77,6 @@ private:
     volatile uint32_t _tx_count;
     volatile uint32_t _tx_size;
 
-    const uint8_t *_tx_data2;
-    volatile uint32_t _tx_size2;
-
-    void (*_completionCallback)(void);
     void (*_receiveCallback)(int);
 
     static void _event_callback(void *context, uint32_t events);

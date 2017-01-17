@@ -74,12 +74,28 @@ static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
 
 static void stm32l4_usbd_cdc_deinit(void)
 {
+    stm32l4_usbd_cdc_t *usbd_cdc;
+
     armv7m_timer_stop(&stm32l4_usbd_cdc_device.timeout);
 
-    stm32l4_usbd_cdc_device.USBD = NULL;
-    stm32l4_usbd_cdc_device.tx_busy = 0;
-
     stm32l4_usbd_cdc_info.lineState = 0;
+
+    if (stm32l4_usbd_cdc_device.tx_busy)
+    {
+	stm32l4_usbd_cdc_device.tx_busy = 0;
+
+	usbd_cdc = stm32l4_usbd_cdc_driver.instances[0];
+	
+	if (usbd_cdc && (usbd_cdc->state > USBD_CDC_STATE_INIT))
+	{
+	    if (usbd_cdc->events & USBD_CDC_EVENT_TRANSMIT)
+	    {
+		(*usbd_cdc->callback)(usbd_cdc->context, USBD_CDC_EVENT_TRANSMIT);
+	    }
+	}
+    }
+
+    stm32l4_usbd_cdc_device.USBD = NULL;
 }
 
 static void stm32l4_usbd_cdc_control(uint8_t command, uint8_t *data, uint16_t length)
@@ -304,42 +320,52 @@ bool stm32l4_usbd_cdc_transmit(stm32l4_usbd_cdc_t *usbd_cdc, const uint8_t *tx_d
 	return false;
     }
 
-    if (stm32l4_usbd_cdc_info.lineState & 3)
-    {
-	/* QTG_FS interrupts need to be disabled while calling
-	 * USBD_CDC_TransmitPacket. It seems that on short 
-	 * transmits HAL_PCD_EP_Transmit()/USB_EPStartXfer()
-	 * can take a completion interrupt before being done
-	 * setting up the transfer completele. I don't want
-	 * to mess around in the USB/HAL code, so the simple
-	 * WAR is to avoid the race condition by blocking
-	 * the interrupt till the transfer setup is complete.
-	 */
+    /* QTG_FS interrupts need to be disabled while calling
+     * USBD_CDC_TransmitPacket. It seems that on short 
+     * transmits HAL_PCD_EP_Transmit()/USB_EPStartXfer()
+     * can take a completion interrupt before being done
+     * setting up the transfer completele. I don't want
+     * to mess around in the USB/HAL code, so the simple
+     * WAR is to avoid the race condition by blocking
+     * the interrupt till the transfer setup is complete.
+     */
 
 #if defined(STM32L476xx)
-	NVIC_DisableIRQ(OTG_FS_IRQn);
+    NVIC_DisableIRQ(OTG_FS_IRQn);
 #else
-	NVIC_DisableIRQ(USB_IRQn);
+    NVIC_DisableIRQ(USB_IRQn);
 #endif
-	stm32l4_usbd_cdc_device.tx_busy = 1;
-
-	USBD_CDC_SetTxBuffer(stm32l4_usbd_cdc_device.USBD, tx_data, tx_count);
-	
-	status = USBD_CDC_TransmitPacket(stm32l4_usbd_cdc_device.USBD);
-
+    if (!(stm32l4_usbd_cdc_info.lineState & 1))
+    {
 #if defined(STM32L476xx)
 	NVIC_EnableIRQ(OTG_FS_IRQn);
 #else
 	NVIC_EnableIRQ(USB_IRQn);
 #endif
 
-	if (status != 0)
-	  {
-	    return false;
-	  }
+	return false;
     }
-
-    return true;
+    else
+    {
+	stm32l4_usbd_cdc_device.tx_busy = 1;
+	
+	USBD_CDC_SetTxBuffer(stm32l4_usbd_cdc_device.USBD, tx_data, tx_count);
+	
+	status = USBD_CDC_TransmitPacket(stm32l4_usbd_cdc_device.USBD);
+	
+#if defined(STM32L476xx)
+	NVIC_EnableIRQ(OTG_FS_IRQn);
+#else
+	NVIC_EnableIRQ(USB_IRQn);
+#endif
+	
+	if (status != 0)
+	{
+	    return false;
+	}
+	
+	return true;
+    }
 }
 
 bool stm32l4_usbd_cdc_done(stm32l4_usbd_cdc_t *usbd_cdc)
@@ -366,5 +392,5 @@ bool stm32l4_usbd_cdc_connected(stm32l4_usbd_cdc_t *usbd_cdc)
 	return false;
     }
 	
-    return (stm32l4_usbd_cdc_info.lineState & 3) && ((armv7m_systick_millis() - stm32l4_usbd_cdc_device.connect) >= 250);
+    return (stm32l4_usbd_cdc_info.lineState & 1) && ((armv7m_systick_millis() - stm32l4_usbd_cdc_device.connect) >= 250);
 }
