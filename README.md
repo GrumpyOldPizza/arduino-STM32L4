@@ -15,7 +15,7 @@
 
 ### Board Manager
 
- 1. [Download and install the Arduino IDE](https://www.arduino.cc/en/Main/Software) (last tested version v1.6.13)
+ 1. [Download and install the Arduino IDE](https://www.arduino.cc/en/Main/Software) (at least version v1.6.8)
  2. Start the Arduino IDE
  3. Go into Preferences
  4. Add ```https://grumpyoldpizza.github.io/arduino-STM32L4/package_STM32L4_boards_index.json``` as an "Additional Board Manager URL"
@@ -46,8 +46,13 @@
 ###### USB Serial driver setup for Tlera Corp boards (Window XP / Windows 7 only)
 
  1. Go to ~/AppData/Local/Arduino15/packages/grumpypoldpizza/hardware/stm32l4/```<VERSION>```/drivers/windows
- 2. Right-click on ```dpinst-x86.exe``` (32 bit Windows) or ```dpinst-amd64.exe``` (64 bit Windows) and select ```Run as administrartor```
+ 2. Right-click on ```dpinst_x86.exe``` (32 bit Windows) or ```dpinst_amd64.exe``` (64 bit Windows) and select ```Run as administrator```
  3. Click on ```Install this driver software anyway``` at the ```Windows Security``` popup as the driver is unsigned
+
+###### STM32 BOOTLOADER driver setup for NUCLEO boards
+
+ 1. Plugin NUCLEO board
+ 2. Download and install [ST-Link USB Drivers](http://www.st.com/en/embedded-software/stsw-link009.html)
 
 ### Flashing the bootloader sketch for Tlera Corp Boards
 
