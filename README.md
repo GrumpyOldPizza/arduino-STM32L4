@@ -1,5 +1,4 @@
-# Arduino Core for STMicroelectronics STM32L4 based boards
-
+# Arduino Core for STM32L4 based boards
 
 ## Supported boards
 
@@ -50,10 +49,12 @@
  2. Right-click on ```dpinst-x86.exe``` (32 bit Windows) or ```dpinst-amd64.exe``` (64 bit Windows) and select ```Run as administrartor```
  3. Click on ```Install this driver software anyway``` at the ```Windows Security``` popup as the driver is unsigned
 
-### Flashing the bootloader for Tlera Corp Boards
+### Flashing the bootloader sketch for Tlera Corp Boards
+
+ The Tlera Corp boards require an initial bootloader sketch. This is nothing more than a default program that contains the USB Serial device
 
  1. Select Tools -> Programmer -> STM32 BOOTLOADER
- 1. Select Tools -> Burn Bootloader
+ 2. Select Tools -> Burn Bootloader
 
 ### From git (for core development)
 
