@@ -53,8 +53,9 @@
 
  The Tlera Corp boards require an initial bootloader sketch. This is nothing more than a default program that contains the USB Serial device
 
- 1. Select Tools -> Programmer -> STM32 BOOTLOADER
- 2. Select Tools -> Burn Bootloader
+ 1. Plugin STM32L4 board and toggle the RESET button while holding down the BOOT button
+ 2. Select Tools -> Programmer -> STM32 BOOTLOADER
+ 3. Select Tools -> Burn Bootloader
 
 ### From git (for core development)
 
