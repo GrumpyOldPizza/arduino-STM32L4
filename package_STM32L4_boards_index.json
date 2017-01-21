@@ -22,7 +22,7 @@
           "checksum": "MD5:c5ca59588f084b39607e93a35636f9d8",
           "size": "9875643",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -46,7 +46,7 @@
           "checksum": "MD5:56404871882bfcd5550882f78934e17d",
           "size": "9876865",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -70,7 +70,7 @@
           "checksum": "MD5:0d703933f968d10f62c3ab7796731c8b",
           "size": "9877259",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -94,7 +94,7 @@
           "checksum": "MD5:cbcd168818a923b4727b8e9edce8e4a8",
           "size": "9886328",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -118,7 +118,7 @@
           "checksum": "MD5:6576b7ff6951134c946824cad129825e",
           "size": "9891123",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -142,7 +142,7 @@
           "checksum": "MD5:72248cd80b41c16a07cee3fb68ac00ab",
           "size": "9890960",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -166,7 +166,7 @@
           "checksum": "MD5:563bfba06c35ef61e70771b50f904866",
           "size": "9896261",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -190,7 +190,7 @@
           "checksum": "MD5:73fee75f7816f2a990da848878f1645d",
           "size": "9896052",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -214,7 +214,7 @@
           "checksum": "MD5:7f32667de4a22124f7f8ddb4a853d772",
           "size": "9896074",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -238,7 +238,7 @@
           "checksum": "MD5:9a4695e9b9f3008d66bae672ef795ece",
           "size": "9896938",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -262,7 +262,7 @@
           "checksum": "MD5:ff4c5536caa12ce974738e430b61d8c0",
           "size": "9897271",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -286,7 +286,7 @@
           "checksum": "MD5:aa840431549087ed72654124b205938e",
           "size": "9921628",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -310,7 +310,7 @@
           "checksum": "MD5:ee800959ef397a138abda207af9d01e4",
           "size": "9921545",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -334,7 +334,7 @@
           "checksum": "MD5:f6d9d0f9df8d6fc7ea4280b8269ae37e",
           "size": "9920854",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -358,7 +358,7 @@
           "checksum": "MD5:61070e844814fce06cdd2177101f0649",
           "size": "9920806",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -382,7 +382,7 @@
           "checksum": "MD5:c5ff4f4dcaed9f2911ac1d1864528532",
           "size": "11112982",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -406,7 +406,7 @@
           "checksum": "MD5:5c265d8da84c9dcbce60923ee5b4822f",
           "size": "11112935",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -430,7 +430,7 @@
           "checksum": "MD5:8ae4a7ee6b3c8109ae8302beb8b5ab06",
           "size": "14347431",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -454,7 +454,7 @@
           "checksum": "MD5:b86181a624d4b1068d74426f90970337",
           "size": "24029804",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
           ],
           "toolsDependencies": [
             {
@@ -464,6 +464,34 @@
             }
           ]
         },
+
+        {
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
+          "version": "0.0.22",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/grumpyoldpizza/arduino-STM32L4/issues"
+          },
+          "url": "https://github.com/grumpyoldpizza/arduino-STM32L4/archive/0.0.22.tar.gz",
+          "archiveFileName": "arduino-STM32L4-0.0.22.tar.gz",
+          "checksum": "MD5:ffb385db84bcbc24c859393c0602b035",
+          "size": "22782908",
+          "boards": [
+            {"name": "Dragonfly-L476RE"},
+            {"name": "Butterfly-L433CC"},
+            {"name": "Ladybug-L432KC"},
+            {"name": "NUCLEO-L432KC"},
+            {"name": "NUCLEO-L476RG"}
+          ],
+          "toolsDependencies": [
+            {
+              "packager": "arduino",
+              "name": "arm-none-eabi-gcc",
+              "version": "4.8.3-2014q1"
+            }
+          ]
+        }
 
       ],
       "tools":[
