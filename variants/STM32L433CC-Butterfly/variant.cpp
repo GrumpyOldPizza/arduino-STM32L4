@@ -92,16 +92,17 @@ extern const PinDescription g_APinDescription[NUM_TOTAL_PINS] =
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA10), GPIO_PIN_PA10,           (PIN_ATTR_EXTI),                                  PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { GPIOA, GPIO_PIN_MASK(GPIO_PIN_PA9),  GPIO_PIN_PA9,            (PIN_ATTR_EXTI),                                  PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
 
-    // 32..36 - Reserved
+    // 32..37 QSPI pins (NCS,CK,IO0,IO1,IO2,IO3)
+    { NULL,  0,                            GPIO_PIN_NONE,           0,                                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { NULL,  0,                            GPIO_PIN_NONE,           0,                                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { NULL,  0,                            GPIO_PIN_NONE,           0,                                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { NULL,  0,                            GPIO_PIN_NONE,           0,                                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { NULL,  0,                            GPIO_PIN_NONE,           0,                                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { NULL,  0,                            GPIO_PIN_NONE,           0,                                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
 
-    // 37..38 - Digital pins (BUTTON,ATN)
-    { GPIOC, GPIO_PIN_MASK(GPIO_PIN_PC13), GPIO_PIN_PC13,           (PIN_ATTR_EXTI | PIN_ATTR_WKUP2),                 PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
+    // 38..39 - Digital pins (ATN,BUTTON)
     { GPIOH, GPIO_PIN_MASK(GPIO_PIN_PH0),  GPIO_PIN_PH0,            (PIN_ATTR_EXTI),                                  PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
+    { GPIOC, GPIO_PIN_MASK(GPIO_PIN_PC13), GPIO_PIN_PC13,           (PIN_ATTR_EXTI | PIN_ATTR_WKUP2),                 PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
 };
 
 extern const unsigned int g_PWMInstances[PWM_INSTANCE_COUNT] = {

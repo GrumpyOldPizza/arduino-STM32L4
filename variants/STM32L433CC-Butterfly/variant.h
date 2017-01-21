@@ -67,7 +67,7 @@ extern "C"
 // Number of pins defined in PinDescription array
 #define PINS_COUNT           (25u)
 #define NUM_DIGITAL_PINS     (20u)
-#define NUM_TOTAL_PINS       (39u)
+#define NUM_TOTAL_PINS       (40u)
 #define NUM_ANALOG_INPUTS    (6u)
 #define NUM_ANALOG_OUTPUTS   (2u)
 #define analogInputToDigitalPin(p)  ((p < 6u) ? (p) + 14u : -1)
@@ -106,7 +106,7 @@ static const uint8_t DAC1 = PIN_DAC1;
 
 // Other pins
 
-#define PIN_BUTTON           (37u)
+#define PIN_BUTTON           (39u)
 static const uint8_t BUTTON = PIN_BUTTON;
 
 #define PIN_ATN              (38u)

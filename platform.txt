@@ -70,7 +70,7 @@ build.usb_flags=-DUSB_VID={build.vid} -DUSB_PID={build.pid} '-DUSB_MANUFACTURER=
 
 # DOSFS Flags
 # ---------
-build.dosfs_flags='-DDOSFS_SDCARD={build.dosfs_sdcard}' '-DDOSFS_SFLASH={build.dosfs_sflash}'
+build.dosfs_flags=-DDOSFS_SDCARD={build.dosfs_sdcard} -DDOSFS_SFLASH={build.dosfs_sflash}
 
 # Compile patterns
 # ----------------
