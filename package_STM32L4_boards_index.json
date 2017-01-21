@@ -2,7 +2,7 @@
   "packages": [
     {
       "name": "grumpyoldpizza",
-      "maintainer": "Thomas Roell",
+      "maintainer": "Tlera Corp",
       "websiteURL": "https://github.com/grumpyoldpizza/arduino-STM32L4",
       "email": "grumpyoldpizza@gmail.com",
       "help": {
@@ -10,7 +10,7 @@
       },
       "platforms": [
         {
-          "name": "STMicroelectronics STM32L4 Boards",
+          "name": "STM32L4 Boards",
           "architecture": "STM32L4",
           "version": "0.0.1",
           "category": "Contributed",
@@ -34,8 +34,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.2",
           "category": "Contributed",
           "help": {
@@ -58,8 +58,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.3",
           "category": "Contributed",
           "help": {
@@ -82,8 +82,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.4",
           "category": "Contributed",
           "help": {
@@ -106,8 +106,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.5",
           "category": "Contributed",
           "help": {
@@ -130,8 +130,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.6",
           "category": "Contributed",
           "help": {
@@ -154,8 +154,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.7",
           "category": "Contributed",
           "help": {
@@ -178,8 +178,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.8",
           "category": "Contributed",
           "help": {
@@ -202,8 +202,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.9",
           "category": "Contributed",
           "help": {
@@ -226,8 +226,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.10",
           "category": "Contributed",
           "help": {
@@ -250,8 +250,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.11",
           "category": "Contributed",
           "help": {
@@ -274,8 +274,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.12",
           "category": "Contributed",
           "help": {
@@ -298,8 +298,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.14",
           "category": "Contributed",
           "help": {
@@ -322,8 +322,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.15",
           "category": "Contributed",
           "help": {
@@ -346,8 +346,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.16",
           "category": "Contributed",
           "help": {
@@ -370,8 +370,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.17",
           "category": "Contributed",
           "help": {
@@ -394,8 +394,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.18",
           "category": "Contributed",
           "help": {
@@ -418,8 +418,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.19",
           "category": "Contributed",
           "help": {
@@ -442,8 +442,8 @@
         },
 
         {
-          "name": "STMicroelectronics STM32L4 Boards",
-          "architecture": "STM32L4",
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
           "version": "0.0.21",
           "category": "Contributed",
           "help": {
@@ -453,6 +453,30 @@
           "archiveFileName": "arduino-STM32L4-0.0.21.tar.gz",
           "checksum": "MD5:b86181a624d4b1068d74426f90970337",
           "size": "24029804",
+          "boards": [
+            {"name": "Dragonfly"}
+          ],
+          "toolsDependencies": [
+            {
+              "packager": "arduino",
+              "name": "arm-none-eabi-gcc",
+              "version": "4.8.3-2014q1"
+            }
+          ]
+        },
+
+        {
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
+          "version": "0.0.22",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/grumpyoldpizza/arduino-STM32L4/issues"
+          },
+          "url": "https://github.com/grumpyoldpizza/arduino-STM32L4/archive/0.0.22.tar.gz",
+          "archiveFileName": "arduino-STM32L4-0.0.22.tar.gz",
+          "checksum": "MD5:ffb385db84bcbc24c859393c0602b035",
+          "size": "22782908",
           "boards": [
             {"name": "Dragonfly"}
           ],
