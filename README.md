@@ -1,5 +1,6 @@
 # Arduino Core for STMicroelectronics STM32L4 based boards
 
+
 ## Supported boards
 
 ### Tlera Corp
@@ -24,10 +25,6 @@
 
 #### OS Specific Setup
 
-##### OS X
-
-No additional setup required.
-
 ##### Linux
 
  1. Go to ~/.arduino15/packages/grumpyoldpizza/hardware/stm32l4/```<VERSION>```/drivers/linux/
@@ -47,7 +44,7 @@ No additional setup required.
  7. Select ```WinUSB (v6.1.7600.16385)``` as new driver
  8. Click ```Replace Driver```
 
-###### USB Serial driver setup for Tlera Corp boards
+###### USB Serial driver setup for Tlera Corp boards (Window XP / Windows 7 only)
 
  1. Go to ~/AppData/Local/Arduino15/packages/grumpypoldpizza/hardware/stm32l4/```<VERSION>```/drivers/windows
  2. Right-click on ```dpinst-x86.exe``` (32 bit Windows) or ```dpinst-amd64.exe``` (64 bit Windows) and select ```Run as administrartor```
