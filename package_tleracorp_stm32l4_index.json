@@ -31,7 +31,7 @@
           "toolsDependencies": [
             {
               "packager": "grumpyoldpizza",
-              "name": "arm-none-eabi-gcc",
+              "name": "gcc-arm-none-eabi",
               "version": "4_9-2015q3"
             }
           ]
@@ -59,14 +59,13 @@
           "toolsDependencies": [
             {
               "packager": "grumpyoldpizza",
-              "name": "arm-none-eabi-gcc",
+              "name": "gcc-arm-none-eabi",
               "version": "4_9-2015q3"
             }
           ]
         }
-
       ],
-      "tools":[
+      "tools": [
         {
           "name": "gcc-arm-none-eabi",
           "version": "4_9-2015q3",
