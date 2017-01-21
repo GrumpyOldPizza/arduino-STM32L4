@@ -1,0 +1,107 @@
+{
+  "packages": [
+    {
+      "name": "grumpyoldpizza",
+      "maintainer": "Tlera Corp",
+      "websiteURL": "https://github.com/grumpyoldpizza/arduino-STM32L4",
+      "email": "grumpyoldpizza@gmail.com",
+      "help": {
+        "online": "https://github.com/grumpyoldpizza/arduino-STM32L4/issues"
+      },
+      "platforms": [
+        {
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
+          "version": "0.0.22",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/grumpyoldpizza/arduino-STM32L4/issues"
+          },
+          "url": "https://github.com/grumpyoldpizza/arduino-STM32L4/archive/0.0.22.tar.gz",
+          "archiveFileName": "arduino-STM32L4-0.0.22.tar.gz",
+          "checksum": "MD5:ffb385db84bcbc24c859393c0602b035",
+          "size": "22782908",
+          "boards": [
+            {"name": "Dragonfly-L476RE"},
+            {"name": "Butterfly-L433CC"},
+            {"name": "Ladybug-L432KC"},
+            {"name": "NUCLEO-L432KC"},
+            {"name": "NUCLEO-L476RG"}
+          ],
+          "toolsDependencies": [
+            {
+              "packager": "grumpyoldpizza",
+              "name": "arm-none-eabi-gcc",
+              "version": "4_9-2015q3"
+            }
+          ]
+        },
+
+        {
+          "name": "STM32L4 Boards",
+          "architecture": "stm32l4",
+          "version": "0.0.23",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/grumpyoldpizza/arduino-STM32L4/issues"
+          },
+          "url": "https://github.com/grumpyoldpizza/arduino-STM32L4/archive/0.0.23.tar.gz",
+          "archiveFileName": "arduino-STM32L4-0.0.23.tar.gz",
+          "checksum": "MD5:28653f9a69a52d45ee1f474416b844de",
+          "size": "15129983",
+          "boards": [
+            {"name": "Dragonfly-L476RE"},
+            {"name": "Butterfly-L433CC"},
+            {"name": "Ladybug-L432KC"},
+            {"name": "NUCLEO-L432KC"},
+            {"name": "NUCLEO-L476RG"}
+          ],
+          "toolsDependencies": [
+            {
+              "packager": "grumpyoldpizza",
+              "name": "arm-none-eabi-gcc",
+              "version": "4_9-2015q3"
+            }
+          ]
+        }
+
+      ],
+      "tools":[
+        {
+          "name": "gcc-arm-none-eabi",
+          "version": 4_9-2015q3",
+          "systems": [
+            {
+              "host": "i386-apple-darwin11",
+              "url": "https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q3-update/+download/gcc-arm-none-eabi-4_9-2015q3-20150921-mac.tar.bz2",
+              "archiveFileName": "gcc-arm-none-eabi-4_9-2015q3-20150921-mac.tar.bz2",
+              "size": "77455989",
+              "checksum": "MD5:7886163ba5a1c17b560939e3dcf1382b"
+            },
+            {
+              "host": "i686-linux-gnu",
+              "url": "https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q3-update/+download/gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2",
+              "archiveFileName": "gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2",
+              "size": "73710332",
+              "checksum": "MD5:8a4a74872830f80c788c944877d3ad8c"
+            },
+            {
+              "host": "x86_64-pc-linux-gnu",
+              "url": "https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q3-update/+download/gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2",
+              "archiveFileName": "gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2",
+              "size": "73710332",
+              "checksum": "MD5:8a4a74872830f80c788c944877d3ad8c"
+            },
+            {
+              "host": "i686-mingw32",
+              "url": "https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q3-update/+download/gcc-arm-none-eabi-4_9-2015q3-20150921-win32.zip",
+              "archiveFileName": "gcc-arm-none-eabi-4_9-2015q3-20150921-win32.zip",
+              "size": "98465351",
+              "checksum": "MD5:d944be40a5bdb2327d80db23290c6b9d"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
