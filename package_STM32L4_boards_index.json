@@ -478,7 +478,11 @@
           "checksum": "MD5:ffb385db84bcbc24c859393c0602b035",
           "size": "22782908",
           "boards": [
-            {"name": "Dragonfly"}
+            {"name": "Dragonfly-L476RE"}
+            {"name": "Butterfly-L433CC"}
+            {"name": "Ladybug-L432KC"}
+            {"name": "NUCLEO-L432KC"}
+            {"name": "NUCLEO-L476RG"}
           ],
           "toolsDependencies": [
             {
