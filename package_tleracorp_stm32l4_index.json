@@ -69,7 +69,7 @@
       "tools":[
         {
           "name": "gcc-arm-none-eabi",
-          "version": 4_9-2015q3",
+          "version": "4_9-2015q3",
           "systems": [
             {
               "host": "i386-apple-darwin11",
