@@ -195,7 +195,7 @@ Ladybug-L432KC.upload.native_usb=false
 
 Ladybug-L432KC.bootloader.tool=stm32l4_dfu
 Ladybug-L432KC.bootloader.protocol=dfu
-Ladybug-L432KC.bootloader.file=butterfly.bin
+Ladybug-L432KC.bootloader.file=ladybug.bin
 
 Ladybug-L432KC.build.mcu=cortex-m4
 Ladybug-L432KC.build.f_cpu=80000000L

@@ -54,14 +54,6 @@
  1. Plugin NUCLEO board
  2. Download and install [ST-Link USB Drivers](http://www.st.com/en/embedded-software/stsw-link009.html)
 
-### Flashing the bootloader sketch for Tlera Corp Boards
-
- The Tlera Corp boards require an initial bootloader sketch. This is nothing more than a default program that contains the USB Serial device
-
- 1. Plugin STM32L4 board and toggle the RESET button while holding down the BOOT button
- 2. Select Tools -> Programmer -> STM32 BOOTLOADER
- 3. Select Tools -> Burn Bootloader
-
 ### From git (for core development)
 
  1. Follow steps from Board Manager section above
@@ -72,6 +64,10 @@
  3. Create a folder named ```hardware```, if it does not exist, and change directories to it
  4. Clone this repo: ```git clone https://github.com/grumpyoldpizza/arduino-STM32L4.git grumpyoldpizza/stm32l4```
  5. Restart the Arduino IDE
+
+## Recovering from a faulty sketch for Tlera Corp Boards
+
+ Sometimes a faulty sketch can render the normal USB Serial based integration into the Arduindo IDE not working. In this case plugin the STM32L4 board and toggle the RESET button while holding down the BOOT button and program a known to be working sketch to go ack to a working USB Serial setup.
 
 ## Credits
 

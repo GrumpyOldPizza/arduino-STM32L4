@@ -100,7 +100,7 @@ static const uint8_t DAC1 = PIN_DAC1;
 
 // Other pins
 
-#define PIN_BUTTON           (44u)
+#define PIN_BUTTON           (39u)
 static const uint8_t BUTTON = PIN_BUTTON;
 
 #define PIN_ATN              (38u)
