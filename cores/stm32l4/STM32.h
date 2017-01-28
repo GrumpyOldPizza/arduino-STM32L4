@@ -72,7 +72,7 @@ public:
     void  shutdown(uint32_t pin, uint32_t mode, uint32_t timeout = 0);
     void  reset();
 
-    bool  flashErase(uint32_t address);
+    bool  flashErase(uint32_t address, uint32_t count);
     bool  flashProgram(uint32_t address, const void *data, uint32_t count);
 
     void  lsco(bool enable);

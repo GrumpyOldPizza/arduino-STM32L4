@@ -8,7 +8,7 @@ while [ $RETRIES -gt 0 ]
 do
     if [ "$($TOOLDIR/dfu-util -l 2>/dev/null | grep 0483:df11)" != "" ]
     then
-      $TOOLDIR/dfu-util -d 0483:df11 -a 0 -s 0x08000000:leave -D $1
+      $TOOLDIR/dfu-util -d $1:$2,0x0483:0xdf11 -a 0 -s 0x08000000:leave -D $3
       echo "OK"
       exit 0
     fi

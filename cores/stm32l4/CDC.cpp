@@ -306,7 +306,6 @@ void CDC::EventCallback(uint32_t events)
     unsigned int rx_write, rx_count, rx_size, count;
     unsigned int tx_read, tx_size;
     bool empty;
-    void(*callback)(void);
 
     if (events & USBD_CDC_EVENT_RECEIVE) {
 	while (_rx_count != CDC_RX_BUFFER_SIZE) {

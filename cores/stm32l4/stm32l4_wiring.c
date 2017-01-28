@@ -28,11 +28,36 @@
 
 #include "Arduino.h"
 #include "stm32l4_wiring_private.h"
+#include "stm32l4_iap.h"
 #include "dosfs_api.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern uint32_t __etextbkp;
+
+const __attribute__((section(".iap_prefix"))) stm32l4_iap_prefix_t stm32l4_iap_prefix = {
+    .bcdDevice = USB_DID,
+    .idProduct = USB_PID,
+    .idVendor  = USB_VID,
+};
+
+const __attribute__((section(".iap_info"))) stm32l4_iap_info_t stm32l4_iap_info = {
+#if defined(STM32L432xx)
+    .signature = "STM32L432xx",
+#endif
+#if defined(STM32L433xx)
+    .signature = "STM32L433xx",
+#endif
+#if defined(STM32L476xx)
+    .signature = "STM32L476xx",
+#endif
+    .length = sizeof(stm32l4_iap_info_t),
+    .features = 0,
+    .address = 0x08000800,
+    .size = (uint32_t)((uint8_t*)&__etextbkp - 0x08000800)
+};
 
 stm32l4_adc_t stm32l4_adc;
 stm32l4_exti_t stm32l4_exti;

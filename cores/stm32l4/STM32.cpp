@@ -196,18 +196,20 @@ void STM32Class::reset()
     stm32l4_system_reset();
 }
 
-bool STM32Class::flashErase(uint32_t address)
+bool STM32Class::flashErase(uint32_t address, uint32_t count)
 {
     if (address & 2047) {
 	return false;
     }
 
-    if ((address < FLASHSTART) || (address >= FLASHEND)) {
+    count = (count + 2047) & ~2047;
+
+    if ((address < FLASHSTART) || ((address + count) > FLASHEND)) {
 	return false;
     }
 
     stm32l4_flash_unlock();
-    stm32l4_flash_erase(address, 1);
+    stm32l4_flash_erase(address, count);
     stm32l4_flash_lock();
     
     return true;

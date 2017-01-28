@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -32,37 +32,27 @@
 
 #include "stm32l4_flash.h"
 
-static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_erase_page(void)
+static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_do_erase(void)
 {
-    uint32_t primask;
-
-    primask = __get_PRIMASK();
-
-    __disable_irq();
+    uint32_t flash_sr;
 
     FLASH->CR |= FLASH_CR_STRT;
 
-    while (FLASH->SR & FLASH_SR_BSY) 
+    do
     {
-	continue;
+	flash_sr = FLASH->SR;
     }
+    while (flash_sr & FLASH_SR_BSY);
 
-    __set_PRIMASK(primask);
+    FLASH->CR = 0;
 }
 
-static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_program_standard(volatile uint32_t *flash, const uint8_t *data, uint32_t count)
+static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_do_program(volatile uint32_t *flash, const uint8_t *data, const uint8_t *data_e)
 {
-    uint32_t primask;
-    const uint8_t *data_e;
-
-    data_e = data + count;
+    uint32_t flash_sr;
 
     do
     {
-	primask = __get_PRIMASK();
-	
-	__disable_irq();
-
 	FLASH->CR = FLASH_CR_PG;
 
 	flash[0] = ((const uint32_t*)((const void*)data))[0];
@@ -73,63 +63,22 @@ static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm3
 
 	__DMB();
 
-	while (FLASH->SR & FLASH_SR_BSY) 
-	{
-	    continue;
-	}
-
-	__set_PRIMASK(primask);
-
-	if (FLASH->SR & (FLASH_SR_PROGERR | FLASH_SR_SIZERR | FLASH_SR_PGAERR | FLASH_SR_PGSERR | FLASH_SR_WRPERR))
-	{
-	    return;
-	}
-    }
-    while (data != data_e);
-}
-
-static __attribute__((optimize("O3"), section(".rodata2"), long_call)) void stm32l4_flash_program_fast(volatile uint32_t *flash, const uint8_t *data, uint32_t count)
-{
-    uint32_t primask;
-    const uint8_t *data_r, *data_e;
-    
-    data_e = data + count;
-
-    do
-    {
-	data_r = data + 256;
-
-	primask = __get_PRIMASK();
-
-	__disable_irq();
-
-	FLASH->CR = FLASH_CR_FSTPG;
-
 	do
 	{
-	    flash[0] = ((const uint32_t*)((const void*)data))[0];
-	    flash[1] = ((const uint32_t*)((const void*)data))[1];
-
-	    flash += 2;
-	    data  += 8;
-
-	    __DMB();
+	    flash_sr = FLASH->SR;
 	}
-	while (data != data_r);
-
-	while (FLASH->SR & FLASH_SR_BSY) 
+	while (flash_sr & FLASH_SR_BSY);
+	    
+	if (flash_sr & (FLASH_SR_PROGERR | FLASH_SR_SIZERR | FLASH_SR_PGAERR | FLASH_SR_PGSERR | FLASH_SR_WRPERR))
 	{
-	    continue;
-	}
+	    FLASH->CR = 0;
 
-	__set_PRIMASK(primask);
-
-	if (FLASH->SR & (FLASH_SR_PROGERR | FLASH_SR_SIZERR | FLASH_SR_PGAERR | FLASH_SR_PGSERR | FLASH_SR_WRPERR | FLASH_SR_MISERR | FLASH_SR_FASTERR))
-	{
 	    return;
 	}
     }
     while (data != data_e);
+
+    FLASH->CR = 0;
 }
 
 uint32_t stm32l4_flash_size(void)
@@ -165,32 +114,46 @@ void stm32l4_flash_lock(void)
 
 bool stm32l4_flash_erase(uint32_t address, uint32_t count)
 {
-#if defined(STM32L476xx)
-    const uint32_t split = (FLASH_BASE + (stm32l4_flash_size() >> 1));
-#endif /* defined(STM32L476xx) */
     bool success = true;
+    const uint32_t flash_base = FLASH_BASE;
+#if defined(STM32L476xx)
+    const uint32_t flash_size = (*((volatile uint16_t*)0x1fff75e0) * 1024);
+    const uint32_t flash_split = (flash_base + (flash_size >> 1));
+#endif /* defined(STM32L476xx) */
+    uint32_t primask, flash_acr;
 
     if (FLASH->CR & FLASH_CR_LOCK)
     {
 	return false;
     }
-
+    
     do
     {
+	primask = __get_PRIMASK();
+
+	__disable_irq();
+
+	flash_acr = FLASH->ACR;
+
+	FLASH->ACR = flash_acr & ~(FLASH_ACR_ICEN | FLASH_ACR_DCEN);
+
 #if defined(STM32L476xx)
-	if (address >= split)
+	if (address >= flash_split)
 	{
-	    FLASH->CR = FLASH_CR_PER | FLASH_CR_BKER | ((((address - split) / 2048) << 3) & FLASH_CR_PNB);
+	    FLASH->CR = FLASH_CR_PER | FLASH_CR_BKER | ((((address - flash_split) / 2048) << 3) & FLASH_CR_PNB);
 	}
 	else
 #endif /* defined(STM32L476xx) */
 	{
-	    FLASH->CR = FLASH_CR_PER | ((((address - FLASH_BASE) / 2048) << 3) & FLASH_CR_PNB);
+	    FLASH->CR = FLASH_CR_PER | ((((address - flash_base) / 2048) << 3) & FLASH_CR_PNB);
 	}
 	
-	stm32l4_flash_erase_page();
+	stm32l4_flash_do_erase();
 	
-	FLASH->CR = 0;
+	FLASH->ACR = (flash_acr & ~(FLASH_ACR_ICEN | FLASH_ACR_DCEN)) | (FLASH_ACR_ICRST | FLASH_ACR_DCRST);
+	FLASH->ACR = flash_acr;
+
+	__set_PRIMASK(primask);
 	
 	if (FLASH->SR & (FLASH_SR_PROGERR | FLASH_SR_SIZERR | FLASH_SR_PGAERR | FLASH_SR_PGSERR | FLASH_SR_WRPERR | FLASH_SR_MISERR | FLASH_SR_FASTERR | FLASH_SR_RDERR))
 	{
@@ -212,28 +175,58 @@ bool stm32l4_flash_erase(uint32_t address, uint32_t count)
 bool stm32l4_flash_program(uint32_t address, const uint8_t *data, uint32_t count)
 {
     bool success = true;
+    uint32_t primask, flash_acr, chunk;
 
     if (FLASH->CR & FLASH_CR_LOCK)
     {
 	return false;
     }
 
-    if ((address & 255) || (count & 255))
+    do
     {
-	stm32l4_flash_program_standard((volatile uint32_t *)address, data, count);
-    }
-    else
-    {
-	stm32l4_flash_program_fast((volatile uint32_t *)address, data, count);
-    }
+	chunk = count;
 
-    if (FLASH->SR & (FLASH_SR_PROGERR | FLASH_SR_SIZERR | FLASH_SR_PGAERR | FLASH_SR_PGSERR | FLASH_SR_WRPERR | FLASH_SR_MISERR | FLASH_SR_FASTERR | FLASH_SR_RDERR))
-    {
-	success = false;
+	if (chunk > 2048)
+	{
+	    chunk = 2048;
+	}
+
+	if (chunk > (((address + 2048) & ~0247) - address))
+	{
+	    chunk = ((address + 2048) & ~0247) - address;
+	}
+
+	primask = __get_PRIMASK();
+
+	__disable_irq();
+
+	flash_acr = FLASH->ACR;
+
+	FLASH->ACR = flash_acr & ~(FLASH_ACR_ICEN | FLASH_ACR_DCEN);
+
+	stm32l4_flash_do_program((volatile uint32_t *)address, data, data + chunk);
+
+	FLASH->ACR = (flash_acr & ~(FLASH_ACR_ICEN | FLASH_ACR_DCEN)) | (FLASH_ACR_ICRST | FLASH_ACR_DCRST);
+	FLASH->ACR = flash_acr;
+    
+	__set_PRIMASK(primask);
+	
+	if (FLASH->SR & (FLASH_SR_PROGERR | FLASH_SR_SIZERR | FLASH_SR_PGAERR | FLASH_SR_PGSERR | FLASH_SR_WRPERR | FLASH_SR_MISERR | FLASH_SR_FASTERR | FLASH_SR_RDERR))
+	{
+	    success = false;
+
+	    break;
+	}
+
+	data += chunk;
+
+	address += chunk;
+	count   -= chunk;
     }
-    
+    while (count);
+
     FLASH->SR = (FLASH_SR_PROGERR | FLASH_SR_SIZERR | FLASH_SR_PGAERR | FLASH_SR_PGSERR | FLASH_SR_WRPERR | FLASH_SR_MISERR | FLASH_SR_FASTERR | FLASH_SR_RDERR);
-    
+
     return success;
 }
 

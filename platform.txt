@@ -40,18 +40,17 @@ compiler.cpp.cmd=arm-none-eabi-g++
 compiler.cpp.flags=-mcpu={build.mcu} -mthumb -c -g {build.flags.optimize} {compiler.warning_flags} -std=gnu++11 -ffunction-sections -fdata-sections -fno-threadsafe-statics -nostdlib -fno-rtti -fno-exceptions -MMD
 compiler.ar.cmd=arm-none-eabi-ar
 compiler.ar.flags=rcs
-compiler.objcopy.cmd=arm-none-eabi-objcopy
-compiler.objcopy.eep.flags=-O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0
-compiler.elf2hex.flags=-O binary
+compiler.elf2hex.bin.flags=-O binary
+compiler.elf2hex.hex.flags=-O ihex
 compiler.elf2hex.cmd=arm-none-eabi-objcopy
+compiler.suffix.cmd=dfu-suffix
+compiler.suffix.cmd.windows=dfu-suffix.exe
 compiler.ldflags=-mcpu={build.mcu} -mthumb -Wl,--cref -Wl,--check-sections -Wl,--gc-sections -Wl,--unresolved-symbols=report-all -Wl,--warn-common -Wl,--warn-section-align
 compiler.size.cmd=arm-none-eabi-size
 compiler.define=-DARDUINO=
 compiler.platform.path={runtime.platform.path}/tools/windows/
 compiler.platform.path.macosx={runtime.platform.path}/tools/macosx/
 compiler.platform.path.linux={runtime.platform.path}/tools/linux/
-compiler.hex2dfu.cmd=dfu-suffix
-compiler.hex2dfu.cmd.windows=dfu-suffix.exe
 
 # this can be overriden in boards.txt
 build.extra_flags=
@@ -66,7 +65,7 @@ compiler.elf2hex.extra_flags=
 
 # USB Flags
 # ---------
-build.usb_flags=-DUSB_VID={build.vid} -DUSB_PID={build.pid} '-DUSB_MANUFACTURER={build.usb_manufacturer}' '-DUSB_PRODUCT={build.usb_product}' '-DUSB_TYPE={build.usb_type}'
+build.usb_flags=-DUSB_VID={build.vid} -DUSB_PID={build.pid} -DUSB_DID={build.did} '-DUSB_MANUFACTURER={build.usb_manufacturer}' '-DUSB_PRODUCT={build.usb_product}' '-DUSB_TYPE={build.usb_type}'
 
 # DOSFS Flags
 # ---------
@@ -92,19 +91,25 @@ recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compil
 ## Combine gc-sections, archives, and objects
 recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}"  "-L{build.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} "-T{build.variant.path}/{build.ldscript}" "-Wl,-Map,{build.path}/{build.project_name}.map" {build.flags.ldspecs} {compiler.ldflags} -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--start-group "{build.path}/{archive_file}"  -Wl,--end-group {build.variant_system_libs} -lc -lm
 
-## Create output (bin file)
-recipe.objcopy.bin.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf2hex.flags} {compiler.elf2hex.extra_flags} "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
+## Create output (dfu file)
+recipe.objcopy.dfu.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf2hex.bin.flags} {compiler.elf2hex.extra_flags} "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.dfu"
 
-## Append DFU suffix (bin file)
-recipe.objcopy.dfu.pattern="{compiler.platform.path}/{compiler.hex2dfu.cmd}"  -v 0x0483 -p 0xdf11 -a "{build.path}/{build.project_name}.bin"
+## Create output (iap file)
+recipe.objcopy.iap.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf2hex.bin.flags} {compiler.elf2hex.extra_flags} -R .boot "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.iap"
+
+## Append DFU suffix (dfu file)
+recipe.hooks.objcopy.postobjcopy.1.pattern="{compiler.platform.path}/{compiler.suffix.cmd}"  -v "{build.vid}" -p "{build.pid}" -d "{build.did}" -a "{build.path}/{build.project_name}.dfu"
+
+## Append DFU suffix (iap file)
+recipe.hooks.objcopy.postobjcopy.2.pattern="{compiler.platform.path}/{compiler.suffix.cmd}"  -v "{build.vid}" -p "{build.pid}" -d "{build.did}" -a "{build.path}/{build.project_name}.iap"
 
 ## Save hex
-recipe.output.tmp_file={build.project_name}.bin
-recipe.output.save_file={build.project_name}.{build.variant}.bin
+recipe.output.tmp_file={build.project_name}.iap
+recipe.output.save_file={build.project_name}.{build.variant}.iap
 
 ## Compute size
 recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
-recipe.size.regex=\.text\s+([0-9]+).*
+recipe.size.regex=^\.(?:boot|text|rodata|data|rodata2|data2|backup)\s+([0-9]+).*
 
 
 # Uploader tools
@@ -118,16 +123,13 @@ tools.stm32l4_dfu.path.macosx={runtime.platform.path}/tools/macosx
 tools.stm32l4_dfu.path.linux={runtime.platform.path}/tools/linux
 tools.stm32l4_dfu.upload.params.verbose=-v
 tools.stm32l4_dfu.upload.params.quiet=
-tools.stm32l4_dfu.upload.pattern="{path}/{cmd}" "{build.path}/{build.project_name}.bin"
+tools.stm32l4_dfu.upload.pattern="{path}/{cmd}" "{build.vid}" "{build.pid}" "{build.path}/{build.project_name}.dfu"
 tools.stm32l4_dfu.program.params.verbose=-v
 tools.stm32l4_dfu.program.params.quiet=
-tools.stm32l4_dfu.program.pattern="{path}/{cmd}" "{build.path}/{build.project_name}.bin"
+tools.stm32l4_dfu.program.pattern="{path}/{cmd}" "{build.vid}" "{build.pid}" "{build.path}/{build.project_name}.dfu"
 tools.stm32l4_dfu.erase.params.verbose=-v
 tools.stm32l4_dfu.erase.params.quiet=
 tools.stm32l4_dfu.erase.pattern=
-tools.stm32l4_dfu.bootloader.params.verbose=-v
-tools.stm32l4_dfu.bootloader.params.quiet=
-tools.stm32l4_dfu.bootloader.pattern="{path}/{cmd}" "{runtime.platform.path}/bootloaders/{bootloader.file}"
 
 # OpenOCD
 tools.stm32l4_openocd.path={runtime.platform.path}/tools/windows/openocd/bin
@@ -144,6 +146,3 @@ tools.stm32l4_openocd.program.pattern="{path}/{cmd}" {program.verbose} -s "{runt
 tools.stm32l4_openocd.erase.params.verbose=-d3
 tools.stm32l4_openocd.erase.params.quiet=-d0
 tools.stm32l4_openocd.erase.pattern=
-tools.stm32l4_openocd.bootloader.params.verbose=-d2
-tools.stm32l4_openocd.bootloader.params.quiet=-d0
-tools.stm32l4_openocd.bootloader.pattern="{path}/{cmd}" {bootloader.verbose} -s "{runtime.platform.path}/tools/share/openocd/scripts/" -f "{runtime.platform.path}/variants/{build.variant}/{build.openocdscript}" -c "telnet_port disabled; program {runtime.platform.path}/bootloaders/{bootloader.file} verify reset; shutdown"

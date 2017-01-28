@@ -169,7 +169,7 @@ __isr_vector:
 
         .size   __isr_vector, . - __isr_vector
 
-
+	
         .text
         .thumb
         .thumb_func
@@ -219,15 +219,8 @@ Reset_Handler:
         bne.n   5b
 6:      cmp     r1, r2
         bne.n   4b
-
-#ifndef __NO_SYSTEM_INIT
-        bl      SystemInit
-#endif
         
-        /* ##### move this into _start */
-        bl      __libc_init_array
-
-        /* ##### default starts is "_start" */
+        /* ##### default start is "_start" */
 #ifndef __START
 #define __START main
 #endif

@@ -33,6 +33,8 @@
 #include "stm32l4_system.h"
 #include "stm32l4_rtc.h"
 
+uint32_t SystemCoreClock = 48000000;
+
 extern uint32_t __rodata2_start__;
 extern uint32_t __rodata2_end__;
 extern uint32_t __backup_start__;
@@ -614,28 +616,6 @@ void stm32l4_system_initialize(uint32_t hclk, uint32_t pclk1, uint32_t pclk2, ui
 
     __disable_irq();
 
-    /* Unlock SYSCFG (and leave it unlocked for EXTI use).
-     * RCC does not need to be protected by atomics as
-     * interrupts are disabled.
-     */
-    
-    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
-
-    RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
-
-#if defined(STM32L432xx) || defined(STM32L433xx)
-    /* Unlock RTCAPBEN (and leave it unlocked for RTC/BKP use).
-     */
-    RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;
-#endif
-
-    /* Switch to Main Flash @ 0x00000000. Make sure the I/D CACHE is
-     * disabled to avoid stale data in the cache.
-     */
-    FLASH->ACR &= ~(FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN);
-	
-    SYSCFG->MEMRMP = 0;
-
     if (PWR->SR1 & PWR_SR1_SBF)
     {
 	stm32l4_system_device.reset = SYSTEM_RESET_STANDBY;
@@ -701,46 +681,6 @@ void stm32l4_system_initialize(uint32_t hclk, uint32_t pclk1, uint32_t pclk2, ui
     RCC->CSR &= ~RCC_CSR_RMVF;
     
     PWR->SCR = (PWR_SCR_CSBF | PWR_SCR_CWUF5 | PWR_SCR_CWUF4 | PWR_SCR_CWUF3 | PWR_SCR_CWUF2 | PWR_SCR_CWUF1);
-    
-    PWR->CR1 |= PWR_CR1_DBP;
-    
-    while (!(PWR->CR1 & PWR_CR1_DBP))
-    {
-    }
-    
-    if (!(RCC->BDCR & RCC_BDCR_RTCEN))
-    {
-	RCC->BDCR |= RCC_BDCR_BDRST;
-	
-	RCC->BDCR &= ~RCC_BDCR_BDRST;
-    }
-    
-    if (RTC->CR & RTC_CR_BCK)
-    {
-	RTC->WPR = 0xca;
-	RTC->WPR = 0x53;
-	RTC->CR &= ~RTC_CR_BCK;
-	RTC->WPR = 0x00;
-
-	SYSCFG->MEMRMP = SYSCFG_MEMRMP_MEM_MODE_0;
-
-	RCC->APB2ENR &= ~RCC_APB2ENR_SYSCFGEN;
-	
-	RCC->APB1ENR1 &= ~RCC_APB1ENR1_PWREN;
-
-	SCB->VTOR = 0x00000000;
-	
-	/* This needs to be assembly code as GCC catches NULL 
-	 * dereferences ...
-	 */
-	__asm__ volatile (
-	    "   ldr     r2, =0x00000000                \n"
-	    "   ldr     r0, [r2, #0]                   \n"
-	    "   ldr     r1, [r2, #4]                   \n"
-	    "   msr     MSP, r0                        \n"
-	    "   isb                                    \n"
-	    "   bx      r1                             \n");
-    }
     
     stm32l4_system_device.lseclk = lseclk;
     stm32l4_system_device.hseclk = hseclk;

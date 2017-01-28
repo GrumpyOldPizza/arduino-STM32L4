@@ -18,19 +18,16 @@ Dragonfly-L476RE.upload.use_1200bps_touch=true
 Dragonfly-L476RE.upload.wait_for_upload_port=false
 Dragonfly-L476RE.upload.native_usb=false
 
-Dragonfly-L476RE.bootloader.tool=stm32l4_dfu
-Dragonfly-L476RE.bootloader.protocol=dfu
-Dragonfly-L476RE.bootloader.file=dragonfly.bin
-
 Dragonfly-L476RE.build.mcu=cortex-m4
 Dragonfly-L476RE.build.f_cpu=80000000L
-Dragonfly-L476RE.build.board=Dragonfly-L476RE
+Dragonfly-L476RE.build.board=STM32L4_DRAGONFLY
 Dragonfly-L476RE.build.arch=STM32L4
 Dragonfly-L476RE.build.core=stm32l4
-Dragonfly-L476RE.build.usb_manufacturer=u"\u0324Tlera Corporation"
-Dragonfly-L476RE.build.usb_product=u"\u0314Dragonfly"
 Dragonfly-L476RE.build.vid=0x1209
 Dragonfly-L476RE.build.pid=0x6667
+Dragonfly-L476RE.build.did=0xffff
+Dragonfly-L476RE.build.usb_manufacturer=u"\u0324Tlera Corporation"
+Dragonfly-L476RE.build.usb_product=u"\u0314Dragonfly"
 Dragonfly-L476RE.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags} {build.dosfs_flags}
 Dragonfly-L476RE.build.ldscript=linker_scripts/STM32L476RE_FLASH.ld
 Dragonfly-L476RE.build.openocdscript=openocd_scripts/stm32l476re_dragonfly.cfg
@@ -110,19 +107,16 @@ Butterfly-L433CC.upload.use_1200bps_touch=true
 Butterfly-L433CC.upload.wait_for_upload_port=false
 Butterfly-L433CC.upload.native_usb=false
 
-Butterfly-L433CC.bootloader.tool=stm32l4_dfu
-Butterfly-L433CC.bootloader.protocol=dfu
-Butterfly-L433CC.bootloader.file=butterfly.bin
-
 Butterfly-L433CC.build.mcu=cortex-m4
 Butterfly-L433CC.build.f_cpu=80000000L
-Butterfly-L433CC.build.board=Butterfly-L433CC
+Butterfly-L433CC.build.board=STM32L4_BUTTERFLY
 Butterfly-L433CC.build.arch=STM32L4
 Butterfly-L433CC.build.core=stm32l4
-Butterfly-L433CC.build.usb_manufacturer=u"\u0324Tlera Corporation"
-Butterfly-L433CC.build.usb_product=u"\u0314Butterfly"
 Butterfly-L433CC.build.vid=0x1209
 Butterfly-L433CC.build.pid=0x6668
+Butterfly-L433CC.build.did=0xffff
+Butterfly-L433CC.build.usb_manufacturer=u"\u0324Tlera Corporation"
+Butterfly-L433CC.build.usb_product=u"\u0314Butterfly"
 Butterfly-L433CC.build.extra_flags=-DSTM32L433xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags} {build.dosfs_flags}
 Butterfly-L433CC.build.ldscript=linker_scripts/STM32L433CC_FLASH.ld
 Butterfly-L433CC.build.openocdscript=openocd_scripts/stm32l433cc_butterfly.cfg
@@ -193,19 +187,16 @@ Ladybug-L432KC.upload.use_1200bps_touch=true
 Ladybug-L432KC.upload.wait_for_upload_port=false
 Ladybug-L432KC.upload.native_usb=false
 
-Ladybug-L432KC.bootloader.tool=stm32l4_dfu
-Ladybug-L432KC.bootloader.protocol=dfu
-Ladybug-L432KC.bootloader.file=ladybug.bin
-
 Ladybug-L432KC.build.mcu=cortex-m4
 Ladybug-L432KC.build.f_cpu=80000000L
-Ladybug-L432KC.build.board=Ladybug-L432KC
+Ladybug-L432KC.build.board=STM32L4_LADYBUG
 Ladybug-L432KC.build.arch=STM32L4
 Ladybug-L432KC.build.core=stm32l4
-Ladybug-L432KC.build.usb_manufacturer=u"\u0324Tlera Corporation"
-Ladybug-L432KC.build.usb_product=u"\u0310Ladybug"
 Ladybug-L432KC.build.vid=0x1209
 Ladybug-L432KC.build.pid=0x6669
+Ladybug-L432KC.build.did=0xffff
+Ladybug-L432KC.build.usb_manufacturer=u"\u0324Tlera Corporation"
+Ladybug-L432KC.build.usb_product=u"\u0310Ladybug"
 Ladybug-L432KC.build.extra_flags=-DSTM32L432xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags} {build.dosfs_flags}
 Ladybug-L432KC.build.ldscript=linker_scripts/STM32L432KC_FLASH.ld
 Ladybug-L432KC.build.openocdscript=openocd_scripts/stm32l432kc_ladybug.cfg
@@ -279,10 +270,13 @@ NUCLEO-L432KC.upload.native_usb=false
 
 NUCLEO-L432KC.build.mcu=cortex-m4
 NUCLEO-L432KC.build.f_cpu=80000000L
-NUCLEO-L432KC.build.board=NUCLEO-L432KC
+NUCLEO-L432KC.build.board=STM32L4_NUCLEO
 NUCLEO-L432KC.build.arch=STM32L4
 NUCLEO-L432KC.build.core=stm32l4
-NUCLEO-L432KC.build.extra_flags=-DSTM32L432xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant
+NUCLEO-L432KC.build.vid=0x0483
+NUCLEO-L432KC.build.pid=0x374b
+NUCLEO-L432KC.build.did=0xffff
+NUCLEO-L432KC.build.extra_flags=-DSTM32L432xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags}
 NUCLEO-L432KC.build.ldscript=linker_scripts/STM32L432KC_FLASH.ld
 NUCLEO-L432KC.build.openocdscript=openocd_scripts/stm32l432kc_nucleo.cfg
 NUCLEO-L432KC.build.variant=STM32L432KC-NUCLEO
@@ -341,10 +335,13 @@ NUCLEO-L476RG.upload.native_usb=false
 
 NUCLEO-L476RG.build.mcu=cortex-m4
 NUCLEO-L476RG.build.f_cpu=80000000L
-NUCLEO-L476RG.build.board=NUCLEO-L476RG
+NUCLEO-L476RG.build.board=STM32L4_NUCLEO
 NUCLEO-L476RG.build.arch=STM32L4
 NUCLEO-L476RG.build.core=stm32l4
-NUCLEO-L476RG.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.dosfs_flags}
+NUCLEO-L476RG.build.vid=0x0483
+NUCLEO-L476RG.build.pid=0x374b
+NUCLEO-L476RG.build.did=0xffff
+NUCLEO-L476RG.build.extra_flags=-DSTM32L476xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags} {build.dosfs_flags}
 NUCLEO-L476RG.build.ldscript=linker_scripts/STM32L476RG_FLASH.ld
 NUCLEO-L476RG.build.openocdscript=openocd_scripts/stm32l476rg_nucleo.cfg
 NUCLEO-L476RG.build.variant=STM32L476RG-NUCLEO
