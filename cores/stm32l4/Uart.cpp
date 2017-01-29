@@ -142,8 +142,12 @@ size_t Uart::read(uint8_t *buffer, size_t size)
 	    rx_count = (UART_RX_BUFFER_SIZE - rx_read);
 	}
 
+	if (rx_count > (size - count)) {
+	    rx_count = (size - count);
+	}
+			       
 	memcpy(&buffer[count], &_rx_data[rx_read], rx_count);
-	count += rx_count;
+	count +=  rx_count;
       
 	_rx_read = (rx_read + rx_count) & (UART_RX_BUFFER_SIZE -1);
 
@@ -268,7 +272,7 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
     return count;
 }
 
-void Uart::onReceive(void(*callback)(int))
+void Uart::onReceive(void(*callback)(void))
 {
     _receiveCallback = callback;
 }
@@ -290,42 +294,36 @@ void Uart::EventCallback(uint32_t events)
     bool empty;
 
     if (events & UART_EVENT_RECEIVE) {
-	while (_rx_count != UART_RX_BUFFER_SIZE) {
-	    empty = (_rx_count == 0);
+	empty = (_rx_count == 0);
 
-	    count = 0;
+	count = 0;
 
-	    do {
-		rx_size = 0;
-		rx_count = UART_RX_BUFFER_SIZE - _rx_count;
-
-		if (rx_count == 0) {
-		    break;
-		}
-	      
-		rx_write = _rx_write;
-
-		if (rx_count > (UART_RX_BUFFER_SIZE - rx_write)) {
-		    rx_count = (UART_RX_BUFFER_SIZE - rx_write);
-		}
-	      
-		rx_size = stm32l4_uart_receive(_uart, &_rx_data[rx_write], rx_count);
-	      
-		_rx_write = (rx_write + rx_size) & (UART_RX_BUFFER_SIZE -1);
-	      
-		armv7m_atomic_add(&_rx_count, rx_size);
-	      
-		count += rx_size;
-	      
-	    } while (rx_size);
-	  
-	    if (empty && _receiveCallback) {
-		(*_receiveCallback)(count);
-	    }
-
-	    if (!rx_size) {
+	do {
+	    rx_size = 0;
+	    rx_count = UART_RX_BUFFER_SIZE - _rx_count;
+	    
+	    if (rx_count == 0) {
 		break;
 	    }
+	    
+	    rx_write = _rx_write;
+	    
+	    if (rx_count > (UART_RX_BUFFER_SIZE - rx_write)) {
+		rx_count = (UART_RX_BUFFER_SIZE - rx_write);
+	    }
+	    
+	    rx_size = stm32l4_uart_receive(_uart, &_rx_data[rx_write], rx_count);
+	    
+	    _rx_write = (rx_write + rx_size) & (UART_RX_BUFFER_SIZE -1);
+	    
+	    armv7m_atomic_add(&_rx_count, rx_size);
+	    
+	    count += rx_size;
+	    
+	} while (rx_size);
+	  
+	if (empty && count && _receiveCallback) {
+	    armv7m_pendsv_enqueue((armv7m_pendsv_routine_t)_receiveCallback, NULL, 0);
 	}
     }
 

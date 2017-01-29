@@ -133,34 +133,38 @@ int CDC::read()
 
 size_t CDC::read(uint8_t *buffer, size_t size)
 {
-  unsigned int rx_read, rx_count;
-  size_t count;
+    unsigned int rx_read, rx_count;
+    size_t count;
 
-  count = 0;
+    count = 0;
 
-  while (count < size) {
+    while (count < size) {
 
-      rx_count = _rx_count;
+	rx_count = _rx_count;
 
-      if (rx_count == 0) {
-	  break;
-      }
+	if (rx_count == 0) {
+	    break;
+	}
 
-      rx_read = _rx_read;
+	rx_read = _rx_read;
 
-      if (rx_count > (UART_RX_BUFFER_SIZE - rx_read)) {
-	  rx_count = (UART_RX_BUFFER_SIZE - rx_read);
-      }
+	if (rx_count > (CDC_RX_BUFFER_SIZE - rx_read)) {
+	    rx_count = (CDC_RX_BUFFER_SIZE - rx_read);
+	}
 
-      memcpy(&buffer[count], &_rx_data[rx_read], rx_count);
-      count += rx_count;
+	if (rx_count > (size - count)) {
+	    rx_count = (size - count);
+	}
+			       
+	memcpy(&buffer[count], &_rx_data[rx_read], rx_count);
+	count +=  rx_count;
       
-      _rx_read = (rx_read + rx_count) & (CDC_RX_BUFFER_SIZE -1);
+	_rx_read = (rx_read + rx_count) & (CDC_RX_BUFFER_SIZE -1);
 
-      armv7m_atomic_sub(&_rx_count, rx_count);
-  }
+	armv7m_atomic_sub(&_rx_count, rx_count);
+    }
 
-  return count;
+    return count;
 }
 
 void CDC::flush()
@@ -286,7 +290,7 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
     return count;
 }
 
-void CDC::onReceive(void(*callback)(int))
+void CDC::onReceive(void(*callback)(void))
 {
     _receiveCallback = callback;
 }
@@ -308,42 +312,36 @@ void CDC::EventCallback(uint32_t events)
     bool empty;
 
     if (events & USBD_CDC_EVENT_RECEIVE) {
-	while (_rx_count != CDC_RX_BUFFER_SIZE) {
-	    empty = (_rx_count == 0);
+	empty = (_rx_count == 0);
 
-	    count = 0;
+	count = 0;
 
-	    do {
-		rx_size = 0;
-		rx_count = CDC_RX_BUFFER_SIZE - _rx_count;
-
-		if (rx_count == 0) {
-		    break;
-		}
-	      
-		rx_write = _rx_write;
-
-		if (rx_count > (CDC_RX_BUFFER_SIZE - rx_write)) {
-		    rx_count = (CDC_RX_BUFFER_SIZE - rx_write);
-		}
-	      
-		rx_size = stm32l4_usbd_cdc_receive(_usbd_cdc, &_rx_data[rx_write], rx_count);
-	      
-		_rx_write = (rx_write + rx_size) & (CDC_RX_BUFFER_SIZE -1);
-	      
-		armv7m_atomic_add(&_rx_count, rx_size);
-	      
-		count += rx_size;
-	      
-	    } while (rx_size);
-	  
-	    if (empty && _receiveCallback) {
-		(*_receiveCallback)(count);
-	    }
-
-	    if (!rx_size) {
+	do {
+	    rx_size = 0;
+	    rx_count = CDC_RX_BUFFER_SIZE - _rx_count;
+	    
+	    if (rx_count == 0) {
 		break;
 	    }
+	    
+	    rx_write = _rx_write;
+	    
+	    if (rx_count > (CDC_RX_BUFFER_SIZE - rx_write)) {
+		rx_count = (CDC_RX_BUFFER_SIZE - rx_write);
+	    }
+	    
+	    rx_size = stm32l4_usbd_cdc_receive(_usbd_cdc, &_rx_data[rx_write], rx_count);
+	    
+	    _rx_write = (rx_write + rx_size) & (CDC_RX_BUFFER_SIZE -1);
+	    
+	    armv7m_atomic_add(&_rx_count, rx_size);
+	    
+	    count += rx_size;
+	    
+	} while (rx_size);
+	  
+	if (empty && count && _receiveCallback) {
+	    armv7m_pendsv_enqueue((armv7m_pendsv_routine_t)_receiveCallback, NULL, 0);
 	}
     }
 

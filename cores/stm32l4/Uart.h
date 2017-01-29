@@ -30,8 +30,8 @@
 
 #include "HardwareSerial.h"
 
-#define UART_RX_BUFFER_SIZE 64
-#define UART_TX_BUFFER_SIZE 64
+#define UART_RX_BUFFER_SIZE 128
+#define UART_TX_BUFFER_SIZE 128
 
 class Uart : public HardwareSerial
 {
@@ -55,7 +55,7 @@ public:
     size_t read(uint8_t *buffer, size_t size);
 
     // STM32L4 EXTENSTION: asynchronous receive
-    void onReceive(void(*callback)(int));
+    void onReceive(void(*callback)(void));
 
     // STM32L4 EXTENSTION: enable/disabe blocking writes
     void blockOnOverrun(bool block);
@@ -77,7 +77,7 @@ private:
     volatile uint32_t _tx_count;
     volatile uint32_t _tx_size;
 
-    void (*_receiveCallback)(int);
+    void (*_receiveCallback)(void);
 
     static void _event_callback(void *context, uint32_t events);
     void EventCallback(uint32_t events);
