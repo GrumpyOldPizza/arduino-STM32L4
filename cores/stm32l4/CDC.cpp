@@ -44,8 +44,6 @@ CDC::CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc, bool serialEvent)
 {
     _usbd_cdc = usbd_cdc;
 
-    _blocking = true;
-
     _rx_read = 0;
     _rx_write = 0;
     _rx_count = 0;
@@ -54,6 +52,10 @@ CDC::CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc, bool serialEvent)
     _tx_count = 0;
     _tx_size = 0;
 
+    _tx_data2 = NULL;
+    _tx_size2 = 0;
+  
+    _completionCallback = NULL;
     _receiveCallback = NULL;
 
     stm32l4_usbd_cdc_create(usbd_cdc);
@@ -96,6 +98,10 @@ int CDC::available()
 int CDC::availableForWrite(void)
 {
     if (_usbd_cdc->state < USBD_CDC_STATE_READY) {
+	return 0;
+    }
+
+    if (_tx_size2 != 0) {
 	return 0;
     }
 
@@ -170,19 +176,11 @@ size_t CDC::read(uint8_t *buffer, size_t size)
 void CDC::flush()
 {
     if (armv7m_core_priority() <= STM32L4_USB_IRQ_PRIORITY) {
-	while (_tx_count != 0) {
-	    stm32l4_usbd_cdc_poll(_usbd_cdc);
-	}
-
-	while (!stm32l4_usbd_cdc_done(_usbd_cdc)) {
+	while ((_tx_count != 0) || (_tx_size2 != 0) || !stm32l4_usbd_cdc_done(_usbd_cdc)) {
 	    stm32l4_usbd_cdc_poll(_usbd_cdc);
 	}
     } else {
-	while (_tx_count != 0) {
-	    armv7m_core_yield();
-	}
-
-	while (!stm32l4_usbd_cdc_done(_usbd_cdc)) {
+	while ((_tx_count != 0) || (_tx_size2 != 0) || !stm32l4_usbd_cdc_done(_usbd_cdc)) {
 	    armv7m_core_yield();
 	}
     }
@@ -205,6 +203,16 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
     if (size == 0) {
 	return 0;
     }
+
+    if (_tx_size2 != 0) {
+	if (__get_IPSR() != 0) {
+	    return 0;
+	}
+	
+	while (_tx_size2 != 0) {
+	    armv7m_core_yield();
+	}
+    }
       
     count = 0;
 
@@ -214,7 +222,7 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
 
 	if (tx_count == 0) {
 
-	    if (!_blocking || (__get_IPSR() != 0)) {
+	    if (__get_IPSR() != 0) {
 		break;
 	    }
 
@@ -290,19 +298,54 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
     return count;
 }
 
+bool CDC::write(const uint8_t *buffer, size_t size, void(*callback)(void))
+{
+    if ((_usbd_cdc->state < USBD_CDC_STATE_READY) || !(stm32l4_usbd_cdc_info.lineState & 1)) {
+	return false;
+    }
+
+    if (size == 0) {
+	return false;
+    }
+
+    if (_tx_size2 != 0) {
+	return false;
+    }
+
+    _completionCallback = callback;
+    _tx_data2 = buffer;
+    _tx_size2 = size;
+
+    if (stm32l4_usbd_cdc_done(_usbd_cdc)) {
+	if (!stm32l4_usbd_cdc_transmit(_usbd_cdc, _tx_data2, _tx_size2)) {
+	    _tx_data2 = NULL;
+	    _tx_size2 = 0;
+	}
+    }
+
+    return true;
+}
+
+bool CDC::done()
+{
+    if (_tx_count) {
+	return false;
+    }
+
+    if (_tx_size2) {
+	return false;
+    }
+
+    if (!stm32l4_usbd_cdc_done(_usbd_cdc)) {
+	return false;
+    }
+
+    return true;
+}
+
 void CDC::onReceive(void(*callback)(void))
 {
     _receiveCallback = callback;
-}
-
-void CDC::blockOnOverrun(bool block)
-{
-    _blocking = block;
-}
-
-bool CDC::isEnabled()
-{
-    return (_usbd_cdc->state >= USBD_CDC_STATE_READY);
 }
 
 void CDC::EventCallback(uint32_t events)
@@ -372,11 +415,23 @@ void CDC::EventCallback(uint32_t events)
 		    _tx_size = tx_size;
 		    
 		    stm32l4_usbd_cdc_transmit(_usbd_cdc, &_tx_data[tx_read], tx_size);
+		} else {
+		    if (_tx_size2 != 0) {
+			stm32l4_usbd_cdc_transmit(_usbd_cdc, _tx_data2, _tx_size2);
+		    }
 		}
-	    }
-	    else {
+	    } else {
 		_tx_count = 0;
 		_tx_read = _tx_write;
+	    }
+	} else {
+	    _tx_size2 = 0;
+	    _tx_data2 = NULL;
+
+	    if (_completionCallback) {
+		armv7m_pendsv_enqueue((armv7m_pendsv_routine_t)_completionCallback, NULL, 0);
+		
+		_completionCallback = NULL;
 	    }
 	}
     }

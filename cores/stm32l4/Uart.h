@@ -54,18 +54,15 @@ public:
     // STM32L4 EXTENSTION: non-blocking multi-byte read
     size_t read(uint8_t *buffer, size_t size);
 
+    // STM32L4 EXTENSTION: asynchronous write with callback
+    bool write(const uint8_t *buffer, size_t size, void(*callback)(void));
+    bool done(void);
+
     // STM32L4 EXTENSTION: asynchronous receive
     void onReceive(void(*callback)(void));
 
-    // STM32L4 EXTENSTION: enable/disabe blocking writes
-    void blockOnOverrun(bool block);
-
-    // STM32L4 EXTENSTION: isEnabled() check
-    bool isEnabled(void);
-
 private:
     struct _stm32l4_uart_t *_uart;
-    bool _blocking;
     uint8_t _rx_fifo[16];
     uint8_t _rx_data[UART_RX_BUFFER_SIZE];
     volatile uint16_t _rx_write;
@@ -77,6 +74,10 @@ private:
     volatile uint32_t _tx_count;
     volatile uint32_t _tx_size;
 
+    const uint8_t *_tx_data2;
+    volatile uint32_t _tx_size2;
+
+    void (*_completionCallback)(void);
     void (*_receiveCallback)(void);
 
     static void _event_callback(void *context, uint32_t events);

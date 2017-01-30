@@ -50,27 +50,26 @@ volatile armv7m_pendsv_routine_t * armv7m_pendsv_enqueue(armv7m_pendsv_routine_t
 {
     volatile armv7m_pendsv_entry_t *pendsv_write, *pendsv_write_next;
 
-    pendsv_write = armv7m_pendsv_control.pendsv_write;
-
     do
     {
-	if (pendsv_write->routine != NULL)
-	{
-	    return false;
-	}
-
+        pendsv_write = armv7m_pendsv_control.pendsv_write;
 	pendsv_write_next = pendsv_write + 1;
 
 	if (pendsv_write_next == &armv7m_pendsv_control.pendsv_data[ARMV7M_PENDSV_ENTRY_COUNT])
 	{
 	    pendsv_write_next = &armv7m_pendsv_control.pendsv_data[0];
 	}
+
+	if (pendsv_write_next == armv7m_pendsv_control.pendsv_read)
+	{
+	    return NULL;
+	}
     }
     while (!armv7m_atomic_compare_exchange((volatile uint32_t*)&armv7m_pendsv_control.pendsv_write, (uint32_t*)&pendsv_write, (uint32_t)pendsv_write_next));
 
+    pendsv_write->routine = routine;
     pendsv_write->context = context;
     pendsv_write->data = data;
-    pendsv_write->routine = routine;
 
     SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
 
@@ -84,21 +83,14 @@ static __attribute__((used)) void armv7m_pendsv_dequeue(void)
     void *context;
     uint32_t data;
 
-    while (1)
+    pendsv_read = armv7m_pendsv_control.pendsv_read;
+
+    while (pendsv_read != armv7m_pendsv_control.pendsv_write)
     {
-	pendsv_read = armv7m_pendsv_control.pendsv_read;
 
 	routine = pendsv_read->routine;
-
-	if (routine == NULL)
-	{
-	    break;
-	}
-
 	context = pendsv_read->context;
 	data = pendsv_read->data;
-
-	pendsv_read->routine = NULL;
 
 	pendsv_read = pendsv_read + 1;
 
