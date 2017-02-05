@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -93,6 +93,7 @@ enum {
 #define UART_EVENT_PARITY            0x00000008
 #define UART_EVENT_FRAMING           0x00000010
 #define UART_EVENT_OVERRUN           0x00000020
+#define UART_EVENT_TIMEOUT           0x20000000
 #define UART_EVENT_RECEIVE           0x40000000
 #define UART_EVENT_TRANSMIT          0x80000000
 
@@ -126,9 +127,14 @@ typedef struct _stm32l4_uart_t {
     const uint8_t              *tx_data;
     uint16_t                   tx_count;
     volatile uint16_t          tx_size;
+    uint8_t                    rx_fifo[16];
     uint8_t                    *rx_data;
     uint16_t                   rx_size;
-    volatile uint16_t          rx_index;
+    uint16_t                   rx_read;
+    uint16_t                   rx_write;
+    uint16_t                   rx_index;
+    uint16_t                   rx_event;
+    volatile uint32_t          rx_count;
     stm32l4_dma_t              tx_dma;
     stm32l4_dma_t              rx_dma;
 } stm32l4_uart_t;
@@ -140,6 +146,8 @@ extern bool stm32l4_uart_disable(stm32l4_uart_t *uart);
 extern bool stm32l4_uart_configure(stm32l4_uart_t *uart, uint32_t bitrate, uint32_t option);
 extern bool stm32l4_uart_notify(stm32l4_uart_t *uart, stm32l4_uart_callback_t callback, void *context, uint32_t events);
 extern unsigned int stm32l4_uart_receive(stm32l4_uart_t *uart, uint8_t *rx_data, uint16_t rx_count);
+extern unsigned int stm32l4_uart_count(stm32l4_uart_t *uart);
+extern int stm32l4_uart_peek(stm32l4_uart_t *uart);
 extern bool stm32l4_uart_transmit(stm32l4_uart_t *uart, const uint8_t *tx_data, uint16_t tx_count);
 extern bool stm32l4_uart_send_break(stm32l4_uart_t *uart);
 extern bool stm32l4_uart_done(stm32l4_uart_t *uart);

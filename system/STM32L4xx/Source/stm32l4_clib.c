@@ -35,7 +35,6 @@
 #include <sys/unistd.h>
 
 #include "armv7m.h"
-#include "stm32l4_usbd_cdc.h"
 
 int (*stm32l4_stdio_put)(char, FILE*) = NULL;
 int (*stm32l4_stdio_get)(FILE*) = NULL;
@@ -43,12 +42,8 @@ int (*stm32l4_stdio_get)(FILE*) = NULL;
 #undef errno
 extern int errno;
 
-extern stm32l4_usbd_cdc_t stm32l4_usbd_cdc;
-
 extern uint32_t __HeapBase[];
 extern uint32_t __StackLimit[];
-
-__attribute__((weak)) int stm32l4_console(char *buf, int nbytes) { return 0; }
 
 void * _sbrk (int nbytes)
 {
@@ -173,10 +168,6 @@ int _write(int file, char *buf, int nbytes)
 		    nbytes--;
 		}
 		while (nbytes != 0);
-	    }
-	    else
-	    {
-		n = stm32l4_console(buf, nbytes);
 	    }
 	}
 	return n;

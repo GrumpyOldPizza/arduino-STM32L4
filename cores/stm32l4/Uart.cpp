@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -36,9 +36,6 @@ Uart::Uart(struct _stm32l4_uart_t *uart, unsigned int instance, const struct _st
 {
     _uart = uart;
 
-    _rx_read = 0;
-    _rx_write = 0;
-    _rx_count = 0;
     _tx_read = 0;
     _tx_write = 0;
     _tx_count = 0;
@@ -59,18 +56,27 @@ Uart::Uart(struct _stm32l4_uart_t *uart, unsigned int instance, const struct _st
 
 void Uart::begin(unsigned long baudrate)
 {
-    begin(baudrate, SERIAL_8N1);
+    begin(baudrate, SERIAL_8N1, &_rx_data[0], sizeof(_rx_data));
 }
 
 void Uart::begin(unsigned long baudrate, uint16_t config)
 {
-    if (_uart->state == UART_STATE_INIT) {
-	stm32l4_uart_enable(_uart, &_rx_fifo[0], sizeof(_rx_fifo), baudrate, config, Uart::_event_callback, (void*)this, (UART_EVENT_RECEIVE | UART_EVENT_TRANSMIT));
-    } else {
-	flush();
+    begin(baudrate, config, &_rx_data[0], sizeof(_rx_data));
+}
 
-	stm32l4_uart_configure(_uart, baudrate, config);
+void Uart::begin(unsigned long baudrate, uint8_t *buffer, size_t size)
+{
+    begin(baudrate, SERIAL_8N1, buffer, size);
+}
+
+void Uart::begin(unsigned long baudrate, uint16_t config, uint8_t *buffer, size_t size)
+{
+    if (_uart->state != UART_STATE_INIT) {
+	flush();
+	stm32l4_uart_disable(_uart);
     }
+
+    stm32l4_uart_enable(_uart, buffer, size, baudrate, config, Uart::_event_callback, (void*)this, (UART_EVENT_RECEIVE | UART_EVENT_TRANSMIT));
 }
 
 void Uart::end()
@@ -82,7 +88,7 @@ void Uart::end()
 
 int Uart::available()
 {
-    return _rx_count;
+    return stm32l4_uart_count(_uart);
 }
 
 int Uart::availableForWrite()
@@ -100,67 +106,25 @@ int Uart::availableForWrite()
 
 int Uart::peek()
 {
-    if (_rx_count == 0) {
-	return -1;
-    }
-
-    return _rx_data[_rx_read];
+    return stm32l4_uart_peek(_uart);
 }
 
 int Uart::read()
 {
-    unsigned int rx_read;
     uint8_t data;
 
-    if (_rx_count == 0) {
+    if (!stm32l4_uart_count(_uart)) {
 	return -1;
     }
 
-    rx_read = _rx_read;
+    stm32l4_uart_receive(_uart, &data, 1);
 
-    data = _rx_data[rx_read];
-    
-    _rx_read = (unsigned int)(rx_read + 1) & (UART_RX_BUFFER_SIZE -1);
-
-    armv7m_atomic_sub(&_rx_count, 1);
-  
     return data;
 }
 
 size_t Uart::read(uint8_t *buffer, size_t size)
 {
-    unsigned int rx_read, rx_count;
-    size_t count;
-
-    count = 0;
-
-    while (count < size) {
-
-	rx_count = _rx_count;
-
-	if (rx_count == 0) {
-	    break;
-	}
-
-	rx_read = _rx_read;
-
-	if (rx_count > (UART_RX_BUFFER_SIZE - rx_read)) {
-	    rx_count = (UART_RX_BUFFER_SIZE - rx_read);
-	}
-
-	if (rx_count > (size - count)) {
-	    rx_count = (size - count);
-	}
-			       
-	memcpy(&buffer[count], &_rx_data[rx_read], rx_count);
-	count +=  rx_count;
-      
-	_rx_read = (rx_read + rx_count) & (UART_RX_BUFFER_SIZE -1);
-
-	armv7m_atomic_sub(&_rx_count, rx_count);
-    }
-
-    return count;
+    return stm32l4_uart_receive(_uart, buffer, size);
 }
 
 void Uart::flush()
@@ -329,40 +293,10 @@ void Uart::onReceive(void(*callback)(void))
 
 void Uart::EventCallback(uint32_t events)
 {
-    unsigned int rx_write, rx_count, rx_size, count;
     unsigned int tx_read, tx_size;
-    bool empty;
 
     if (events & UART_EVENT_RECEIVE) {
-	empty = (_rx_count == 0);
-
-	count = 0;
-
-	do {
-	    rx_size = 0;
-	    rx_count = UART_RX_BUFFER_SIZE - _rx_count;
-	    
-	    if (rx_count == 0) {
-		break;
-	    }
-	    
-	    rx_write = _rx_write;
-	    
-	    if (rx_count > (UART_RX_BUFFER_SIZE - rx_write)) {
-		rx_count = (UART_RX_BUFFER_SIZE - rx_write);
-	    }
-	    
-	    rx_size = stm32l4_uart_receive(_uart, &_rx_data[rx_write], rx_count);
-	    
-	    _rx_write = (rx_write + rx_size) & (UART_RX_BUFFER_SIZE -1);
-	    
-	    armv7m_atomic_add(&_rx_count, rx_size);
-	    
-	    count += rx_size;
-	    
-	} while (rx_size);
-	  
-	if (empty && count && _receiveCallback) {
+	if (_receiveCallback) {
 	    armv7m_pendsv_enqueue((armv7m_pendsv_routine_t)_receiveCallback, NULL, 0);
 	}
     }

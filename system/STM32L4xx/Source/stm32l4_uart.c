@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -91,14 +91,74 @@ static const IRQn_Type stm32l4_uart_xlate_IRQn[UART_INSTANCE_COUNT] = {
 
 static void stm32l4_uart_dma_callback(stm32l4_uart_t *uart, uint32_t events)
 {
-    /* DMA_EVENT_TRANSFER_DONE or DMA_EVENT_TRANSFER_HALF
-     */
+    uint32_t rx_index, rx_count, rx_total, rx_size, rx_write;
+    bool overrun = false;
 
-    if (uart->rx_index != stm32l4_dma_count(&uart->rx_dma))
+    rx_index = uart->rx_index;
+    rx_count = stm32l4_dma_count(&uart->rx_dma);
+
+    if (rx_index != rx_count)
     {
-	if (uart->events & UART_EVENT_RECEIVE)
+	rx_count = (rx_count - rx_index) & 15;
+
+	uart->rx_index = (rx_index + rx_count) & 15;
+
+	if (rx_count > (uart->rx_size - uart->rx_count))
 	{
-	    (*uart->callback)(uart->context, UART_EVENT_RECEIVE);
+	    rx_count = (uart->rx_size - uart->rx_count);
+
+	    overrun = true;
+	}
+	
+	rx_total = rx_count;
+	rx_write = uart->rx_write;
+	rx_size  = rx_total;
+	
+	if (rx_size > (uart->rx_size - rx_write))
+	{
+	    rx_size = (uart->rx_size - rx_write);
+	}
+	
+	memcpy(&uart->rx_data[rx_write], &uart->rx_fifo[rx_index], rx_size);
+	
+	rx_write += rx_size;
+	rx_index += rx_size;
+	rx_total -= rx_size;
+	
+	if (rx_write == uart->rx_size)
+	{
+	    rx_write = 0;
+	}
+	
+	if (rx_total)
+	{
+	    memcpy(&uart->rx_data[rx_write], &uart->rx_fifo[rx_index], rx_total);
+	    
+	    rx_write += rx_total;
+	}
+	
+	uart->rx_write = rx_write;
+	
+	armv7m_atomic_add(&uart->rx_count, rx_count);
+	
+	uart->rx_event += rx_count;
+
+	if (uart->rx_event >= 16)
+	{
+	    uart->rx_event = 0;
+	    
+	    if (uart->events & UART_EVENT_RECEIVE)
+	    {
+		(*uart->callback)(uart->context, UART_EVENT_RECEIVE);
+	    }
+	}
+	
+	if (overrun)
+	{
+	    if (uart->events & UART_EVENT_OVERRUN)
+	    {
+		(*uart->callback)(uart->context, UART_EVENT_OVERRUN);
+	    }
 	}
     }
 }
@@ -106,56 +166,116 @@ static void stm32l4_uart_dma_callback(stm32l4_uart_t *uart, uint32_t events)
 static void stm32l4_uart_interrupt(stm32l4_uart_t *uart)
 {
     USART_TypeDef *USART = uart->USART;
-    uint32_t events;
-
+    uint32_t events, rx_index, rx_count, rx_total, rx_size, rx_write;
+    uint8_t rx_data;
+    
     events = 0;
-
-    if (USART->ISR & (USART_ISR_PE | USART_ISR_FE | USART_ISR_NE | USART_ISR_ORE | USART_ISR_IDLE | USART_ISR_LBDF))
-    {
-	if (uart->events & (UART_EVENT_IDLE | UART_EVENT_BREAK | UART_EVENT_NOISE | UART_EVENT_PARITY | UART_EVENT_FRAMING | UART_EVENT_OVERRUN))
-	{
-	    if (USART->ISR & USART_ISR_PE)
-	    {
-		events |= UART_EVENT_PARITY;
-	    }
-	    
-	    if (USART->ISR & USART_ISR_FE)
-	    {
-		events |= UART_EVENT_FRAMING;
-	    }
-	    
-	    if (USART->ISR & USART_ISR_NE)
-	    {
-		events |= UART_EVENT_NOISE;
-	    }
-	    
-	    if (USART->ISR & USART_ISR_IDLE)
-	    {
-		events |= UART_EVENT_IDLE;
-	    }
-	    
-	    if (USART->ISR & USART_ISR_ORE)
-	    {
-		events |= UART_EVENT_OVERRUN;
-	    }
-	    
-	    if (USART->ISR & USART_ISR_LBDF)
-	    {
-		events |= UART_EVENT_BREAK;
-	    }
-	}
-
-	USART->ICR = (USART_ICR_PECF | USART_ICR_FECF | USART_ICR_NCF | USART_ICR_ORECF | USART_ICR_IDLECF | USART_ICR_LBDCF);
-    }
 
     if (USART->ISR & USART_ISR_RXNE)
     {
 	if (USART->CR1 & USART_CR1_RXNEIE)
 	{
-	    uart->rx_index = USART->RDR;
+	    rx_data = USART->RDR;
 
-	    events |= UART_EVENT_RECEIVE;
+	    if (uart->rx_count != uart->rx_size)
+	    {
+		rx_write = uart->rx_write;
+
+		uart->rx_data[rx_write] = rx_data;
+
+		rx_write++;
+
+		if (rx_write == uart->rx_size)
+		{
+		    rx_write = 0;
+		}
+
+		uart->rx_write = rx_write;
+
+		armv7m_atomic_add(&uart->rx_count, 1);
+
+		uart->rx_event++;
+
+		if (uart->rx_event >= 16)
+		{
+		    uart->rx_event = 0;
+
+		    events |= UART_EVENT_RECEIVE;
+		}
+	    }
+	    else
+	    {
+		events |= UART_EVENT_OVERRUN;
+	    }
 	}
+    }
+
+    if (USART->ISR & USART_ISR_RTOF)
+    {
+	if (USART->CR1 & USART_CR1_RTOIE)
+	{
+	    if (uart->mode & UART_MODE_RX_DMA)
+	    {
+		rx_index = uart->rx_index;
+		rx_count = stm32l4_dma_count(&uart->rx_dma);
+		
+		if (rx_index != rx_count)
+		{
+		    rx_count = (rx_count - rx_index) & 15;
+		    
+		    uart->rx_index = (rx_index + rx_count) & 15;
+		    
+		    if (rx_count > (uart->rx_size - uart->rx_count))
+		    {
+			rx_count = (uart->rx_size - uart->rx_count);
+			
+			events |= UART_EVENT_OVERRUN;
+		    }
+		    
+		    rx_total = rx_count;
+		    rx_write = uart->rx_write;
+		    rx_size  = rx_total;
+		    
+		    if (rx_size > (uart->rx_size - rx_write))
+		    {
+			rx_size = (uart->rx_size - rx_write);
+		    }
+		    
+		    memcpy(&uart->rx_data[rx_write], &uart->rx_fifo[rx_index], rx_size);
+		    
+		    rx_write += rx_size;
+		    rx_index += rx_size;
+		    rx_total -= rx_size;
+		    
+		    if (rx_write == uart->rx_size)
+		    {
+			rx_write = 0;
+		    }
+		    
+		    if (rx_total)
+		    {
+			memcpy(&uart->rx_data[rx_write], &uart->rx_fifo[rx_index], rx_total);
+			
+			rx_write += rx_total;
+		    }
+		    
+		    uart->rx_write = rx_write;
+		    
+		    armv7m_atomic_add(&uart->rx_count, rx_count);
+		    
+		    uart->rx_event += rx_count;
+		}
+	    }
+
+	    if (uart->rx_event)
+	    {
+		uart->rx_event = 0;
+		
+		events |= UART_EVENT_RECEIVE;
+	    }
+	}
+
+	USART->ICR = USART_ICR_RTOCF;
     }
 
     if (USART->ISR & USART_ISR_TXE)
@@ -195,17 +315,42 @@ static void stm32l4_uart_interrupt(stm32l4_uart_t *uart)
 	}
     }
 
-    if (USART->ISR & USART_ISR_RTOF)
+    if (USART->ISR & (USART_ISR_PE | USART_ISR_FE | USART_ISR_NE | USART_ISR_ORE | USART_ISR_IDLE | USART_ISR_LBDF))
     {
-	if (USART->CR1 & USART_CR1_RTOIE)
+	if (uart->events & (UART_EVENT_IDLE | UART_EVENT_BREAK | UART_EVENT_NOISE | UART_EVENT_PARITY | UART_EVENT_FRAMING | UART_EVENT_OVERRUN))
 	{
-	    if (uart->rx_index != stm32l4_dma_count(&uart->rx_dma))
+	    if (USART->ISR & USART_ISR_PE)
 	    {
-		events |= UART_EVENT_RECEIVE;
+		events |= UART_EVENT_PARITY;
+	    }
+	    
+	    if (USART->ISR & USART_ISR_FE)
+	    {
+		events |= UART_EVENT_FRAMING;
+	    }
+	    
+	    if (USART->ISR & USART_ISR_NE)
+	    {
+		events |= UART_EVENT_NOISE;
+	    }
+	    
+	    if (USART->ISR & USART_ISR_IDLE)
+	    {
+		events |= UART_EVENT_IDLE;
+	    }
+	    
+	    if (USART->ISR & USART_ISR_ORE)
+	    {
+		events |= UART_EVENT_OVERRUN;
+	    }
+	    
+	    if (USART->ISR & USART_ISR_LBDF)
+	    {
+		events |= UART_EVENT_BREAK;
 	    }
 	}
 
-	USART->ICR = USART_ICR_RTOCF;
+	USART->ICR = (USART_ICR_PECF | USART_ICR_FECF | USART_ICR_NCF | USART_ICR_ORECF | USART_ICR_IDLECF | USART_ICR_LBDCF);
     }
 
     events &= uart->events;
@@ -369,21 +514,18 @@ bool stm32l4_uart_enable(stm32l4_uart_t *uart, uint8_t *rx_data, uint16_t rx_siz
 	return false;
     }
     
-    if (uart->mode & UART_MODE_RX_DMA)
+    if ((rx_data == NULL) || (rx_size < 16))
     {
-	if ((rx_data == NULL) || (rx_size < 8))
-	{
-	    return false;
-	}
+	return false;
+    }
 
-	uart->rx_data = rx_data;
-	uart->rx_size = rx_size;
-	uart->rx_index = 0;
-    }
-    else
-    {
-	uart->rx_index = UART_RX_DATA_NONE;
-    }
+    uart->rx_data  = rx_data;
+    uart->rx_size  = rx_size;
+    uart->rx_read  = 0;
+    uart->rx_write = 0;
+    uart->rx_index = 0;
+    uart->rx_event = 0;
+    uart->rx_count = 0;
 
     if (uart->instance != UART_INSTANCE_LPUART1)
     {
@@ -543,19 +685,19 @@ bool stm32l4_uart_configure(stm32l4_uart_t *uart, uint32_t bitrate, uint32_t opt
     if ((uart->pins.rx != GPIO_PIN_NONE) || ((uart->pins.tx != GPIO_PIN_NONE) && (option & UART_OPTION_HALF_DUPLEX_MODE)))
     {
 	usart_cr1 |= USART_CR1_RE;
+	usart_cr1 |= USART_CR1_RTOIE;
+	usart_cr2 |= USART_CR2_RTOEN;
 
 	if (uart->mode & UART_MODE_RX_DMA)
 	{
-	    usart_cr1 |= USART_CR1_RTOIE;
-	    usart_cr2 |= USART_CR2_RTOEN;
 	    usart_cr3 |= USART_CR3_DMAR;
-
-	    USART->RTOR = 32;
 	}
 	else
 	{
 	    usart_cr1 |= USART_CR1_RXNEIE;
 	}
+
+	USART->RTOR = 32;
     }
 
     if (uart->pins.tx != GPIO_PIN_NONE)
@@ -680,7 +822,7 @@ bool stm32l4_uart_configure(stm32l4_uart_t *uart, uint32_t bitrate, uint32_t opt
 	if (uart->state == UART_STATE_BUSY)
 	{
 	    stm32l4_dma_enable(&uart->rx_dma, (stm32l4_dma_callback_t)stm32l4_uart_dma_callback, uart);
-	    stm32l4_dma_start(&uart->rx_dma, (uint32_t)uart->rx_data, (uint32_t)&USART->RDR, uart->rx_size, UART_RX_DMA_OPTION);
+	    stm32l4_dma_start(&uart->rx_dma, (uint32_t)uart->rx_fifo, (uint32_t)&USART->RDR, 16, UART_RX_DMA_OPTION);
 	}
     }
 
@@ -813,56 +955,81 @@ bool stm32l4_uart_notify(stm32l4_uart_t *uart, stm32l4_uart_callback_t callback,
 
 unsigned int stm32l4_uart_receive(stm32l4_uart_t *uart, uint8_t *rx_data, uint16_t rx_count)
 {
-    uint16_t rx_size, rx_index, dma_count, rx_receive;
+    uint32_t rx_total, rx_size, rx_read;
 
     if (uart->state < UART_STATE_READY)
     {
 	return false;
     }
 
-    rx_size = 0;
+    rx_size = uart->rx_count;
 
-    if (uart->mode & UART_MODE_RX_DMA)
+    if (rx_count > rx_size)
     {
-	rx_index = uart->rx_index;
-	dma_count = stm32l4_dma_count(&uart->rx_dma);
-
-	while ((rx_index != dma_count) && (rx_size < rx_count))
-	{
-	    rx_data[rx_size++] = uart->rx_data[rx_index];
-
-	    rx_index++;
-
-	    if (rx_index == uart->rx_size)
-	    {
-		rx_index = 0;
-	    }
-
-	    if  (rx_index == dma_count)
-	    {
-		dma_count = stm32l4_dma_count(&uart->rx_dma);
-	    }
-	}
-
-	uart->rx_index = rx_index;
-    }
-    else
-    {
-	do
-	{
-	    rx_receive = uart->rx_index;
-
-	    if (rx_receive != UART_RX_DATA_NONE)
-	    {
-		uart->rx_index = UART_RX_DATA_NONE;
-
-		rx_data[rx_size++] = rx_receive;
-	    }
-	}
-	while ((rx_receive != UART_RX_DATA_NONE) && (rx_size < rx_count));
+	rx_count = rx_size;
     }
 
-    return rx_size;
+    rx_total = rx_count;
+
+    rx_read = uart->rx_read;
+    rx_size = rx_total;
+
+    if ((rx_read + rx_size) > uart->rx_size)
+    {
+	rx_size = uart->rx_size - rx_read;
+    }
+
+    memcpy(rx_data, &uart->rx_data[rx_read], rx_size);
+
+    rx_read += rx_size;
+    rx_total -= rx_size;
+
+    if (rx_read == uart->rx_size)
+    {
+	rx_read = 0;
+    }
+
+    uart->rx_read = rx_read;
+
+    armv7m_atomic_sub(&uart->rx_count, rx_size);
+
+    if (rx_total)
+    {
+	memcpy(rx_data + rx_size, &uart->rx_data[rx_read], rx_total);
+
+	rx_read += rx_total;
+
+	uart->rx_read = rx_read;
+
+	armv7m_atomic_sub(&uart->rx_count, rx_total);
+    }
+
+    return rx_count;
+}
+
+unsigned int stm32l4_uart_count(stm32l4_uart_t *uart)
+{
+    if (uart->state < UART_STATE_READY)
+    {
+	return 0;
+    }
+
+    return uart->rx_count;
+}
+
+int stm32l4_uart_peek(stm32l4_uart_t *uart)
+{
+    if (uart->state < UART_STATE_READY)
+    {
+	return -1;
+    }
+
+    if (!uart->rx_count)
+    {
+	return -1;
+    }
+
+    return uart->rx_data[uart->rx_read];
 }
 
 bool stm32l4_uart_transmit(stm32l4_uart_t *uart, const uint8_t *tx_data, uint16_t tx_count)

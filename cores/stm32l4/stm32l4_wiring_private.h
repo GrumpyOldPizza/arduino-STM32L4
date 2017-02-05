@@ -84,6 +84,7 @@ extern void USBD_Poll(void);
 extern bool USBD_Connected(void);
 extern bool USBD_Configured(void);
 extern bool USBD_Suspended(void);
+extern void USBD_SOFCallback(void(*callback)(void*), void*);
 
 /************************************************************************
  *

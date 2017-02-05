@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -54,7 +54,6 @@ typedef struct _stm32l4_usbd_cdc_info_t {
 
 extern volatile stm32l4_usbd_cdc_info_t stm32l4_usbd_cdc_info;
 
-#define USBD_CDC_EVENT_OVERRUN           0x00000001
 #define USBD_CDC_EVENT_RECEIVE           0x40000000
 #define USBD_CDC_EVENT_TRANSMIT          0x80000000
 
@@ -71,17 +70,22 @@ typedef struct _stm32l4_usbd_cdc_t {
     void                           *context;
     uint32_t                       events;
     uint8_t                        *rx_data;
-    uint32_t                       rx_size;
-    volatile uint32_t              rx_index;
+    uint16_t                       rx_size;
+    uint16_t                       rx_read;
+    uint16_t                       rx_write;
+    volatile uint16_t              rx_wrap;
+    volatile uint32_t              rx_count;
 } stm32l4_usbd_cdc_t;
 
 extern bool stm32l4_usbd_cdc_create(stm32l4_usbd_cdc_t *usbd_cdc);
 extern bool stm32l4_usbd_cdc_destroy(stm32l4_usbd_cdc_t *usbd_cdc);
-extern bool stm32l4_usbd_cdc_enable(stm32l4_usbd_cdc_t *usbd_cdc, uint32_t option, stm32l4_usbd_cdc_callback_t callback, void *context, uint32_t events);
+extern bool stm32l4_usbd_cdc_enable(stm32l4_usbd_cdc_t *usbd_cdc, uint8_t *rx_data, uint16_t rx_size, uint32_t option, stm32l4_usbd_cdc_callback_t callback, void *context, uint32_t events);
 extern bool stm32l4_usbd_cdc_disable(stm32l4_usbd_cdc_t *usbd_cdc);
 extern bool stm32l4_usbd_cdc_configure(stm32l4_usbd_cdc_t *usbd_cdc, uint32_t option);
 extern bool stm32l4_usbd_cdc_notify(stm32l4_usbd_cdc_t *usbd_cdc, stm32l4_usbd_cdc_callback_t callback, void *context, uint32_t events);
-extern unsigned int stm32l4_usbd_cdc_receive(stm32l4_usbd_cdc_t *usbd_cdc, uint8_t *rx_data, uint32_t rx_count);
+extern unsigned int stm32l4_usbd_cdc_receive(stm32l4_usbd_cdc_t *usbd_cdc, uint8_t *rx_data, uint16_t rx_count);
+extern unsigned int stm32l4_usbd_cdc_count(stm32l4_usbd_cdc_t *usbd_cdc);
+extern int stm32l4_usbd_cdc_peek(stm32l4_usbd_cdc_t *usbd_cdc);
 extern bool stm32l4_usbd_cdc_transmit(stm32l4_usbd_cdc_t *usbd_cdc, const uint8_t *tx_data, uint32_t tx_count);
 extern bool stm32l4_usbd_cdc_done(stm32l4_usbd_cdc_t *usbd_cdc);
 extern void stm32l4_usbd_cdc_poll(stm32l4_usbd_cdc_t *usbd_cdc);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -30,8 +30,8 @@
 
 #include "HardwareSerial.h"
 
-#define UART_RX_BUFFER_SIZE 128
-#define UART_TX_BUFFER_SIZE 128
+#define UART_RX_BUFFER_SIZE 64
+#define UART_TX_BUFFER_SIZE 64
 
 class Uart : public HardwareSerial
 {
@@ -39,6 +39,8 @@ public:
     Uart(struct _stm32l4_uart_t *uart, unsigned int instance, const struct _stm32l4_uart_pins_t *pins, unsigned int priority, unsigned int mode, bool serialEvent);
     void begin(unsigned long baudRate);
     void begin(unsigned long baudrate, uint16_t config);
+    void begin(unsigned long baudRate, uint8_t *buffer, size_t size);
+    void begin(unsigned long baudrate, uint16_t config, uint8_t *buffer, size_t size);
     void end();
     int available();
     int availableForWrite(void);
@@ -63,11 +65,7 @@ public:
 
 private:
     struct _stm32l4_uart_t *_uart;
-    uint8_t _rx_fifo[16];
     uint8_t _rx_data[UART_RX_BUFFER_SIZE];
-    volatile uint16_t _rx_write;
-    volatile uint16_t _rx_read;
-    volatile uint32_t _rx_count;
     uint8_t _tx_data[UART_TX_BUFFER_SIZE];
     volatile uint16_t _tx_write;
     volatile uint16_t _tx_read;

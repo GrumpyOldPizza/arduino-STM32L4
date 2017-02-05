@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -110,9 +110,6 @@ public:
 private:
     struct _stm32l4_usbd_cdc_t *_usbd_cdc;
     uint8_t _rx_data[CDC_RX_BUFFER_SIZE];
-    volatile uint16_t _rx_write;
-    volatile uint16_t _rx_read;
-    volatile uint32_t _rx_count;
     uint8_t _tx_data[CDC_TX_BUFFER_SIZE];
     volatile uint16_t _tx_write;
     volatile uint16_t _tx_read;
@@ -122,9 +119,13 @@ private:
     const uint8_t *_tx_data2;
     volatile uint32_t _tx_size2;
 
+    volatile uint32_t _tx_timeout;
+
     void (*_completionCallback)(void);
     void (*_receiveCallback)(void);
 
     static void _event_callback(void *context, uint32_t events);
+    static void _sof_callback(void *context);
     void EventCallback(uint32_t events);
+    void SOFCallback();
 };

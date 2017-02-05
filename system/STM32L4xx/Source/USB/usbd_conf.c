@@ -57,7 +57,6 @@
 #include "armv7m.h"
 #include "stm32l4_system.h"
 #include "stm32l4_gpio.h"
-#include "stm32l4_usbd_cdc.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -65,11 +64,11 @@
 /* Private variables ---------------------------------------------------------*/
 static PCD_HandleTypeDef hpcd;
 
-extern stm32l4_usbd_cdc_t stm32l4_usbd_cdc;
-
 static unsigned int usbd_pin_vbus;
 static unsigned int usbd_pin_vbus_count = 0;
 static bool usbd_connected = false;
+static void (*usbd_sof_callback)(void*) = NULL;
+static void *usbd_sof_context;
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -272,67 +271,11 @@ bool USBD_Suspended(void)
     return (USBD_Device.dev_state == USBD_STATE_SUSPENDED);
 }
 
-int stm32l4_console(char *buf, int nbytes)
+void USBD_SOFCallback(void(*callback)(void*), void *context)
 {
-    if (stm32l4_usbd_cdc.state == USBD_CDC_STATE_NONE)
-    {
-	stm32l4_usbd_cdc_create(&stm32l4_usbd_cdc);
-    }
-    
-    if (stm32l4_usbd_cdc.state == USBD_CDC_STATE_INIT)
-    {
-	stm32l4_usbd_cdc_enable(&stm32l4_usbd_cdc, 0, NULL, NULL, 0);
-    }
-    
-    if (stm32l4_usbd_cdc_connected(&stm32l4_usbd_cdc))
-    {
-	if (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-	{
-#if defined(STM32L476xx)
-	    if (armv7m_core_priority() <= (int)NVIC_GetPriority(OTG_FS_IRQn))
-#else
-	    if (armv7m_core_priority() <= (int)NVIC_GetPriority(USB_IRQn))
-#endif
-	    {
-		while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-		{
-		    stm32l4_usbd_cdc_poll(&stm32l4_usbd_cdc);
-		}
-	    }
-	    else
-	    {
-		while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-		{
-		    armv7m_core_yield();
-		}
-	    }
-	}
-	
-	stm32l4_usbd_cdc_transmit(&stm32l4_usbd_cdc, (const uint8_t*)buf, nbytes);
-	
-#if defined(STM32L476xx)
-	if (armv7m_core_priority() <= (int)NVIC_GetPriority(OTG_FS_IRQn))
-#else
-        if (armv7m_core_priority() <= (int)NVIC_GetPriority(USB_IRQn))
-#endif
-	{
-	    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-	    {
-		stm32l4_usbd_cdc_poll(&stm32l4_usbd_cdc);
-	    }
-	}
-	else
-	{
-	    while (!stm32l4_usbd_cdc_done(&stm32l4_usbd_cdc))
-	    {
-		armv7m_core_yield();
-	    }
-	}
-    }
-
-    return nbytes;
+    usbd_sof_callback = callback;
+    usbd_sof_context = context;
 }
-
   
 /*******************************************************************************
                        PCD BSP Routines
@@ -470,6 +413,10 @@ void HAL_PCD_DataInStageCallback(PCD_HandleTypeDef *hpcd, uint8_t epnum)
 void HAL_PCD_SOFCallback(PCD_HandleTypeDef *hpcd)
 {
   USBD_LL_SOF(hpcd->pData);
+
+  if (usbd_sof_callback) {
+    (*usbd_sof_callback)(usbd_sof_context);
+  }
 }
 
 /**

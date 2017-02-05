@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -32,21 +32,22 @@
 
 #if defined(USBCON)
 
-/* STM32L4x5/STM32L4x6 have USB_OTG_FS with a multi-packet FIFO. However 
- * to avoid sending ZLP packets, the CDC_TX_PACKET_SIZE is one byte
- * less than the maximum FIFO size in terms of 64 byte packets.
- */
-#define CDC_TX_PACKET_SIZE (((USBD_CDC_FIFO_SIZE + 63) & ~63) -1)
+#define CDC_TX_PACKET_SIZE  128
+#define CDC_TX_PACKET_SMALL 64
 
 stm32l4_usbd_cdc_t stm32l4_usbd_cdc;
+
+extern int (*stm32l4_stdio_put)(char, FILE*);
+
+static int serialusb_stdio_put(char data, FILE *fp)
+{
+    return Serial.write(&data, 1);
+}
 
 CDC::CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc, bool serialEvent)
 {
     _usbd_cdc = usbd_cdc;
 
-    _rx_read = 0;
-    _rx_write = 0;
-    _rx_count = 0;
     _tx_read = 0;
     _tx_write = 0;
     _tx_count = 0;
@@ -54,6 +55,8 @@ CDC::CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc, bool serialEvent)
 
     _tx_data2 = NULL;
     _tx_size2 = 0;
+
+    _tx_timeout = 0;
   
     _completionCallback = NULL;
     _receiveCallback = NULL;
@@ -75,24 +78,36 @@ void CDC::begin(unsigned long baudrate, uint16_t config)
     /* If USBD_CDC has already been enabled/initialized by STDIO, just add the notify.
      */
     if (_usbd_cdc->state == USBD_CDC_STATE_INIT) {
-	stm32l4_usbd_cdc_enable(_usbd_cdc, 0, CDC::_event_callback, (void*)this, (USBD_CDC_EVENT_RECEIVE | USBD_CDC_EVENT_TRANSMIT));
+        stm32l4_usbd_cdc_enable(_usbd_cdc, &_rx_data[0], sizeof(_rx_data), 0, CDC::_event_callback, (void*)this, (USBD_CDC_EVENT_RECEIVE | USBD_CDC_EVENT_TRANSMIT));
+
+	if (stm32l4_stdio_put == NULL) {
+	    stm32l4_stdio_put = serialusb_stdio_put;
+	}
     } else {
 	flush();
 
 	stm32l4_usbd_cdc_notify(_usbd_cdc, CDC::_event_callback, (void*)this, (USBD_CDC_EVENT_RECEIVE | USBD_CDC_EVENT_TRANSMIT));
     }
+
+    USBD_SOFCallback(CDC::_sof_callback, (void*)this);
 }
 
 void CDC::end()
 {
     flush();
 
+    USBD_SOFCallback(NULL, NULL);
+
+    if (stm32l4_stdio_put == serialusb_stdio_put) {
+	stm32l4_stdio_put = NULL;
+    }
+
     stm32l4_usbd_cdc_disable(_usbd_cdc);
 }
 
 int CDC::available()
 {
-    return _rx_count;
+    return stm32l4_usbd_cdc_count(_usbd_cdc);
 }
 
 int CDC::availableForWrite(void)
@@ -110,67 +125,25 @@ int CDC::availableForWrite(void)
 
 int CDC::peek()
 {
-    if (_rx_count == 0) {
-	return -1;
-    }
-
-    return _rx_data[_rx_read];
+    return stm32l4_usbd_cdc_peek(_usbd_cdc);
 }
 
 int CDC::read()
 {
-    unsigned int rx_read;
     uint8_t data;
 
-    if (_rx_count == 0) {
+    if (!stm32l4_usbd_cdc_count(_usbd_cdc)) {
 	return -1;
     }
 
-    rx_read = _rx_read;
+    stm32l4_usbd_cdc_receive(_usbd_cdc, &data, 1);
 
-    data = _rx_data[rx_read];
-    
-    _rx_read = (unsigned int)(rx_read + 1) & (CDC_RX_BUFFER_SIZE -1);
-
-    armv7m_atomic_sub(&_rx_count, 1);
-  
     return data;
 }
 
 size_t CDC::read(uint8_t *buffer, size_t size)
 {
-    unsigned int rx_read, rx_count;
-    size_t count;
-
-    count = 0;
-
-    while (count < size) {
-
-	rx_count = _rx_count;
-
-	if (rx_count == 0) {
-	    break;
-	}
-
-	rx_read = _rx_read;
-
-	if (rx_count > (CDC_RX_BUFFER_SIZE - rx_read)) {
-	    rx_count = (CDC_RX_BUFFER_SIZE - rx_read);
-	}
-
-	if (rx_count > (size - count)) {
-	    rx_count = (size - count);
-	}
-			       
-	memcpy(&buffer[count], &_rx_data[rx_read], rx_count);
-	count +=  rx_count;
-      
-	_rx_read = (rx_read + rx_count) & (CDC_RX_BUFFER_SIZE -1);
-
-	armv7m_atomic_sub(&_rx_count, rx_count);
-    }
-
-    return count;
+    return stm32l4_usbd_cdc_receive(_usbd_cdc, buffer, size);
 }
 
 void CDC::flush()
@@ -276,7 +249,7 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
 	tx_size = _tx_count;
 	tx_read = _tx_read;
 	
-	if (tx_size) {
+	if (tx_size >= CDC_TX_PACKET_SMALL) {
 	    if (tx_size > (CDC_TX_BUFFER_SIZE - tx_read)) {
 		tx_size = (CDC_TX_BUFFER_SIZE - tx_read);
 	    }
@@ -350,45 +323,17 @@ void CDC::onReceive(void(*callback)(void))
 
 void CDC::EventCallback(uint32_t events)
 {
-    unsigned int rx_write, rx_count, rx_size, count;
     unsigned int tx_read, tx_size;
-    bool empty;
-
-    if (events & USBD_CDC_EVENT_RECEIVE) {
-	empty = (_rx_count == 0);
-
-	count = 0;
-
-	do {
-	    rx_size = 0;
-	    rx_count = CDC_RX_BUFFER_SIZE - _rx_count;
-	    
-	    if (rx_count == 0) {
-		break;
-	    }
-	    
-	    rx_write = _rx_write;
-	    
-	    if (rx_count > (CDC_RX_BUFFER_SIZE - rx_write)) {
-		rx_count = (CDC_RX_BUFFER_SIZE - rx_write);
-	    }
-	    
-	    rx_size = stm32l4_usbd_cdc_receive(_usbd_cdc, &_rx_data[rx_write], rx_count);
-	    
-	    _rx_write = (rx_write + rx_size) & (CDC_RX_BUFFER_SIZE -1);
-	    
-	    armv7m_atomic_add(&_rx_count, rx_size);
-	    
-	    count += rx_size;
-	    
-	} while (rx_size);
 	  
-	if (empty && count && _receiveCallback) {
+    if (events & USBD_CDC_EVENT_RECEIVE) {
+	if (_receiveCallback) {
 	    armv7m_pendsv_enqueue((armv7m_pendsv_routine_t)_receiveCallback, NULL, 0);
 	}
     }
 
     if (events & USBD_CDC_EVENT_TRANSMIT) {
+
+	_tx_timeout = 0;
 
 	tx_size = _tx_size;
 
@@ -437,9 +382,43 @@ void CDC::EventCallback(uint32_t events)
     }
 }
 
+void CDC::SOFCallback()
+{
+    unsigned int tx_read, tx_size;
+
+    if (_tx_count && !_tx_size && !_tx_size2)
+    {
+	_tx_timeout++;
+
+	// Small packets get only send after 8ms latency
+	if (_tx_timeout >= 8)
+	{
+	    tx_size = _tx_count;
+	    tx_read = _tx_read;
+		    
+	    if (tx_size > (CDC_TX_BUFFER_SIZE - tx_read)) {
+		tx_size = (CDC_TX_BUFFER_SIZE - tx_read);
+	    }
+	    
+	    if (tx_size > CDC_TX_PACKET_SIZE) {
+		tx_size = CDC_TX_PACKET_SIZE;
+	    }
+	    
+	    _tx_size = tx_size;
+	    
+	    stm32l4_usbd_cdc_transmit(_usbd_cdc, &_tx_data[tx_read], tx_size);
+	}
+    }
+}
+
 void CDC::_event_callback(void *context, uint32_t events)
 {
     reinterpret_cast<class CDC*>(context)->EventCallback(events);
+}
+
+void CDC::_sof_callback(void *context)
+{
+    reinterpret_cast<class CDC*>(context)->SOFCallback();
 }
 
 CDC::operator bool()
