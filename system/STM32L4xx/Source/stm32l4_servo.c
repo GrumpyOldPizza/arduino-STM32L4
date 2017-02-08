@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -42,96 +42,62 @@ static void stm32l4_servo_event_callback(void *context, uint32_t events)
     stm32l4_servo_schedule_t *active, *pending;
     unsigned int index;
 
-    if (events & TIMER_EVENT_PERIOD)
+    index = servo->index;
+    active = servo->active;
+
+    if (index != active->entries)
     {
-	pending = servo->pending;
-	servo->pending = NULL;
-
-	if (pending)
-	{
-	    servo->active = pending;
-	}
-
-	active = servo->active;
-
-	if (active->entries != 0)
-	{
-	    if (servo->period == active->period)
-	    {
-		active->slot[0].GPIO->BSRR = active->slot[0].mask;
+	active->slot[index].GPIO->BRR = active->slot[index].mask;
 	    
-		stm32l4_timer_compare(&servo->timer, TIMER_CHANNEL_1, active->slot[0].offset);
-	    }
-	    else
-	    {
-		servo->period = active->period;
-
-		stm32l4_timer_stop(&servo->timer);
-		stm32l4_timer_configure(&servo->timer, servo->prescaler -1, servo->period -1, 0);
-		stm32l4_timer_channel(&servo->timer, TIMER_CHANNEL_1, active->slot[0].offset, TIMER_CONTROL_COMPARE_TIMING);
-		stm32l4_timer_start(&servo->timer, false);
-
-		active->slot[0].GPIO->BSRR = active->slot[0].mask;
-
-		servo->state = SERVO_STATE_ACTIVE;
-	    }
-	}
-	else
-	{
-	    stm32l4_timer_stop(&servo->timer);
-
-	    servo->active = NULL;
-
-	    servo->state = SERVO_STATE_READY;
-	}
-
-	servo->index = 0;
-
-	if (pending && (servo->events & SERVO_EVENT_UPDATE))
-	{
-	    (*servo->callback)(servo->context, SERVO_EVENT_UPDATE);
-	}
-    }
-    else
-    {
-	index = servo->index;
-	active = servo->active;
+	index++;
 
 	if (index != active->entries)
 	{
-	    active->slot[index].GPIO->BRR = active->slot[index].mask;
-	    
-	    index++;
+	    active->slot[index].GPIO->BSRR = active->slot[index].mask;
 
-	    if (index != active->entries)
-	    {
-		active->slot[index].GPIO->BSRR = active->slot[index].mask;
-
-		stm32l4_timer_compare(&servo->timer, TIMER_CHANNEL_1, active->slot[index].offset);
-	    }
-	    else
-	    {
-		if (active->offset)
-		{
-		    stm32l4_timer_compare(&servo->timer, TIMER_CHANNEL_1, active->offset);
-		}
-		else
-		{
-		    if (servo->events & SERVO_EVENT_SYNC)
-		    {
-			(*servo->callback)(servo->context, SERVO_EVENT_SYNC);
-		    }
-		}
-	    }
-
-	    servo->index = index;
+	    stm32l4_timer_period(&servo->timer, active->slot[index].width -1, true);
 	}
 	else
 	{
-	    if (servo->events & SERVO_EVENT_SYNC)
+	    stm32l4_timer_period(&servo->timer, active->sync -1, true);
+	}
+
+	servo->index = index;
+    }
+    else
+    {
+	servo->index = 0;
+
+	pending = servo->pending;
+
+	if (pending == NULL)
+	{
+	    active->slot[0].GPIO->BSRR = active->slot[0].mask;
+
+	    stm32l4_timer_period(&servo->timer, active->slot[0].width -1, true);
+	}
+	else
+	{
+	    if (pending->entries)
 	    {
-		(*servo->callback)(servo->context, SERVO_EVENT_SYNC);
+		pending->slot[0].GPIO->BSRR = pending->slot[0].mask;
+
+		stm32l4_timer_period(&servo->timer, pending->slot[0].width -1, true);
 	    }
+	    else
+	    {
+		stm32l4_timer_stop(&servo->timer);
+
+		servo->state = SERVO_STATE_READY;
+	    }
+
+	    servo->pending = NULL;
+	    servo->active = pending;
+	}
+
+	if (servo->events & SERVO_EVENT_SYNC)
+	{
+	    (*servo->callback)(servo->context, SERVO_EVENT_SYNC);
 	}
     }
 }
@@ -150,7 +116,6 @@ bool stm32l4_servo_create(stm32l4_servo_t *servo, unsigned int instance, unsigne
 
     servo->index = 0;
     servo->prescaler = 0;
-    servo->period = 0;
     servo->active = NULL;
     servo->pending = NULL;
 
@@ -178,7 +143,7 @@ bool stm32l4_servo_enable(stm32l4_servo_t *servo, const stm32l4_servo_table_t *t
 
     servo->state = SERVO_STATE_BUSY;
 
-    if (!stm32l4_timer_enable(&servo->timer, 0, 0, 0, stm32l4_servo_event_callback, servo, (TIMER_EVENT_PERIOD | TIMER_EVENT_CHANNEL_1)))
+    if (!stm32l4_timer_enable(&servo->timer, 0, 0, 0, stm32l4_servo_event_callback, servo, TIMER_EVENT_PERIOD))
     {
 	servo->state = SERVO_STATE_INIT;
 
@@ -233,22 +198,20 @@ bool stm32l4_servo_configure(stm32l4_servo_t *servo, const stm32l4_servo_table_t
 
     for (offset = 0, entry = 0, index = 0; entry < table->entries; entry++)
     {
-	if ((table->slot[entry].pin != GPIO_PIN_NONE) && (table->slot[index].width >= SERVO_PULSE_THRESHOLD))
+	if ((table->slot[entry].pin != GPIO_PIN_NONE) && (table->slot[index].width >= SERVO_PULSE_WIDTH))
 	{
-	    offset += table->slot[entry].width;
-
 	    pending->slot[index].GPIO = (GPIO_TypeDef *)(GPIOA_BASE + (GPIOB_BASE - GPIOA_BASE) * ((table->slot[entry].pin & GPIO_PIN_GROUP_MASK) >> GPIO_PIN_GROUP_SHIFT));
 	    pending->slot[index].mask = (1ul << ((table->slot[entry].pin & GPIO_PIN_INDEX_MASK) >> GPIO_PIN_INDEX_SHIFT));
-	    pending->slot[index].offset = offset;
+	    pending->slot[index].width = table->slot[entry].width;
 
+	    offset += table->slot[entry].width;
 	    index++;
 	}
     }
 
     if (offset == 0)
     {
-	pending->period = 0;
-	pending->offset = 0;
+	pending->sync = 0;
 	pending->entries = 0;
     }
     else
@@ -257,15 +220,13 @@ bool stm32l4_servo_configure(stm32l4_servo_t *servo, const stm32l4_servo_table_t
 
 	servo->prescaler = stm32l4_timer_clock(&servo->timer) / 1000000;
 
-	if ((offset + SERVO_SYNC_MARGIN + SERVO_SYNC_WIDTH) >= SERVO_FRAME_WIDTH)
+	if ((offset + SERVO_SYNC_WIDTH) >= SERVO_FRAME_WIDTH)
 	{
-	    pending->period = (offset + SERVO_SYNC_MARGIN + SERVO_SYNC_WIDTH);
-	    pending->offset = SERVO_SYNC_MARGIN;
+	    pending->sync = SERVO_SYNC_WIDTH;
 	}
 	else
 	{
-	    pending->period = SERVO_FRAME_WIDTH;
-	    pending->offset = SERVO_FRAME_WIDTH - SERVO_SYNC_WIDTH;
+	    pending->sync = SERVO_FRAME_WIDTH - offset;
 	}
     }
 
@@ -275,20 +236,17 @@ bool stm32l4_servo_configure(stm32l4_servo_t *servo, const stm32l4_servo_table_t
     }
     else
     {
-	if (pending->period)
+	if (pending->entries)
 	{
+	    servo->state = SERVO_STATE_ACTIVE;
+
 	    servo->active = pending;
-
-	    servo->period = pending->period;
-
-	    stm32l4_timer_stop(&servo->timer);
-	    stm32l4_timer_configure(&servo->timer, servo->prescaler -1, servo->period -1, 0);
-	    stm32l4_timer_channel(&servo->timer, TIMER_CHANNEL_1, pending->slot[0].offset, TIMER_CONTROL_COMPARE_TIMING);
+	    servo->index = 0;
+	    
+	    stm32l4_timer_configure(&servo->timer, servo->prescaler -1, pending->slot[0].width -1, 0);
 	    stm32l4_timer_start(&servo->timer, false);
 	    
 	    pending->slot[0].GPIO->BSRR = pending->slot[0].mask;
-		
-	    servo->state = SERVO_STATE_ACTIVE;
 	}
     }
 

@@ -145,6 +145,7 @@ extern bool     stm32l4_timer_notify(stm32l4_timer_t *timer, stm32l4_timer_callb
 extern bool     stm32l4_timer_start(stm32l4_timer_t *timer, bool oneshot);
 extern bool     stm32l4_timer_stop(stm32l4_timer_t *timer);
 extern uint32_t stm32l4_timer_count(stm32l4_timer_t *timer);
+extern bool     stm32l4_timer_period(stm32l4_timer_t *timer, uint32_t period, bool offset);
 extern bool     stm32l4_timer_channel(stm32l4_timer_t *timer, unsigned int channel, uint32_t compare, uint32_t control);
 extern bool     stm32l4_timer_compare(stm32l4_timer_t *timer, unsigned int channel, uint32_t compare);
 extern uint32_t stm32l4_timer_capture(stm32l4_timer_t *timer, unsigned int channel);

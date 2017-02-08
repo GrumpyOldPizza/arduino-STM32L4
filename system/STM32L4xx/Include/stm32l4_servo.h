@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -40,7 +40,6 @@
 extern "C" {
 #endif
 
-#define SERVO_EVENT_UPDATE                       0x40000000
 #define SERVO_EVENT_SYNC                         0x80000000
 
 typedef void (*stm32l4_servo_callback_t)(void *context, uint32_t events);
@@ -51,14 +50,11 @@ typedef void (*stm32l4_servo_callback_t)(void *context, uint32_t events);
 #define SERVO_STATE_READY                        3
 #define SERVO_STATE_ACTIVE                       4
 
-#define SERVO_SLOT_COUNT                         9
+#define SERVO_SLOT_COUNT                         10
 
-#define SERVO_SYNC_MARGIN                        50     /* sync needs to be at least 50us after the last pulse      */
-#define SERVO_SYNC_WIDTH                         1950   /* last slot is 2ms, hence the default sync width is 1950us */
-#define SERVO_FRAME_WIDTH                        20000  /* the default RC servo frame is 10 slots or 20000us        */
-#define SERVO_PULSE_THRESHOLD                     500   /* below a pulse is deemed illegal                          */
-#define SERVO_PULSE_MIN                          1000
-#define SERVO_PULSE_MAX                          2000
+#define SERVO_SYNC_WIDTH                         100     /* sync needs to be at least 100us after the last pulse    */
+#define SERVO_FRAME_WIDTH                        20000   /* the default RC servo frame is 20000us                    */
+#define SERVO_PULSE_WIDTH                        100     /* below a pulse is deemed illegal                          */
 
 typedef struct _stm32l4_servo_table_t {
     uint32_t                    entries;
@@ -69,13 +65,12 @@ typedef struct _stm32l4_servo_table_t {
 } stm32l4_servo_table_t;
 
 typedef struct _stm32l4_servo_schedule_t {
-    uint16_t                    period;
-    uint16_t                    offset;
-    uint32_t                    entries;
+    uint16_t                    sync;
+    uint16_t                    entries;
     struct {
 	GPIO_TypeDef              *GPIO;
 	uint16_t                  mask;
-	uint16_t                  offset;
+	uint16_t                  width;
     }                           slot[SERVO_SLOT_COUNT];
 } stm32l4_servo_schedule_t;
 
@@ -83,7 +78,6 @@ typedef struct _stm32l4_servo_t {
     volatile uint8_t                  state;
     uint8_t                           index;
     uint16_t                          prescaler;
-    uint16_t                          period;
     stm32l4_timer_t                   timer;
     stm32l4_servo_callback_t          callback;
     void                              *context;

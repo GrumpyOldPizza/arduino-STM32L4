@@ -79,7 +79,7 @@ uint8_t Servo::attach(int pin, int min, int max)
     pinMode(pin, OUTPUT);
 
     ServoTable.slot[this->servoIndex].pin = g_APinDescription[pin].pin;
-
+    
     this->min  = min;
     this->max  = max;
 
@@ -138,12 +138,12 @@ void Servo::writeMicroseconds(int width)
 	return;
     }
 
-    if (width < SERVO_PULSE_MIN) {
-	width = SERVO_PULSE_MIN;
+    if (width < this->min) {
+	width = this->min;
     }
 
-    if (width > SERVO_PULSE_MAX) {
-	width = SERVO_PULSE_MAX;
+    if (width > this->max) {
+	width = this->max;
     }
     
     ServoTable.slot[this->servoIndex].width = width;

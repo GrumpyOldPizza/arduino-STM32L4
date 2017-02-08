@@ -543,6 +543,34 @@ uint32_t stm32l4_timer_count(stm32l4_timer_t *timer)
     return TIM->CNT;
 }
 
+bool stm32l4_timer_period(stm32l4_timer_t *timer, uint32_t period, bool offset)
+{
+    TIM_TypeDef *TIM = timer->TIM;
+    uint32_t primask;
+
+    if ((timer->state != TIMER_STATE_READY) && (timer->state != TIMER_STATE_ACTIVE))
+    {
+	return false;
+    }
+
+    if (offset)
+    {
+	primask = __get_PRIMASK();
+
+	__disable_irq();
+
+	TIM->ARR = period - TIM->CNT;
+
+	__set_PRIMASK(primask);
+    }
+    else
+    {
+	TIM->ARR = period;
+    }
+
+    return true;
+}
+
 bool stm32l4_timer_channel(stm32l4_timer_t *timer, unsigned int channel, uint32_t compare, uint32_t control)
 {
     TIM_TypeDef *TIM = timer->TIM;
