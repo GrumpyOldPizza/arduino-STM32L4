@@ -30,6 +30,7 @@
 #define _DOSFS_CORE_H
 
 #include "dosfs_device.h"
+#include "dosfs_port.h"
 
 #ifdef __cplusplus
  extern "C" {

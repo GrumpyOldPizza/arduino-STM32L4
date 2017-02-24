@@ -35,16 +35,6 @@
  extern "C" {
 #endif
 
-extern bool     stm32l4_sdcard_spi_init(dosfs_sdcard_t *sdcard);
-extern bool     stm32l4_sdcard_spi_present(dosfs_sdcard_t *sdcard);
-extern uint32_t stm32l4_sdcard_spi_mode(dosfs_sdcard_t *sdcard, int mode);
-extern void     stm32l4_sdcard_spi_select(dosfs_sdcard_t *sdcard);
-extern void     stm32l4_sdcard_spi_deselect(dosfs_sdcard_t *sdcard);
-extern void     stm32l4_sdcard_spi_send(dosfs_sdcard_t *sdcard, uint8_t data);
-extern uint8_t  stm32l4_sdcard_spi_receive(dosfs_sdcard_t *sdcard);
-extern void     stm32l4_sdcard_spi_send_data(dosfs_sdcard_t *sdcard, const uint8_t *data, uint32_t count);
-extern uint32_t stm32l4_sdcard_spi_receive_data(dosfs_sdcard_t *sdcard, uint8_t *data, uint32_t count);
-
 static inline void stm32l4_system_timedate(uint16_t *p_time, uint16_t *p_date)
 {
     stm32l4_rtc_time_t rtc_time;
@@ -55,17 +45,7 @@ static inline void stm32l4_system_timedate(uint16_t *p_time, uint16_t *p_date)
     *p_date = ((rtc_time.day << 0) | (rtc_time.month << 5) | ((rtc_time.year + 20) << 9));
 }
 
-#define DOSFS_PORT_SDCARD_SPI_INIT(_sdcard)                         stm32l4_sdcard_spi_init((_sdcard))
-#define DOSFS_PORT_SDCARD_SPI_PRESENT(_sdcard)                      stm32l4_sdcard_spi_present((_sdcard))
-#define DOSFS_PORT_SDCARD_SPI_MODE(_sdcard, _mode)                  stm32l4_sdcard_spi_mode((_sdcard), (_mode))
-#define DOSFS_PORT_SDCARD_SPI_SELECT(_sdcard)                       stm32l4_sdcard_spi_select((_sdcard))
-#define DOSFS_PORT_SDCARD_SPI_DESELECT(_sdcard)                     stm32l4_sdcard_spi_deselect((_sdcard))
-#define DOSFS_PORT_SDCARD_SPI_SEND(_sdcard, _data)                  stm32l4_sdcard_spi_send((_sdcard), (_data))
-#define DOSFS_PORT_SDCARD_SPI_RECEIVE(_sdcard)                      stm32l4_sdcard_spi_receive((_sdcard))
-#define DOSFS_PORT_SDCARD_SPI_SEND_DATA(_sdcard, _data, _count)     stm32l4_sdcard_spi_send_data((_sdcard), (_data), (_count))
-#define DOSFS_PORT_SDCARD_SPI_RECEIVE_DATA(_sdcard, _data, _count)  stm32l4_sdcard_spi_receive_data((_sdcard), (_data), (_count))
-
-#define DOSFS_PORT_CORE_TIMEDATE(_ctime, _cdata)             stm32l4_rtc_timedate((_ctime),(_cdate))
+#define DOSFS_PORT_CORE_TIMEDATE(_ctime, _cdate) stm32l4_system_timedate((_ctime),(_cdate))
 
 #ifdef __cplusplus
 }
