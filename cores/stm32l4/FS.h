@@ -66,7 +66,7 @@ protected:
 class Dir {
 public:
     Dir(const char *path);
-    ~Dir();
+    Dir();
 
     File openFile(const char* mode);
     String fileName();

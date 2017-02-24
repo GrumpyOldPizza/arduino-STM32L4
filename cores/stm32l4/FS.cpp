@@ -140,6 +140,11 @@ Dir::Dir(const char* path) {
     }
 }
 
+Dir::Dir() {
+    _path[0] = '\0';
+    _find.find_clsno = 0x0fffffff;
+};
+
 File Dir::openFile(const char* mode) {
     char filename[F_MAXPATH];
 
