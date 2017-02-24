@@ -54,6 +54,7 @@ typedef struct _stm32l4_usbd_cdc_info_t {
 
 extern volatile stm32l4_usbd_cdc_info_t stm32l4_usbd_cdc_info;
 
+#define USBD_CDC_EVENT_SOF               0x20000000
 #define USBD_CDC_EVENT_RECEIVE           0x40000000
 #define USBD_CDC_EVENT_TRANSMIT          0x80000000
 

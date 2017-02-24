@@ -125,7 +125,5 @@ private:
     void (*_receiveCallback)(void);
 
     static void _event_callback(void *context, uint32_t events);
-    static void _sof_callback(void *context);
     void EventCallback(uint32_t events);
-    void SOFCallback();
 };

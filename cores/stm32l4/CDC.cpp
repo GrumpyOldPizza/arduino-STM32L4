@@ -78,7 +78,7 @@ void CDC::begin(unsigned long baudrate, uint16_t config)
     /* If USBD_CDC has already been enabled/initialized by STDIO, just add the notify.
      */
     if (_usbd_cdc->state == USBD_CDC_STATE_INIT) {
-        stm32l4_usbd_cdc_enable(_usbd_cdc, &_rx_data[0], sizeof(_rx_data), 0, CDC::_event_callback, (void*)this, (USBD_CDC_EVENT_RECEIVE | USBD_CDC_EVENT_TRANSMIT));
+        stm32l4_usbd_cdc_enable(_usbd_cdc, &_rx_data[0], sizeof(_rx_data), 0, CDC::_event_callback, (void*)this, (USBD_CDC_EVENT_SOF | USBD_CDC_EVENT_RECEIVE | USBD_CDC_EVENT_TRANSMIT));
 
 	if (stm32l4_stdio_put == NULL) {
 	    stm32l4_stdio_put = serialusb_stdio_put;
@@ -86,17 +86,13 @@ void CDC::begin(unsigned long baudrate, uint16_t config)
     } else {
 	flush();
 
-	stm32l4_usbd_cdc_notify(_usbd_cdc, CDC::_event_callback, (void*)this, (USBD_CDC_EVENT_RECEIVE | USBD_CDC_EVENT_TRANSMIT));
+	stm32l4_usbd_cdc_notify(_usbd_cdc, CDC::_event_callback, (void*)this, (USBD_CDC_EVENT_SOF | USBD_CDC_EVENT_RECEIVE | USBD_CDC_EVENT_TRANSMIT));
     }
-
-    USBD_SOFCallback(CDC::_sof_callback, (void*)this);
 }
 
 void CDC::end()
 {
     flush();
-
-    USBD_SOFCallback(NULL, NULL);
 
     if (stm32l4_stdio_put == serialusb_stdio_put) {
 	stm32l4_stdio_put = NULL;
@@ -324,7 +320,7 @@ void CDC::onReceive(void(*callback)(void))
 void CDC::EventCallback(uint32_t events)
 {
     unsigned int tx_read, tx_size;
-	  
+
     if (events & USBD_CDC_EVENT_RECEIVE) {
 	if (_receiveCallback) {
 	    armv7m_pendsv_enqueue((armv7m_pendsv_routine_t)_receiveCallback, NULL, 0);
@@ -380,33 +376,30 @@ void CDC::EventCallback(uint32_t events)
 	    }
 	}
     }
-}
 
-void CDC::SOFCallback()
-{
-    unsigned int tx_read, tx_size;
+    if (events & USBD_CDC_EVENT_SOF) {
+	if (_tx_count && !_tx_size && !_tx_size2) {
 
-    if (_tx_count && !_tx_size && !_tx_size2)
-    {
-	_tx_timeout++;
+	    _tx_timeout++;
 
-	// Small packets get only send after 8ms latency
-	if (_tx_timeout >= 8)
-	{
-	    tx_size = _tx_count;
-	    tx_read = _tx_read;
+	    // Small packets get only send after 8ms latency
+	    if (_tx_timeout >= 8)
+	    {
+		tx_size = _tx_count;
+		tx_read = _tx_read;
 		    
-	    if (tx_size > (CDC_TX_BUFFER_SIZE - tx_read)) {
-		tx_size = (CDC_TX_BUFFER_SIZE - tx_read);
+		if (tx_size > (CDC_TX_BUFFER_SIZE - tx_read)) {
+		    tx_size = (CDC_TX_BUFFER_SIZE - tx_read);
+		}
+	    
+		if (tx_size > CDC_TX_PACKET_SIZE) {
+		    tx_size = CDC_TX_PACKET_SIZE;
+		}
+	    
+		_tx_size = tx_size;
+	    
+		stm32l4_usbd_cdc_transmit(_usbd_cdc, &_tx_data[tx_read], tx_size);
 	    }
-	    
-	    if (tx_size > CDC_TX_PACKET_SIZE) {
-		tx_size = CDC_TX_PACKET_SIZE;
-	    }
-	    
-	    _tx_size = tx_size;
-	    
-	    stm32l4_usbd_cdc_transmit(_usbd_cdc, &_tx_data[tx_read], tx_size);
 	}
     }
 }
@@ -414,11 +407,6 @@ void CDC::SOFCallback()
 void CDC::_event_callback(void *context, uint32_t events)
 {
     reinterpret_cast<class CDC*>(context)->EventCallback(events);
-}
-
-void CDC::_sof_callback(void *context)
-{
-    reinterpret_cast<class CDC*>(context)->SOFCallback();
 }
 
 CDC::operator bool()

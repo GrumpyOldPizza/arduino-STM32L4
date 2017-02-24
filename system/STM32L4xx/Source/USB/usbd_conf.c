@@ -67,8 +67,7 @@ static PCD_HandleTypeDef hpcd;
 static unsigned int usbd_pin_vbus;
 static unsigned int usbd_pin_vbus_count = 0;
 static bool usbd_connected = false;
-static void (*usbd_sof_callback)(void*) = NULL;
-static void *usbd_sof_context;
+static void (*usbd_sof_callback)(void) = NULL;
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -271,10 +270,9 @@ bool USBD_Suspended(void)
     return (USBD_Device.dev_state == USBD_STATE_SUSPENDED);
 }
 
-void USBD_SOFCallback(void(*callback)(void*), void *context)
+void USBD_SOFCallback(void(*callback)(void))
 {
     usbd_sof_callback = callback;
-    usbd_sof_context = context;
 }
   
 /*******************************************************************************
@@ -415,7 +413,7 @@ void HAL_PCD_SOFCallback(PCD_HandleTypeDef *hpcd)
   USBD_LL_SOF(hpcd->pData);
 
   if (usbd_sof_callback) {
-    (*usbd_sof_callback)(usbd_sof_context);
+    (*usbd_sof_callback)();
   }
 }
 
