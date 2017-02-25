@@ -275,11 +275,13 @@ int I2SClass::read(void* buffer, size_t size)
 {
     uint32_t xf_offset, xf_index, xf_count;
 
-    if (!((_state == I2S_STATE_READY) || (_state == I2S_STATE_RECEIVE))) {
-	return 0;
+    if (_state != I2S_STATE_RECEIVE) {
+	if (!((_state == I2S_STATE_READY) || (_state == I2S_STATE_RECEIVE))) {
+	    return 0;
+	}
+	
+	_state = I2S_STATE_RECEIVE;
     }
-
-    _state = I2S_STATE_RECEIVE;
 
     if (!_xf_active)
     {
@@ -376,23 +378,37 @@ size_t I2SClass::write(const uint8_t *buffer, size_t size)
 
 size_t I2SClass::write(int sample)
 {
-    return write((const void*)&sample, (_width / 8));
+    return write((int32_t)sample);
 }
 
 size_t I2SClass::write(int32_t sample)
 {
-    return write((const void*)&sample, (_width / 8));
+    if (_state != I2S_STATE_TRANSMIT) {
+	if (!((_state == I2S_STATE_READY) || (_state == I2S_STATE_TRANSMIT))) {
+	    return 0;
+	}
+	
+	_state = I2S_STATE_TRANSMIT;
+    }
+
+    while (!write((const void*)&sample, (_width / 8))) {
+	armv7m_core_yield();
+    }
+
+    return 1;
 }
 
 size_t I2SClass::write(const void *buffer, size_t size)
 {
     uint32_t xf_offset, xf_index, xf_count;
 
-    if (!((_state == I2S_STATE_READY) || (_state == I2S_STATE_TRANSMIT))) {
-	return 0;
+    if (_state != I2S_STATE_TRANSMIT) {
+	if (!((_state == I2S_STATE_READY) || (_state == I2S_STATE_TRANSMIT))) {
+	    return 0;
+	}
+	
+	_state = I2S_STATE_TRANSMIT;
     }
-
-    _state = I2S_STATE_TRANSMIT;
 
     if      (_width == 32) { size &= ~3; }
     else if (_width == 16) { size &= ~1; }
