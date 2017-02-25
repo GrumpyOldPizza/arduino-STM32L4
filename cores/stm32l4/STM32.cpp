@@ -45,6 +45,13 @@ uint64_t STM32Class::getSerial()
     return (((uint64_t)serial0 << 16) | ((uint64_t)serial1 >> 16));
 }
 
+void STM32Class::getUID(uint32_t uid[3])
+{
+    uid[0] = *((uint32_t*)0x1fff7590);
+    uid[1] = *((uint32_t*)0x1fff7594);
+    uid[2] = *((uint32_t*)0x1fff7598);
+}
+
 float STM32Class::getVBAT()
 {
     int32_t vbat_data, vref_data, vrefint;
@@ -195,6 +202,17 @@ void STM32Class::reset()
 {
     stm32l4_system_reset();
 }
+
+void  STM32Class::wdtEnable(uint32_t timeout)
+{
+    stm32l4_iwdg_enable(timeout);
+}
+
+void  STM32Class::wdtReset()
+{
+    stm32l4_iwdg_reset();
+}
+
 
 bool STM32Class::flashErase(uint32_t address, uint32_t count)
 {

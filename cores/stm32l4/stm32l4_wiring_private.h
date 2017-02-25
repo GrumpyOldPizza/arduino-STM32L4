@@ -51,6 +51,7 @@ extern "C" {
 #include "stm32l4_flash.h"
 #include "stm32l4_sdmmc.h"
 #include "stm32l4_sdspi.h"
+#include "stm32l4_iwdg.h"
 
 #define STM32L4_SVCALL_IRQ_PRIORITY  15
 #define STM32L4_PENDSV_IRQ_PRIORITY  15

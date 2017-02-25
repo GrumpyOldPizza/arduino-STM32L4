@@ -51,6 +51,7 @@ LSRCS = \
 	stm32l4_exti.c \
 	stm32l4_flash.c \
 	stm32l4_i2c.c \
+	stm32l4_iwdg.c \
 	stm32l4_gpio.c \
 	stm32l4_nvic.c \
 	stm32l4_qspi.c \

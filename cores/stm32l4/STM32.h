@@ -56,6 +56,7 @@
 class STM32Class {
 public:
     uint64_t getSerial();
+    void getUID(uint32_t uid[3]);
 
     float getVBAT();
     float getVREF();
@@ -71,6 +72,9 @@ public:
     void  shutdown(uint32_t timeout = 0);
     void  shutdown(uint32_t pin, uint32_t mode, uint32_t timeout = 0);
     void  reset();
+
+    void  wdtEnable(uint32_t timeout);
+    void  wdtReset();
 
     bool  flashErase(uint32_t address, uint32_t count);
     bool  flashProgram(uint32_t address, const void *data, uint32_t count);

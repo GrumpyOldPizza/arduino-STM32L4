@@ -163,7 +163,7 @@ __attribute__((naked)) void reset_stm32l4xx(void)
 
 	FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_LATENCY_2WS;
     
-	if (!(PWR->SR1 & PWR_SR1_SBF))
+	if (!(PWR->SR1 & PWR_SR1_SBF) && !(RCC->CSR & (RCC_CSR_LPWRRSTF | RCC_CSR_WWDGRSTF | RCC_CSR_IWDGRSTF | RCC_CSR_BORRSTF | RCC_CSR_OBLRSTF | RCC_CSR_FWRSTF)))
 	{
 	    stm32l4_iap();
 	}

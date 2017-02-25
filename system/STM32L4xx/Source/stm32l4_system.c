@@ -651,27 +651,27 @@ void stm32l4_system_initialize(uint32_t hclk, uint32_t pclk1, uint32_t pclk2, ui
 	    stm32l4_system_device.reset = SYSTEM_RESET_OTHER;
 	}
 	
-	if (RCC->CSR & RCC_CSR_FWRSTF)
+	else if (RCC->CSR & RCC_CSR_FWRSTF)
 	{
 	    stm32l4_system_device.reset = SYSTEM_RESET_FIREWALL;
 	}
 	
-	if (RCC->CSR & RCC_CSR_BORRSTF)
+	else if (RCC->CSR & RCC_CSR_BORRSTF)
 	{
 	    stm32l4_system_device.reset = SYSTEM_RESET_BROWNOUT;
 	}
 	
-	if (RCC->CSR & (RCC_CSR_IWDGRSTF | RCC_CSR_WWDGRSTF))
+	else if (RCC->CSR & (RCC_CSR_IWDGRSTF | RCC_CSR_WWDGRSTF))
 	{
 	    stm32l4_system_device.reset = SYSTEM_RESET_WATCHDOG;
 	}
 	
-	if (RCC->CSR & RCC_CSR_SFTRSTF)
+	else if (RCC->CSR & RCC_CSR_SFTRSTF)
 	{
 	    stm32l4_system_device.reset = SYSTEM_RESET_SOFTWARE;
 	}
 	
-	if (RCC->CSR & RCC_CSR_PINRSTF)
+	else if (RCC->CSR & RCC_CSR_PINRSTF)
 	{
 	    stm32l4_system_device.reset = SYSTEM_RESET_EXTERNAL;
 	}
@@ -851,6 +851,10 @@ void stm32l4_system_initialize(uint32_t hclk, uint32_t pclk1, uint32_t pclk2, ui
 	
 	CoreDebug->DEMCR &= ~0x01000000;
     }
+
+    /* Avoid IWDG/WWDG triggering reset while debugging.
+     */
+    DBGMCU->APB1FZR1 |= (DBGMCU_APB1FZR1_DBG_IWDG_STOP | DBGMCU_APB1FZR1_DBG_WWDG_STOP);
 
     RCC->AHB1SMENR &= ~(RCC_AHB1SMENR_FLASHSMEN |
 			RCC_AHB1SMENR_SRAM1SMEN);
