@@ -517,7 +517,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   hpcd.Init.lpm_enable = 0;
   hpcd.Init.battery_charging_enable = 0;
   hpcd.Init.phy_itface = PCD_PHY_EMBEDDED;
-  hpcd.Init.Sof_enable = 0;
+  hpcd.Init.Sof_enable = 1;
   hpcd.Init.speed = PCD_SPEED_FULL;
   hpcd.Init.vbus_sensing_enable = 1;
   /* Link The driver to the stack */
@@ -542,7 +542,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   hpcd.Init.speed = PCD_SPEED_FULL;
   hpcd.Init.ep0_mps = DEP0CTL_MPS_64;
   hpcd.Init.phy_itface = PCD_PHY_EMBEDDED;
-  hpcd.Init.Sof_enable = 0;
+  hpcd.Init.Sof_enable = 1;
   hpcd.Init.low_power_enable = 0;
   hpcd.Init.lpm_enable = 0;
   hpcd.Init.battery_charging_enable = 0;
