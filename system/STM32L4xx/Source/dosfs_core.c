@@ -8798,7 +8798,7 @@ int f_delvolume(void)
 	status = dosfs_volume_unlock(volume, status);
     }
 
-    if (status != F_NO_ERROR)
+    if (status == F_NO_ERROR)
     {
 	armv7m_atomic_and(&device->lock, ~DOSFS_DEVICE_LOCK_VOLUME);
     }
