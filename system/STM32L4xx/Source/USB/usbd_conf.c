@@ -68,6 +68,8 @@ static unsigned int usbd_pin_vbus;
 static unsigned int usbd_pin_vbus_count = 0;
 static bool usbd_connected = false;
 static void (*usbd_sof_callback)(void) = NULL;
+static void (*usbd_suspend_callback)(void) = NULL;
+static void (*usbd_resume_callback)(void) = NULL;
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -270,9 +272,11 @@ bool USBD_Suspended(void)
     return (USBD_Device.dev_state == USBD_STATE_SUSPENDED);
 }
 
-void USBD_SOFCallback(void(*callback)(void))
+void USBD_RegisterCallbacks(void(*sof_callback)(void), void(*suspend_callback)(void), void(*resume_callback)(void))
 {
-    usbd_sof_callback = callback;
+    usbd_sof_callback = sof_callback;
+    usbd_suspend_callback = suspend_callback;
+    usbd_resume_callback = resume_callback;
 }
   
 /*******************************************************************************
@@ -438,6 +442,10 @@ void HAL_PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
  */
 void HAL_PCD_SuspendCallback(PCD_HandleTypeDef *hpcd)
 { 
+  if (usbd_suspend_callback) {
+    (*usbd_suspend_callback)();
+  }
+
   USBD_LL_Suspend(hpcd->pData);
 }
 
@@ -449,6 +457,10 @@ void HAL_PCD_SuspendCallback(PCD_HandleTypeDef *hpcd)
 void HAL_PCD_ResumeCallback(PCD_HandleTypeDef *hpcd)
 {
   USBD_LL_Resume(hpcd->pData);
+
+  if (usbd_resume_callback) {
+    (*usbd_resume_callback)();
+  }
 }
 
 /**

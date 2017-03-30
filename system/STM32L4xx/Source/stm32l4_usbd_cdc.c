@@ -37,7 +37,7 @@
 #include "usbd_cdc.h"
 
 extern void USBD_Detach(void);
-extern void USBD_SOFCallback(void(*callback)(void));
+extern void USBD_RegisterCallbacks(void(*sof_callback)(void), void(*suspend_callback)(void), void(*resume_callback)(void));
 
 volatile stm32l4_usbd_cdc_info_t stm32l4_usbd_cdc_info;
 
@@ -51,11 +51,32 @@ typedef struct _stm32l4_usbd_cdc_device_t {
     struct _USBD_HandleTypeDef     *USBD;
     volatile uint8_t               rx_busy;
     volatile uint8_t               tx_busy;
+    volatile uint8_t               lineState;
     uint64_t                       connect;
     uint32_t                       timeout;
 } stm32l4_usbd_cdc_device_t;
 
 static stm32l4_usbd_cdc_device_t stm32l4_usbd_cdc_device;
+
+static void stm32l4_usbd_cdc_tx_cancel(void)
+{
+    stm32l4_usbd_cdc_t *usbd_cdc;
+
+    if (stm32l4_usbd_cdc_device.tx_busy)
+    {
+	stm32l4_usbd_cdc_device.tx_busy = 0;
+
+	usbd_cdc = stm32l4_usbd_cdc_driver.instances[0];
+	
+	if (usbd_cdc && (usbd_cdc->state > USBD_CDC_STATE_INIT))
+	{
+	    if (usbd_cdc->events & USBD_CDC_EVENT_TRANSMIT)
+	    {
+		(*usbd_cdc->callback)(usbd_cdc->context, USBD_CDC_EVENT_TRANSMIT);
+	    }
+	}
+    }
+}
 
 static void stm32l4_usbd_cdc_sof_callback(void)
 {
@@ -82,6 +103,20 @@ static void stm32l4_usbd_cdc_sof_callback(void)
     }
 }
 
+static void stm32l4_usbd_cdc_suspend_callback(void)
+{
+    stm32l4_usbd_cdc_info.lineState = 0;
+
+    stm32l4_usbd_cdc_device.rx_busy = 0;
+
+    stm32l4_usbd_cdc_tx_cancel();
+}
+
+static void stm32l4_usbd_cdc_resume_callback(void)
+{
+    stm32l4_usbd_cdc_info.lineState = stm32l4_usbd_cdc_device.lineState;
+}
+
 static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
 {
     stm32l4_usbd_cdc_t *usbd_cdc = stm32l4_usbd_cdc_driver.instances[0];
@@ -89,6 +124,7 @@ static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
     stm32l4_usbd_cdc_device.USBD = USBD;
     stm32l4_usbd_cdc_device.rx_busy = 0;
     stm32l4_usbd_cdc_device.tx_busy = 0;
+    stm32l4_usbd_cdc_device.lineState = 0;
     stm32l4_usbd_cdc_device.connect = 0;
     stm32l4_usbd_cdc_device.timeout = 0;
 
@@ -106,33 +142,19 @@ static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
 	stm32l4_usbd_cdc_device.rx_busy = 1;
     }
 
-    USBD_SOFCallback(stm32l4_usbd_cdc_sof_callback);
+    USBD_RegisterCallbacks(stm32l4_usbd_cdc_sof_callback, stm32l4_usbd_cdc_suspend_callback, stm32l4_usbd_cdc_resume_callback);
 }
 
 static void stm32l4_usbd_cdc_deinit(void)
 {
-    stm32l4_usbd_cdc_t *usbd_cdc;
+    USBD_RegisterCallbacks(NULL, NULL, NULL);
 
-    USBD_SOFCallback(NULL);
-
+    stm32l4_usbd_cdc_device.lineState = 0;
     stm32l4_usbd_cdc_info.lineState = 0;
 
     stm32l4_usbd_cdc_device.rx_busy = 0;
 
-    if (stm32l4_usbd_cdc_device.tx_busy)
-    {
-	stm32l4_usbd_cdc_device.tx_busy = 0;
-
-	usbd_cdc = stm32l4_usbd_cdc_driver.instances[0];
-	
-	if (usbd_cdc && (usbd_cdc->state > USBD_CDC_STATE_INIT))
-	{
-	    if (usbd_cdc->events & USBD_CDC_EVENT_TRANSMIT)
-	    {
-		(*usbd_cdc->callback)(usbd_cdc->context, USBD_CDC_EVENT_TRANSMIT);
-	    }
-	}
-    }
+    stm32l4_usbd_cdc_tx_cancel();
 
     stm32l4_usbd_cdc_device.USBD = NULL;
 }
@@ -161,8 +183,8 @@ static void stm32l4_usbd_cdc_control(uint8_t command, uint8_t *data, uint16_t le
 
 	if (command == USBD_CDC_SET_CONTROL_LINE_STATE)
 	{
-	    stm32l4_usbd_cdc_info.lineState = (uint16_t)((data[2] << 0) | (data[3] << 8));
-
+	    stm32l4_usbd_cdc_info.lineState = stm32l4_usbd_cdc_device.lineState = (uint16_t)((data[2] << 0) | (data[3] << 8));
+	    
 	    if ((stm32l4_usbd_cdc_info.lineState & 3) && (stm32l4_usbd_cdc_device.connect == 0))
 	    {
 		stm32l4_usbd_cdc_device.connect = armv7m_systick_millis();

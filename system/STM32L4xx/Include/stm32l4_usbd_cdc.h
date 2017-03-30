@@ -45,11 +45,11 @@
 #define USBD_CDC_SET_CONTROL_LINE_STATE  0x22
 
 typedef struct _stm32l4_usbd_cdc_info_t {
-    int32_t                        dwDTERate;
-    uint8_t                        bCharFormat;
-    uint8_t                        bParityType;
-    uint8_t                        bDataBits;
-    uint8_t                        lineState;
+    volatile int32_t               dwDTERate;
+    volatile uint8_t               bCharFormat;
+    volatile uint8_t               bParityType;
+    volatile uint8_t               bDataBits;
+    volatile uint8_t               lineState;
 } stm32l4_usbd_cdc_info_t;
 
 extern volatile stm32l4_usbd_cdc_info_t stm32l4_usbd_cdc_info;
