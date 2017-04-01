@@ -165,7 +165,7 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
     unsigned int tx_read, tx_write, tx_count, tx_size;
     size_t count;
 
-    if ((_usbd_cdc->state < USBD_CDC_STATE_READY) || !(stm32l4_usbd_cdc_info.lineState & 1)) {
+    if (_usbd_cdc->state != USBD_CDC_STATE_READY) {
 	return 0;
     }
 
@@ -269,7 +269,7 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
 
 bool CDC::write(const uint8_t *buffer, size_t size, void(*callback)(void))
 {
-    if ((_usbd_cdc->state < USBD_CDC_STATE_READY) || !(stm32l4_usbd_cdc_info.lineState & 1)) {
+    if (_usbd_cdc->state != USBD_CDC_STATE_READY) {
 	return false;
     }
 
@@ -340,7 +340,7 @@ void CDC::EventCallback(uint32_t events)
       
 	    _tx_size = 0;
 
-	    if (stm32l4_usbd_cdc_info.lineState & 1) {
+	    if (_usbd_cdc->state == USBD_CDC_STATE_READY) {
 		if (_tx_count != 0) {
 		    tx_size = _tx_count;
 		    tx_read = _tx_read;

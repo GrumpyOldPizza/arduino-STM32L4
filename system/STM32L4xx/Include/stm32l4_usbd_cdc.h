@@ -63,6 +63,8 @@ typedef void (*stm32l4_usbd_cdc_callback_t)(void *context, uint32_t events);
 #define USBD_CDC_STATE_NONE              0
 #define USBD_CDC_STATE_INIT              1
 #define USBD_CDC_STATE_READY             2
+#define USBD_CDC_STATE_SUSPENDED         3
+#define USBD_CDC_STATE_RESET             4
 
 typedef struct _stm32l4_usbd_cdc_t {
     volatile uint8_t               state;

@@ -51,7 +51,7 @@ typedef struct _stm32l4_usbd_cdc_device_t {
     struct _USBD_HandleTypeDef     *USBD;
     volatile uint8_t               rx_busy;
     volatile uint8_t               tx_busy;
-    volatile uint8_t               lineState;
+    volatile uint8_t               suspended;
     uint64_t                       connect;
     uint32_t                       timeout;
 } stm32l4_usbd_cdc_device_t;
@@ -60,20 +60,15 @@ static stm32l4_usbd_cdc_device_t stm32l4_usbd_cdc_device;
 
 static void stm32l4_usbd_cdc_tx_cancel(void)
 {
-    stm32l4_usbd_cdc_t *usbd_cdc;
+    stm32l4_usbd_cdc_t *usbd_cdc = stm32l4_usbd_cdc_driver.instances[0];
 
     if (stm32l4_usbd_cdc_device.tx_busy)
     {
 	stm32l4_usbd_cdc_device.tx_busy = 0;
 
-	usbd_cdc = stm32l4_usbd_cdc_driver.instances[0];
-	
-	if (usbd_cdc && (usbd_cdc->state > USBD_CDC_STATE_INIT))
+	if (usbd_cdc && (usbd_cdc->events & USBD_CDC_EVENT_TRANSMIT))
 	{
-	    if (usbd_cdc->events & USBD_CDC_EVENT_TRANSMIT)
-	    {
-		(*usbd_cdc->callback)(usbd_cdc->context, USBD_CDC_EVENT_TRANSMIT);
-	    }
+	    (*usbd_cdc->callback)(usbd_cdc->context, USBD_CDC_EVENT_TRANSMIT);
 	}
     }
 }
@@ -105,7 +100,14 @@ static void stm32l4_usbd_cdc_sof_callback(void)
 
 static void stm32l4_usbd_cdc_suspend_callback(void)
 {
-    stm32l4_usbd_cdc_info.lineState = 0;
+    stm32l4_usbd_cdc_t *usbd_cdc = stm32l4_usbd_cdc_driver.instances[0];
+
+    if (usbd_cdc && (usbd_cdc->state == USBD_CDC_STATE_READY))
+    {
+	usbd_cdc->state = USBD_CDC_STATE_SUSPENDED;
+    }
+
+    stm32l4_usbd_cdc_device.suspended = 1;
 
     stm32l4_usbd_cdc_device.rx_busy = 0;
 
@@ -114,7 +116,14 @@ static void stm32l4_usbd_cdc_suspend_callback(void)
 
 static void stm32l4_usbd_cdc_resume_callback(void)
 {
-    stm32l4_usbd_cdc_info.lineState = stm32l4_usbd_cdc_device.lineState;
+    stm32l4_usbd_cdc_t *usbd_cdc = stm32l4_usbd_cdc_driver.instances[0];
+
+    stm32l4_usbd_cdc_device.suspended = 0;
+    
+    if (usbd_cdc && (usbd_cdc->state == USBD_CDC_STATE_SUSPENDED))
+    {
+	usbd_cdc->state = USBD_CDC_STATE_READY;
+    }
 }
 
 static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
@@ -124,7 +133,7 @@ static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
     stm32l4_usbd_cdc_device.USBD = USBD;
     stm32l4_usbd_cdc_device.rx_busy = 0;
     stm32l4_usbd_cdc_device.tx_busy = 0;
-    stm32l4_usbd_cdc_device.lineState = 0;
+    stm32l4_usbd_cdc_device.suspended = 0;
     stm32l4_usbd_cdc_device.connect = 0;
     stm32l4_usbd_cdc_device.timeout = 0;
 
@@ -136,6 +145,8 @@ static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
 
     if (usbd_cdc && (usbd_cdc->state > USBD_CDC_STATE_INIT))
     {
+	usbd_cdc->state = USBD_CDC_STATE_READY;
+
 	USBD_CDC_SetRxBuffer(stm32l4_usbd_cdc_device.USBD, &usbd_cdc->rx_data[usbd_cdc->rx_write]);
 	USBD_CDC_ReceivePacket(stm32l4_usbd_cdc_device.USBD);
 
@@ -147,10 +158,16 @@ static void stm32l4_usbd_cdc_init(USBD_HandleTypeDef *USBD)
 
 static void stm32l4_usbd_cdc_deinit(void)
 {
+    stm32l4_usbd_cdc_t *usbd_cdc = stm32l4_usbd_cdc_driver.instances[0];
+
+    if (usbd_cdc)
+    {
+	usbd_cdc->state = USBD_CDC_STATE_RESET;
+    }
+
     USBD_RegisterCallbacks(NULL, NULL, NULL);
 
-    stm32l4_usbd_cdc_device.lineState = 0;
-    stm32l4_usbd_cdc_info.lineState = 0;
+    stm32l4_usbd_cdc_device.suspended = 0;
 
     stm32l4_usbd_cdc_device.rx_busy = 0;
 
@@ -183,7 +200,7 @@ static void stm32l4_usbd_cdc_control(uint8_t command, uint8_t *data, uint16_t le
 
 	if (command == USBD_CDC_SET_CONTROL_LINE_STATE)
 	{
-	    stm32l4_usbd_cdc_info.lineState = stm32l4_usbd_cdc_device.lineState = (uint16_t)((data[2] << 0) | (data[3] << 8));
+	    stm32l4_usbd_cdc_info.lineState = (uint16_t)((data[2] << 0) | (data[3] << 8));
 	    
 	    if ((stm32l4_usbd_cdc_info.lineState & 3) && (stm32l4_usbd_cdc_device.connect == 0))
 	    {
@@ -213,7 +230,7 @@ static void stm32l4_usbd_cdc_data_receive(uint8_t *data, uint32_t length)
 
     stm32l4_usbd_cdc_device.rx_busy = 0;
 
-    if (usbd_cdc && (usbd_cdc->state > USBD_CDC_STATE_INIT))
+    if (usbd_cdc && (usbd_cdc->state == USBD_CDC_STATE_READY))
     {
 	usbd_cdc->rx_write += length;
 
@@ -246,7 +263,7 @@ static void stm32l4_usbd_cdc_data_transmit(void)
 
     stm32l4_usbd_cdc_device.tx_busy = 0;
 
-    if (usbd_cdc && (usbd_cdc->state > USBD_CDC_STATE_INIT))
+    if (usbd_cdc && (usbd_cdc->state == USBD_CDC_STATE_READY))
     {
 	if (usbd_cdc->events & USBD_CDC_EVENT_TRANSMIT)
 	{
@@ -315,14 +332,18 @@ bool stm32l4_usbd_cdc_enable(stm32l4_usbd_cdc_t *usbd_cdc, uint8_t *rx_data, uin
     usbd_cdc->context = context;
     usbd_cdc->events = events;
 
-    usbd_cdc->state = USBD_CDC_STATE_READY;
-
     if (stm32l4_usbd_cdc_device.USBD)
     {
+	usbd_cdc->state = stm32l4_usbd_cdc_device.suspended ? USBD_CDC_STATE_SUSPENDED : USBD_CDC_STATE_READY;
+
 	USBD_CDC_SetRxBuffer(stm32l4_usbd_cdc_device.USBD, &usbd_cdc->rx_data[usbd_cdc->rx_write]);
 	USBD_CDC_ReceivePacket(stm32l4_usbd_cdc_device.USBD);
 
 	stm32l4_usbd_cdc_device.rx_busy = 1;
+    }
+    else
+    {
+	usbd_cdc->state = USBD_CDC_STATE_RESET;
     }
 
     return true;
@@ -330,7 +351,7 @@ bool stm32l4_usbd_cdc_enable(stm32l4_usbd_cdc_t *usbd_cdc, uint8_t *rx_data, uin
 
 bool stm32l4_usbd_cdc_disable(stm32l4_usbd_cdc_t *usbd_cdc)
 {
-    if (usbd_cdc->state != USBD_CDC_STATE_READY)
+    if (usbd_cdc->state < USBD_CDC_STATE_READY)
     {
 	return false;
     }
@@ -353,7 +374,7 @@ bool stm32l4_usbd_cdc_disable(stm32l4_usbd_cdc_t *usbd_cdc)
 
 bool stm32l4_usbd_cdc_notify(stm32l4_usbd_cdc_t *usbd_cdc, stm32l4_usbd_cdc_callback_t callback, void *context, uint32_t events)
 {
-    if (usbd_cdc->state != USBD_CDC_STATE_READY)
+    if (usbd_cdc->state < USBD_CDC_STATE_READY)
     {
 	return false;
     }
@@ -464,11 +485,6 @@ bool stm32l4_usbd_cdc_transmit(stm32l4_usbd_cdc_t *usbd_cdc, const uint8_t *tx_d
 {
     int status;
 
-    if ((usbd_cdc->state != USBD_CDC_STATE_READY) || stm32l4_usbd_cdc_device.tx_busy)
-    {
-	return false;
-    }
-
     /* QTG_FS interrupts need to be disabled while calling
      * USBD_CDC_TransmitPacket. It seems that on short 
      * transmits HAL_PCD_EP_Transmit()/USB_EPStartXfer()
@@ -484,7 +500,8 @@ bool stm32l4_usbd_cdc_transmit(stm32l4_usbd_cdc_t *usbd_cdc, const uint8_t *tx_d
 #else
     NVIC_DisableIRQ(USB_IRQn);
 #endif
-    if (!(stm32l4_usbd_cdc_info.lineState & 1))
+
+    if ((usbd_cdc->state != USBD_CDC_STATE_READY) || stm32l4_usbd_cdc_device.tx_busy)
     {
 #if defined(STM32L476xx)
 	NVIC_EnableIRQ(OTG_FS_IRQn);
