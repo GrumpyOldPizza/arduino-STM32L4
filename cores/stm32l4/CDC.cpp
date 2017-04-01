@@ -108,7 +108,7 @@ int CDC::available()
 
 int CDC::availableForWrite(void)
 {
-    if (_usbd_cdc->state < USBD_CDC_STATE_READY) {
+    if (_usbd_cdc->state != USBD_CDC_STATE_READY) {
 	return 0;
     }
 
@@ -411,7 +411,7 @@ void CDC::_event_callback(void *context, uint32_t events)
 
 CDC::operator bool()
 {
-    return stm32l4_usbd_cdc_connected(_usbd_cdc);
+    return (_usbd_cdc->state == USBD_CDC_STATE_READY) && (stm32l4_usbd_cdc_info.lineState & 1);
 }
 
 unsigned long CDC::baud()

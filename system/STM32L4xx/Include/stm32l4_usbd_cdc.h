@@ -92,7 +92,6 @@ extern int stm32l4_usbd_cdc_peek(stm32l4_usbd_cdc_t *usbd_cdc);
 extern bool stm32l4_usbd_cdc_transmit(stm32l4_usbd_cdc_t *usbd_cdc, const uint8_t *tx_data, uint32_t tx_count);
 extern bool stm32l4_usbd_cdc_done(stm32l4_usbd_cdc_t *usbd_cdc);
 extern void stm32l4_usbd_cdc_poll(stm32l4_usbd_cdc_t *usbd_cdc);
-extern bool stm32l4_usbd_cdc_connected(stm32l4_usbd_cdc_t *usbd_cdc);
 
 #ifdef __cplusplus
 }
