@@ -446,6 +446,8 @@ static uint16_t USBD_CDC_MSC_ConigurationDescriptorLength = 0;
 static uint8_t  USBD_CDC_MSC_Init (USBD_HandleTypeDef *pdev, 
 				  uint8_t cfgidx)
 {
+  USBD_Configure();
+
   USBD_CDC_Init(pdev, cfgidx);
 
   if (USBD_MSC_Interface) (*USBD_MSC_Interface->Init)(pdev, cfgidx);

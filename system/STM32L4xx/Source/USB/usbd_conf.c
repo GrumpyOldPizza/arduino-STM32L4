@@ -88,71 +88,66 @@ static armv7m_timer_t USBD_VBUSTimer;
 static void USBD_VBUSCallback(void)
 {
     unsigned int state, timeout;
-    
+
     state = stm32l4_gpio_pin_read(usbd_pin_vbus);
 
-    if (usbd_pin_vbus_count)
+    if (!usbd_connected)
     {
-	if (!state)
+	if (state)
 	{
-	    usbd_pin_vbus_count = 0;
-
-	    timeout = 50;
-	}
-	else
-	{
-	    usbd_pin_vbus_count--;
-
-	    if (!usbd_pin_vbus_count)
+	    if (usbd_pin_vbus_count)
 	    {
-		usbd_connected = true;
-
-		USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
-
-		(*USBD_ClassInitialize)(&USBD_Device);
-
-		USBD_Start(&USBD_Device);
-
-		timeout = 50;
+		usbd_pin_vbus_count--;
+		    
+		if (!usbd_pin_vbus_count)
+		{
+		    usbd_connected = true;
+			
+		    USBD_Init(&USBD_Device, &CDC_MSC_Desc, 0);
+			
+		    (*USBD_ClassInitialize)(&USBD_Device);
+			
+		    USBD_Start(&USBD_Device);
+			
+		    timeout = 50;
+		}
+		else
+		{
+		    timeout = 1;
+		}
 	    }
 	    else
 	    {
+		usbd_pin_vbus_count = 10;
+
 		timeout = 1;
 	    }
+	}
+	else
+	{
+	    usbd_pin_vbus_count = 0;
+		
+	    timeout = 50;
 	}
     }
     else
     {
-	if (!usbd_connected)
+	if (!state)
 	{
-	    if (state)
-	    {
-		usbd_pin_vbus_count = 10;
-		
-		timeout = 1;
-	    }
-	    else
-	    {
-		timeout = 50;
-	    }
-	}
-	else
-	{
-	    if (!state)
-	    {
 #if defined(STM32L476xx)
-		NVIC_DisableIRQ(OTG_FS_IRQn);
+	    NVIC_DisableIRQ(OTG_FS_IRQn);
 #else
-		NVIC_DisableIRQ(USB_IRQn);
+	    NVIC_DisableIRQ(USB_IRQn);
 #endif
-		
-		USBD_DeInit(&USBD_Device);
-		
-		usbd_connected = false;
-	    }
-
-	    timeout = 50;
+	    
+	    USBD_DeInit(&USBD_Device);
+	    
+	    usbd_connected = false;
 	}
+	
+	usbd_pin_vbus_count = 0;
+	
+	timeout = 100;
     }
 
     armv7m_timer_start(&USBD_VBUSTimer, timeout);
@@ -227,6 +222,8 @@ void USBD_Attach(void)
 	    (*USBD_ClassInitialize)(&USBD_Device);
 
 	    USBD_Start(&USBD_Device);
+
+	    armv7m_timer_start(&USBD_VBUSTimer, 50);
 	}
     }
 }
@@ -249,6 +246,14 @@ void USBD_Detach(void)
 	USBD_DeInit(&USBD_Device);
 
 	usbd_connected = false;
+    }
+}
+
+void USBD_Configure(void)
+{
+    if (usbd_pin_vbus != GPIO_PIN_NONE)
+    {
+	armv7m_timer_stop(&USBD_VBUSTimer);
     }
 }
 
@@ -447,6 +452,14 @@ void HAL_PCD_SuspendCallback(PCD_HandleTypeDef *hpcd)
   }
 
   USBD_LL_Suspend(hpcd->pData);
+
+  if (usbd_pin_vbus != GPIO_PIN_NONE)
+  {
+      if ((USBD_Device.dev_state == USBD_STATE_SUSPENDED) && (USBD_Device.dev_old_state == USBD_STATE_CONFIGURED))
+      {
+	  armv7m_timer_start(&USBD_VBUSTimer, 50);
+      }
+  }
 }
 
 /**
@@ -456,6 +469,14 @@ void HAL_PCD_SuspendCallback(PCD_HandleTypeDef *hpcd)
  */
 void HAL_PCD_ResumeCallback(PCD_HandleTypeDef *hpcd)
 {
+  if (usbd_pin_vbus != GPIO_PIN_NONE)
+  {
+      if ((USBD_Device.dev_state == USBD_STATE_SUSPENDED) && (USBD_Device.dev_old_state == USBD_STATE_CONFIGURED))
+      {
+	  armv7m_timer_stop(&USBD_VBUSTimer);
+      }
+  }
+
   USBD_LL_Resume(hpcd->pData);
 
   if (usbd_resume_callback) {
