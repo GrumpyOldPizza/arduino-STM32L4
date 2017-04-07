@@ -222,8 +222,6 @@ void USBD_Attach(void)
 	    (*USBD_ClassInitialize)(&USBD_Device);
 
 	    USBD_Start(&USBD_Device);
-
-	    armv7m_timer_start(&USBD_VBUSTimer, 50);
 	}
     }
 }
