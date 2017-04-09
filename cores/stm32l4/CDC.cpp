@@ -48,6 +48,8 @@ CDC::CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc, bool serialEvent)
 {
     _usbd_cdc = usbd_cdc;
 
+    _blocking = true;
+
     _tx_read = 0;
     _tx_write = 0;
     _tx_count = 0;
@@ -174,7 +176,7 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
     }
 
     if (_tx_size2 != 0) {
-	if (__get_IPSR() != 0) {
+	if (!_blocking || (__get_IPSR() != 0)) {
 	    return 0;
 	}
 	
@@ -191,7 +193,7 @@ size_t CDC::write(const uint8_t *buffer, size_t size)
 
 	if (tx_count == 0) {
 
-	    if (__get_IPSR() != 0) {
+	    if (!_blocking || (__get_IPSR() != 0)) {
 		break;
 	    }
 
@@ -315,6 +317,11 @@ bool CDC::done()
 void CDC::onReceive(void(*callback)(void))
 {
     _receiveCallback = callback;
+}
+
+void CDC::blockOnOverrun(bool block)
+{
+    _blocking = block;
 }
 
 void CDC::EventCallback(uint32_t events)

@@ -63,8 +63,12 @@ public:
     // STM32L4 EXTENSTION: asynchronous receive
     void onReceive(void(*callback)(void));
 
+    // STM32L4 EXTENSTION: enable/disabe blocking writes
+    void blockOnOverrun(bool enable);
+
 private:
     struct _stm32l4_uart_t *_uart;
+    bool _blocking;
     uint8_t _rx_data[UART_RX_BUFFER_SIZE];
     uint8_t _tx_data[UART_TX_BUFFER_SIZE];
     volatile uint16_t _tx_write;

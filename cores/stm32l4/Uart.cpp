@@ -36,6 +36,8 @@ Uart::Uart(struct _stm32l4_uart_t *uart, unsigned int instance, const struct _st
 {
     _uart = uart;
 
+    _blocking = true;
+
     _tx_read = 0;
     _tx_write = 0;
     _tx_count = 0;
@@ -159,7 +161,7 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
     }
 
     if (_tx_size2 != 0) {
-	if (__get_IPSR() != 0) {
+	if (!_blocking || (__get_IPSR() != 0)) {
 	    return 0;
 	}
 	
@@ -176,7 +178,7 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
 
 	if (tx_count == 0) {
 
-	    if (__get_IPSR() != 0) {
+	    if (!_blocking || (__get_IPSR() != 0)) {
 		break;
 	    }
 
@@ -289,6 +291,11 @@ bool Uart::done()
 void Uart::onReceive(void(*callback)(void))
 {
     _receiveCallback = callback;
+}
+
+void Uart::blockOnOverrun(bool block)
+{
+    _blocking = block;
 }
 
 void Uart::EventCallback(uint32_t events)
