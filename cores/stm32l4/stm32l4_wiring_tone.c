@@ -31,23 +31,21 @@
 
 static GPIO_TypeDef *toneGPIO = NULL;
 static uint32_t     toneBit = 0x00000000;
-static uint32_t     toneCount = 0;;
+static uint32_t     toneCount = 0;
 
 static stm32l4_timer_t stm32l4_tone;
 
 static void tone_event_callback(void *context, uint32_t events)
 {
     if (toneCount) {
-	if (toneCount & 1) {
-	    toneGPIO->BSRR = toneBit;
-	} else {
+      if (toneGPIO->ODR & toneBit) {
 	    toneGPIO->BRR = toneBit;
+	} else {
+	    toneGPIO->BSRR = toneBit;
 	}
 
-	if (toneCount < 0xfffffffe) {
+	if (toneCount <= 0xfffffffe) {
 	    toneCount--;
-	} else {
-	    toneCount ^= 1;
 	}
     } else {
 	stm32l4_timer_stop(&stm32l4_tone);
@@ -60,6 +58,8 @@ static void tone_event_callback(void *context, uint32_t events)
 
 void tone(uint32_t pin, uint32_t frequency, uint32_t duration)
 {
+    uint32_t modulus;
+
     if (frequency == 0) {
 	return;
     }
@@ -84,30 +84,45 @@ void tone(uint32_t pin, uint32_t frequency, uint32_t duration)
 	pinMode(pin, OUTPUT);
     }
 
-    toneGPIO  = GPIO;
-    toneBit   = bit;
-    toneCount = (duration > 0 ? frequency * duration * 2 / 1000UL : 0xfffffffe);
+    toneGPIO = GPIO;
+    toneBit  = bit;
 
-    uint32_t modulus = (stm32l4_timer_clock(&stm32l4_tone) / frequency) / 2;
-    uint32_t scale   = 1;
+    /* Use 4MHz as a carrier frequency. The Arduino UNO spec says we need to be able
+     * to hit 31.5Hz at the bottom, which means a 63Hz period to toggle the GPIO.
+     * Hence 4MHz is upper boundary if the timer counter should still fit into 16 bits.
+     */
+    modulus = (4000000 / frequency) / 2;
 
-    while (modulus > 65536) {
-	modulus /= 2;
-	scale++;
+    if (modulus < 1) {
+	modulus = 1;
     }
 
-    stm32l4_timer_enable(&stm32l4_tone, scale -1, modulus -1, 0, tone_event_callback, NULL, TIMER_EVENT_PERIOD);
-    stm32l4_timer_start(&stm32l4_tone, false);
+    if (modulus > 65536) {
+	modulus = 63356;
+    }
 
-    toneGPIO->BSRR = toneBit;
+    frequency = 4000000 / (modulus * 2);
+
+    if (duration) {
+	toneCount = (frequency * duration * 2) / 1000;
+    } else {
+	toneCount = 0xffffffff;
+    }
+
+    if (stm32l4_tone.state == TIMER_STATE_INIT) {
+	stm32l4_timer_enable(&stm32l4_tone, (stm32l4_timer_clock(&stm32l4_tone) / 4000000) -1, modulus -1, TIMER_OPTION_COUNT_PRELOAD, tone_event_callback, NULL, TIMER_EVENT_PERIOD);
+	stm32l4_timer_start(&stm32l4_tone, false);
+    } else {
+	stm32l4_timer_period(&stm32l4_tone, modulus -1, false);
+    }
 }
 
 void noTone(uint32_t pin)
 {
-  stm32l4_timer_stop(&stm32l4_tone);
-  stm32l4_timer_disable(&stm32l4_tone);
+    stm32l4_timer_stop(&stm32l4_tone);
+    stm32l4_timer_disable(&stm32l4_tone);
 
-  digitalWrite(pin, LOW);
+    digitalWrite(pin, LOW);
 
-  toneGPIO = NULL;
+    toneGPIO = NULL;
 }

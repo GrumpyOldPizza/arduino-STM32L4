@@ -80,6 +80,7 @@ enum {
 #define TIMER_OPTION_COUNT_CENTER_UP             0x00000020
 #define TIMER_OPTION_COUNT_CENTER_DOWN           0x00000040
 #define TIMER_OPTION_COUNT_CENTER_UP_DOWN        0x00000060
+#define TIMER_OPTION_COUNT_PRELOAD               0x00000080
 
 #define TIMER_EVENT_PERIOD                       0x08000000
 #define TIMER_EVENT_CHANNEL_1                    0x10000000

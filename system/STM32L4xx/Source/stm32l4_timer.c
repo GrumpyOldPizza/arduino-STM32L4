@@ -417,6 +417,11 @@ bool stm32l4_timer_configure(stm32l4_timer_t *timer, uint32_t prescaler, uint32_
 		tim_cr1 |= TIM_CR1_DIR;
 	    }
 	}
+
+	if (option & TIMER_OPTION_COUNT_PRELOAD)
+	{
+	    tim_cr1 |= TIM_CR1_ARPE;
+	}
     }
 
     TIM->CR1  = tim_cr1;
