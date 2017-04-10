@@ -95,7 +95,7 @@ int Uart::available()
 
 int Uart::availableForWrite()
 {
-    if (_uart->state != UART_STATE_READY) {
+    if (_uart->state < UART_STATE_READY) {
 	return 0;
     }
 
@@ -152,7 +152,7 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
     unsigned int tx_read, tx_write, tx_count, tx_size;
     size_t count;
 
-    if (_uart->state != UART_STATE_READY) {
+    if (_uart->state < UART_STATE_READY) {
 	return 0;
     }
 
@@ -248,7 +248,7 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
 
 bool Uart::write(const uint8_t *buffer, size_t size, void(*callback)(void))
 {
-    if (_uart->state != UART_STATE_READY) {
+    if (_uart->state < UART_STATE_READY) {
 	return false;
     }
 
