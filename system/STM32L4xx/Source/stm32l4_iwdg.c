@@ -35,7 +35,7 @@
 
 void stm32l4_iwdg_enable(uint32_t timeout)
 {
-    uint32_t iwdg_pr, iwdg_rl, iwdg_sr;
+    uint32_t iwdg_pr, iwdg_rl;
 
     if (timeout > 32000)
     {
@@ -43,7 +43,7 @@ void stm32l4_iwdg_enable(uint32_t timeout)
     }
 
     iwdg_pr = 0;
-    iwdg_rl = (timeout * 32768) / (4 * 1000);
+    iwdg_rl = timeout * (32000 / (4 * 1000));
     
     while (iwdg_rl > 4096)
     {
@@ -53,14 +53,12 @@ void stm32l4_iwdg_enable(uint32_t timeout)
     
     IWDG->KR = 0xcccc;
     IWDG->KR = 0x5555;
+
+    while (IWDG->SR & (IWDG_SR_WVU | IWDG_SR_RVU | IWDG_SR_PVU))
+    {
+    }
+
     IWDG->PR = iwdg_pr;
     IWDG->RLR = iwdg_rl -1;
-
-    do
-    {
-	iwdg_sr = IWDG->SR;
-    }
-    while (iwdg_sr & (IWDG_SR_WVU | IWDG_SR_RVU | IWDG_SR_PVU));
-
     IWDG->KR = 0xaaaa;
 }
