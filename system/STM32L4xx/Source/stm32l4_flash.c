@@ -191,9 +191,9 @@ bool stm32l4_flash_program(uint32_t address, const uint8_t *data, uint32_t count
 	    chunk = 2048;
 	}
 
-	if (chunk > (((address + 2048) & ~0247) - address))
+	if (chunk > (((address + 2048) & ~2047) - address))
 	{
-	    chunk = ((address + 2048) & ~0247) - address;
+	    chunk = ((address + 2048) & ~2047) - address;
 	}
 
 	primask = __get_PRIMASK();
