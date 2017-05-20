@@ -1059,7 +1059,7 @@ bool stm32l4_system_sysclk_configure(uint32_t hclk, uint32_t pclk1, uint32_t pcl
 	if (stm32l4_system_device.lseclk)
 	{
 	    /* Disable CRS on HSI48 */
-	    CRS->CR = 0;
+	    CRS->CR &= ~(CRS_CR_AUTOTRIMEN | CRS_CR_CEN);
 	    
 	    RCC->APB1ENR1 &= ~RCC_APB1ENR1_CRSEN;
 	}
@@ -1311,15 +1311,12 @@ bool stm32l4_system_sysclk_configure(uint32_t hclk, uint32_t pclk1, uint32_t pcl
 	
 	if (stm32l4_system_device.lseclk)
 	{
-	    /* Enable/Reset CRS on HSI48 */
+	    /* Enable CRS on HSI48 */
 	    RCC->APB1ENR1 |= RCC_APB1ENR1_CRSEN;
-	    
-	    RCC->APB1RSTR1 |= RCC_APB1RSTR1_CRSRST;
-	    RCC->APB1RSTR1 &= ~RCC_APB1RSTR1_CRSRST;
 	    
 	    /* 32768Hz * 1465 = 48005120Hz, Sync Source is LSE */
 	    CRS->CFGR = ((1465 -1) << CRS_CFGR_RELOAD_Pos) | (1 << CRS_CFGR_FELIM_Pos) | CRS_CFGR_SYNCSRC_0;
-	    CRS->CR = CRS_CR_AUTOTRIMEN | CRS_CR_CEN;
+	    CRS->CR |= (CRS_CR_AUTOTRIMEN | CRS_CR_CEN);
 	}
     }
     
@@ -1529,15 +1526,12 @@ static void stm32l4_system_hsi48_enable(void)
 
 	if (stm32l4_system_device.lseclk)
 	{
-	    /* Enable/Reset CRS on HSI48 */
+	    /* Enable CRS on HSI48 */
 	    RCC->APB1ENR1 |= RCC_APB1ENR1_CRSEN;
 
-	    RCC->APB1RSTR1 |= RCC_APB1RSTR1_CRSRST;
-	    RCC->APB1RSTR1 &= ~RCC_APB1RSTR1_CRSRST;
-	    
 	    /* 32768Hz * 1465 = 48005120Hz, Sync Source is LSE */
 	    CRS->CFGR = ((1465 -1) << CRS_CFGR_RELOAD_Pos) | (1 << CRS_CFGR_FELIM_Pos) | CRS_CFGR_SYNCSRC_0;
-	    CRS->CR = CRS_CR_AUTOTRIMEN | CRS_CR_CEN;
+	    CRS->CR |= (CRS_CR_AUTOTRIMEN | CRS_CR_CEN);
 	}
     }
 
@@ -1561,7 +1555,7 @@ static void stm32l4_system_hsi48_disable(void)
 	if (stm32l4_system_device.lseclk)
 	{
 	    /* Disable CRS on HSI48 */
-	    CRS->CR = 0;
+	    CRS->CR &= ~(CRS_CR_AUTOTRIMEN | CRS_CR_CEN);
 	    
 	    RCC->APB1ENR1 &= ~RCC_APB1ENR1_CRSEN;
 	}
@@ -2096,7 +2090,7 @@ static void stm32l4_system_suspend(void)
 	if (stm32l4_system_device.lseclk)
 	{
 	    /* Disable CRS on HSI48 */
-	    CRS->CR = 0;
+	    CRS->CR &= ~(CRS_CR_AUTOTRIMEN | CRS_CR_CEN);
 	    
 	    RCC->APB1ENR1 &= ~RCC_APB1ENR1_CRSEN;
 	}
@@ -2240,12 +2234,9 @@ static void stm32l4_system_resume(void)
 	    /* Enable/Reset CRS on HSI48 */
 	    RCC->APB1ENR1 |= RCC_APB1ENR1_CRSEN;
 
-	    RCC->APB1RSTR1 |= RCC_APB1RSTR1_CRSRST;
-	    RCC->APB1RSTR1 &= ~RCC_APB1RSTR1_CRSRST;
-	    
 	    /* 32768Hz * 1465 = 48005120Hz, Sync Source is LSE */
 	    CRS->CFGR = ((1465 -1) << CRS_CFGR_RELOAD_Pos) | (1 << CRS_CFGR_FELIM_Pos) | CRS_CFGR_SYNCSRC_0;
-	    CRS->CR = CRS_CR_AUTOTRIMEN | CRS_CR_CEN;
+	    CRS->CR |= (CRS_CR_AUTOTRIMEN | CRS_CR_CEN);
 	}
     }
 #else /* defined(STM32L432xx) || defined(STM32L433xx) */
@@ -2438,7 +2429,7 @@ static void stm32l4_system_deepsleep(uint32_t lpms, uint32_t config, uint32_t ti
 	if (stm32l4_system_device.lseclk)
 	{
 	    /* Disable CRS on HSI48 */
-	    CRS->CR = 0;
+	    CRS->CR &= ~(CRS_CR_AUTOTRIMEN | CRS_CR_CEN);
 	    
 	    RCC->APB1ENR1 &= ~RCC_APB1ENR1_CRSEN;
 	}

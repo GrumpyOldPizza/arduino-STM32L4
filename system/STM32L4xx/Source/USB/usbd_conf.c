@@ -325,6 +325,16 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
   if (!(apb1enr1 & RCC_APB1ENR1_PWREN)) {
     armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
   }
+
+#if defined(STM32L432xx) || defined(STM32L433xx)
+  if (stm32l4_system_lseclk() == 0) {
+      /* Enable/Reset CRS on HSI48 */
+      armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_CRSEN);
+      
+      CRS->CFGR = ((48000 -1) << CRS_CFGR_RELOAD_Pos) | (34 << CRS_CFGR_FELIM_Pos) | CRS_CFGR_SYNCSRC_1;
+      CRS->CR |= (CRS_CR_AUTOTRIMEN | CRS_CR_CEN);
+  }
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
   
   /* Enable USB FS Interrupt */
 #if defined(STM32L476xx)
@@ -342,6 +352,15 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
 void HAL_PCD_MspDeInit(PCD_HandleTypeDef *hpcd)
 {  
   uint32_t apb1enr1;
+
+#if defined(STM32L432xx) || defined(STM32L433xx)
+  if (stm32l4_system_lseclk() == 0) {
+      /* Disable CRS on HSI48 */
+      CRS->CR &= ~(CRS_CR_AUTOTRIMEN | CRS_CR_CEN);
+      
+      armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_CRSEN);
+  }
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
 
   /* Disable VUSB */
   apb1enr1 = RCC->APB1ENR1;
