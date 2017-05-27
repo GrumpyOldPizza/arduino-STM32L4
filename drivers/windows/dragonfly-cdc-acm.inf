@@ -86,10 +86,10 @@ ServiceBinary=%12%\usbser.sys
 [SourceDisksFiles]
 [SourceDisksNames]
 [DeviceList]
-%DESCRIPTION%=DriverInstall, USB\VID_1209&PID_6667&MI_00, USB\VID_1209&PID_6667&MI_01
+%DESCRIPTION%=DriverInstall, USB\VID_1209&PID_6666&MI_00, USB\VID_1209&PID_6666&MI_01, USB\VID_1209&PID_6667&MI_00, USB\VID_1209&PID_6667&MI_01
 
 [DeviceList.NTamd64]
-%DESCRIPTION%=DriverInstall, USB\VID_1209&PID_6667&MI_00, USB\VID_1209&PID_6667&MI_01
+%DESCRIPTION%=DriverInstall, USB\VID_1209&PID_6666&MI_00, USB\VID_1209&PID_6666&MI_01, USB\VID_1209&PID_6667&MI_00, USB\VID_1209&PID_6667&MI_01
 
 ;------------------------------------------------------------------------------
 ;  String Definitions

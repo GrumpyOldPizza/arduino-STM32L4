@@ -98,7 +98,7 @@ Dragonfly-L476RE.menu.opt.o3.build.flags.ldspecs=
 # ---------------------------------------
 Dragonfly-L496RG.name=Dragonfly-L496RG
 Dragonfly-L496RG.vid.0=0x1209
-Dragonfly-L496RG.pid.0=0x6667
+Dragonfly-L496RG.pid.0=0x6666
 
 Dragonfly-L496RG.upload.tool=stm32l4_dfu
 Dragonfly-L496RG.upload.protocol=dfu
@@ -113,7 +113,7 @@ Dragonfly-L496RG.build.board=STM32L4_DRAGONFLY
 Dragonfly-L496RG.build.arch=STM32L4
 Dragonfly-L496RG.build.core=stm32l4
 Dragonfly-L496RG.build.vid=0x1209
-Dragonfly-L496RG.build.pid=0x6667
+Dragonfly-L496RG.build.pid=0x6666
 Dragonfly-L496RG.build.did=0xffff
 Dragonfly-L496RG.build.usb_manufacturer=u"\u0324Tlera Corporation"
 Dragonfly-L496RG.build.usb_product=u"\u0314Dragonfly"
@@ -121,7 +121,7 @@ Dragonfly-L496RG.build.extra_flags=-DSTM32L496xx -D__FPU_PRESENT=1 -march=armv7e
 Dragonfly-L496RG.build.ldscript=linker_scripts/STM32L496RG_FLASH.ld
 Dragonfly-L496RG.build.openocdscript=openocd_scripts/stm32l496rg_dragonfly.cfg
 Dragonfly-L496RG.build.variant=STM32L496RG-Dragonfly
-Dragonfly-L496RG.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l476 -larm_cortexM4lf_math
+Dragonfly-L496RG.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l496 -larm_cortexM4lf_math
 Dragonfly-L496RG.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/STM32L4xx/Include" 
 
 Dragonfly-L496RG.menu.usb.cdc=Serial
