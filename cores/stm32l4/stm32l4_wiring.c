@@ -53,6 +53,9 @@ const __attribute__((section(".iap_info"))) stm32l4_iap_info_t stm32l4_iap_info 
 #if defined(STM32L476xx)
     .signature = "STM32L476xx",
 #endif
+#if defined(STM32L496xx)
+    .signature = "STM32L496xx",
+#endif
     .length = sizeof(stm32l4_iap_info_t),
     .features = 0,
     .address = 0x08000800,

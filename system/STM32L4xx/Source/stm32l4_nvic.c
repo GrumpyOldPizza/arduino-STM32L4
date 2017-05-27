@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -33,7 +33,7 @@
 
 #include "armv7m.h"
 
-__attribute__((section(".isr_vector_sram"))) uint32_t __isr_vector_sram[98];
+__attribute__((section(".isr_vector_sram"))) uint32_t __isr_vector_sram[16+96];
 
 uint32_t NVIC_CatchIRQ(IRQn_Type IRQn, uint32_t vector)
 {

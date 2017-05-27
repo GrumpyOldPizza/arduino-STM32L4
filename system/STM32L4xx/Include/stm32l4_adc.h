@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -40,10 +40,10 @@ extern "C" {
 
 enum {
      ADC_INSTANCE_ADC1 = 0,
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
      ADC_INSTANCE_ADC2,
      ADC_INSTANCE_ADC3,
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
      ADC_INSTANCE_COUNT
 };
 

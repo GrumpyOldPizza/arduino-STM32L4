@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -55,10 +55,10 @@ static stm32l4_adc_driver_t stm32l4_adc_driver;
 
 static ADC_TypeDef * const stm32l4_adc_xlate_ADC[ADC_INSTANCE_COUNT] = {
     ADC1,
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
     ADC2,
     ADC3,
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 };
 
 bool stm32l4_adc_create(stm32l4_adc_t *adc, unsigned int instance, unsigned int priority, unsigned int mode)
@@ -144,11 +144,11 @@ bool stm32l4_adc_disable(stm32l4_adc_t *adc)
 
     if (adc->instance == ADC_INSTANCE_ADC1)
     {
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	armv7m_atomic_and(&ADC123_COMMON->CCR, ~(ADC_CCR_VBATEN | ADC_CCR_VREFEN));
-#else /* defined(STM32L476xx) */
+#else /* defined(STM32L476xx) || defined(STM32L496xx) */
 	armv7m_atomic_and(&ADC1_COMMON->CCR, ~(ADC_CCR_VBATEN | ADC_CCR_VREFEN));
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
     }
 
     stm32l4_system_periph_cond_disable(SYSTEM_PERIPH_ADC, &stm32l4_adc_driver.adc, (1ul << adc->instance));
@@ -177,28 +177,28 @@ bool stm32l4_adc_configure(stm32l4_adc_t *adc, uint32_t option)
 
 	if ((stm32l4_system_hclk() <= 48000000) && (stm32l4_system_hclk() == stm32l4_system_sysclk()))
 	{
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	    armv7m_atomic_modify(&ADC123_COMMON->CCR, ADC_CCR_CKMODE, ADC_CCR_CKMODE_0); /* HCLK / 1 */
-#else /* defined(STM32L476xx) */
+#else /* defined(STM32L476xx) || defined(STM32L496xx) */
 	    armv7m_atomic_modify(&ADC1_COMMON->CCR, ADC_CCR_CKMODE, ADC_CCR_CKMODE_0); /* HCLK / 1 */
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 	}
 	else
 	{
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	    armv7m_atomic_modify(&ADC123_COMMON->CCR, ADC_CCR_CKMODE, ADC_CCR_CKMODE_1); /* HCLK / 2 */
-#else /* defined(STM32L476xx) */
+#else /* defined(STM32L476xx) || defined(STM32L496xx) */
 	    armv7m_atomic_modify(&ADC1_COMMON->CCR, ADC_CCR_CKMODE, ADC_CCR_CKMODE_1); /* HCLK / 2 */
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 	}
 
 	if (adc->instance == ADC_INSTANCE_ADC1)
 	{
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	    armv7m_atomic_or(&ADC123_COMMON->CCR, (ADC_CCR_VBATEN | ADC_CCR_VREFEN));
-#else /* defined(STM32L476xx) */
+#else /* defined(STM32L476xx) || defined(STM32L496xx) */
 	    armv7m_atomic_or(&ADC1_COMMON->CCR, (ADC_CCR_VBATEN | ADC_CCR_VREFEN));
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 	}
 
 	ADCx->CR &= ~ADC_CR_DEEPPWD;
@@ -307,11 +307,11 @@ uint32_t stm32l4_adc_convert(stm32l4_adc_t *adc, unsigned int channel)
 	    {
 	    }
 	    
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
   	    armv7m_atomic_or(&ADC123_COMMON->CCR, ADC_CCR_TSEN);
-#else /* defined(STM32L476xx) */
+#else /* defined(STM32L476xx) || defined(STM32L496xx) */
   	    armv7m_atomic_or(&ADC1_COMMON->CCR, ADC_CCR_TSEN);
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 
 	    ADCx->ISR = ADC_ISR_ADRDY;
 
@@ -373,11 +373,11 @@ uint32_t stm32l4_adc_convert(stm32l4_adc_t *adc, unsigned int channel)
 	{
 	}
 	
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	armv7m_atomic_and(&ADC123_COMMON->CCR, ~ADC_CCR_TSEN);
-#else /* defined(STM32L476xx) */
+#else /* defined(STM32L476xx) || defined(STM32L496xx) */
 	armv7m_atomic_and(&ADC1_COMMON->CCR, ~ADC_CCR_TSEN);
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 
 	ADCx->ISR = ADC_ISR_ADRDY;
 

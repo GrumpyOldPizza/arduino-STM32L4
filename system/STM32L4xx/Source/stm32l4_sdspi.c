@@ -2097,21 +2097,21 @@ int stm32l4_sdspi_initialize(void)
 
     if (sdspi->state == STM32L4_SDSPI_STATE_NONE)
     {
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	sdspi->instance  = SPI_INSTANCE_SPI3;
 	sdspi->pins.mosi = GPIO_PIN_PC12_SPI3_MOSI;
 	sdspi->pins.miso = GPIO_PIN_PC11_SPI3_MISO;
 	sdspi->pins.sck  = GPIO_PIN_PC10_SPI3_SCK;
 	sdspi->pins.cs   = GPIO_PIN_PD2;
 	sdspi->SPI       = SPI3;
-#else
+#else /* defined(STM32L476xx) || defined(STM32L496xx) */
 	sdspi->instance  = SPI_INSTANCE_SPI1;
 	sdspi->pins.mosi = GPIO_PIN_PA7_SPI1_MOSI;
 	sdspi->pins.miso = GPIO_PIN_PA6_SPI1_MISO;
 	sdspi->pins.sck  = GPIO_PIN_PA1_SPI1_SCK;
 	sdspi->pins.cs   = GPIO_PIN_PA8;
 	sdspi->SPI       = SPI1;
-#endif
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 
 	/* Try GO_IDLE after a reset, as the SDCARD could be still
 	 * powered during the reset.

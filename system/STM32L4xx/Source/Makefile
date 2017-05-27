@@ -78,7 +78,11 @@ BOBJS_L476 = $(patsubst %.c,_out/stm32l476/%.o,$(BSRCS))
 LSRCS_L476 = $(LSRCS) startup_stm32l476xx.S
 LOBJS_L476 = $(patsubst %.c,_out/stm32l476/%.o,$(filter-out %.S,$(LSRCS_L476))) $(patsubst %.S,_out/stm32l476/%.o,$(filter-out %.c,$(LSRCS_L476)))
 
-all:: boot_stm32l432.o boot_stm32l433.o boot_stm32l476.o libstm32l432.a libstm32l433.a libstm32l476.a
+BOBJS_L496 = $(patsubst %.c,_out/stm32l496/%.o,$(BSRCS))
+LSRCS_L496 = $(LSRCS) startup_stm32l496xx.S
+LOBJS_L496 = $(patsubst %.c,_out/stm32l496/%.o,$(filter-out %.S,$(LSRCS_L496))) $(patsubst %.S,_out/stm32l496/%.o,$(filter-out %.c,$(LSRCS_L496)))
+
+all:: boot_stm32l432.o boot_stm32l433.o boot_stm32l476.o boot_stm32l496.o libstm32l432.a libstm32l433.a libstm32l476.a  libstm32l496.a
 
 boot_stm32l432.o:: $(BOBJS_L432)
 	$(LD) -r -o $@ $^
@@ -124,15 +128,32 @@ _out/stm32l476/%.o: %.S
 	-@mkdir -p $(dir $@)
 	$(CC) -DSTM32L476xx $(ASFLAGS) -c $< -o $@
 
+
+boot_stm32l496.o:: $(BOBJS_L496)
+	$(LD) -r -o $@ $^
+
+libstm32l496.a:: $(LOBJS_L496)
+	$(AR) rcs $@ $^
+
+_out/stm32l496/%.o: %.c
+	-@mkdir -p $(dir $@)
+	$(CC) -DSTM32L496xx $(CFLAGS) -c $< -o $@
+
+_out/stm32l496/%.o: %.S
+	-@mkdir -p $(dir $@)
+	$(CC) -DSTM32L496xx $(ASFLAGS) -c $< -o $@
+
 clean::
-	rm -rf boot_stm32l432.o boot_stm32l433.o boot_stm32l476.o libstm32l432.a libstm32l433.a libstm32l476.a _out
+	rm -rf boot_stm32l432.o boot_stm32l433.o boot_stm32l476.o boot_stm32l496.o libstm32l432.a libstm32l433.a libstm32l476.a libstm32l496.a _out
 
 -include $(BOBJS_L432:.o=.d)
 -include $(BOBJS_L433:.o=.d)
 -include $(BOBJS_L476:.o=.d)
+-include $(BOBJS_L496:.o=.d)
 
 -include $(LOBJS_L432:.o=.d)
 -include $(LOBJS_L433:.o=.d)
 -include $(LOBJS_L476:.o=.d)
+-include $(LOBJS_L496:.o=.d)
 
 

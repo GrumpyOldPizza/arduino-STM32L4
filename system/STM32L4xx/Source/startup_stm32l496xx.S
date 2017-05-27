@@ -165,6 +165,15 @@ __isr_vector:
         .long   0
         .long   RNG_IRQHandler
         .long   FPU_IRQHandler
+        .long   CRS_IRQHandler
+        .long   I2C4_EV_IRQHandler
+        .long   I2C4_ER_IRQHandler
+        .long   DCMI_IRQHandler
+        .long   CAN2_TX_IRQHandler
+        .long   CAN2_RX0_IRQHandler
+        .long   CAN2_RX1_IRQHandler
+        .long   CAN2_SCE_IRQHandler
+        .long   DMA2D_IRQHandler  
 
         .size   __isr_vector, . - __isr_vector
 
@@ -337,3 +346,12 @@ Default_Handler:
         def_irq_handler LCD_IRQHandler
         def_irq_handler RNG_IRQHandler
         def_irq_handler FPU_IRQHandler
+        def_irq_handler CRS_IRQHandler
+        def_irq_handler I2C4_EV_IRQHandler
+        def_irq_handler I2C4_ER_IRQHandler
+        def_irq_handler DCMI_IRQHandler
+        def_irq_handler CAN2_TX_IRQHandler
+        def_irq_handler CAN2_RX0_IRQHandler
+        def_irq_handler CAN2_RX1_IRQHandler
+        def_irq_handler CAN2_SCE_IRQHandler
+        def_irq_handler DMA2D_IRQHandler  

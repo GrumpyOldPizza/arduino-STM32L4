@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -26,7 +26,7 @@
  * WITH THE SOFTWARE.
  */
 
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 
 #include "dosfs_sflash.h"
 
@@ -2652,4 +2652,4 @@ int dosfs_sflash_init(void)
     return status;
 }
 
-#endif
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */

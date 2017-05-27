@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -558,7 +558,7 @@ bool stm32l4_sai_create(stm32l4_sai_t *sai, unsigned int instance, const stm32l4
 	sai->interrupt = SAI1_IRQn;
 	break;
 
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
     case SAI_INSTANCE_SAI2A:
 	sai->SAIx = SAI2_Block_A;
 	sai->interrupt = SAI2_IRQn;
@@ -568,7 +568,7 @@ bool stm32l4_sai_create(stm32l4_sai_t *sai, unsigned int instance, const stm32l4
 	sai->SAIx = SAI2_Block_B;
 	sai->interrupt = SAI2_IRQn;
 	break;
-#endif
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 
     default:
 	sai->state = SAI_STATE_NONE;
@@ -597,7 +597,7 @@ bool stm32l4_sai_create(stm32l4_sai_t *sai, unsigned int instance, const stm32l4
 		sai->mode |= SAI_MODE_DMA;
 	    }
 	    break;
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	case SAI_INSTANCE_SAI2A:
 	    if ((!(mode & SAI_MODE_DMA_SECONDARY) && stm32l4_dma_create(&sai->dma, DMA_CHANNEL_DMA2_CH3_SAI2_A, sai->priority)) ||
 		stm32l4_dma_create(&sai->dma, DMA_CHANNEL_DMA1_CH6_SAI2_A, sai->priority))
@@ -612,7 +612,7 @@ bool stm32l4_sai_create(stm32l4_sai_t *sai, unsigned int instance, const stm32l4
 		sai->mode |= SAI_MODE_DMA;
 	    }
 	    break;
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 	}
     }
 
@@ -721,7 +721,7 @@ bool stm32l4_sai_configure(stm32l4_sai_t *sai, uint32_t width, uint32_t clock, u
 
     if (clock)
     {
-#if defined(STM32L432xx) || defined(STM32L433xx)
+#if defined(STM32L432xx) || defined(STM32L433xx) || defined(STM32L496xx)
 	switch (clock) {
 	case 8000:  saiclk = SYSTEM_SAICLK_8192000;  sai_cr1 |= (2 << SAI_xCR1_MCKDIV_Pos); break;
 	case 16000: saiclk = SYSTEM_SAICLK_8192000;  sai_cr1 |= (1 << SAI_xCR1_MCKDIV_Pos); break;
@@ -736,7 +736,7 @@ bool stm32l4_sai_configure(stm32l4_sai_t *sai, uint32_t width, uint32_t clock, u
 	default:
 	    return false;
 	}
-#else /* defined(STM32L432xx) || defined(STM32L433xx) */
+#else /* defined(STM32L432xx) || defined(STM32L433xx) || defined(STM32L496xx) */
 	switch (clock) {
 	case 8000:  saiclk = SYSTEM_SAICLK_49152000; sai_cr1 |= (12 << SAI_xCR1_MCKDIV_Pos); break;
 	case 16000: saiclk = SYSTEM_SAICLK_49152000; sai_cr1 |= (6 << SAI_xCR1_MCKDIV_Pos);  break;
@@ -751,7 +751,7 @@ bool stm32l4_sai_configure(stm32l4_sai_t *sai, uint32_t width, uint32_t clock, u
 	default:
 	    return false;
 	}
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) || defined(STM32L496xx) */
     }
     else
     {
@@ -1157,7 +1157,7 @@ void SAI1_IRQHandler(void)
     }
 }
 
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 
 void SAI2_IRQHandler(void)
 {
@@ -1172,4 +1172,4 @@ void SAI2_IRQHandler(void)
     }
 }
 
-#endif
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */

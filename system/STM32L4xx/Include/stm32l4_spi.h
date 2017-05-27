@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -42,9 +42,9 @@ extern "C" {
 
 enum {
     SPI_INSTANCE_SPI1  = 0,
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
     SPI_INSTANCE_SPI2,
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */
     SPI_INSTANCE_SPI3,
     SPI_INSTANCE_COUNT
 };
@@ -196,9 +196,9 @@ extern uint16_t stm32l4_spi_crc16(stm32l4_spi_t *spi);
 extern void stm32l4_spi_poll(stm32l4_spi_t *spi);
 
 extern void SPI1_IRQHandler(void);
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
 extern void SPI2_IRQHandler(void);
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */
 extern void SPI3_IRQHandler(void);
 
 #ifdef __cplusplus

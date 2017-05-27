@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -42,10 +42,13 @@ extern "C" {
 
 enum {
     I2C_INSTANCE_I2C1  = 0,
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
     I2C_INSTANCE_I2C2,
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */
     I2C_INSTANCE_I2C3,
+#if defined(STM32L496xx)
+    I2C_INSTANCE_I2C4,
+#endif /* defined(STM32L496xx) */
     I2C_INSTANCE_COUNT
 };
 
@@ -152,12 +155,16 @@ extern void stm32l4_i2c_poll(stm32l4_i2c_t *i2c);
 
 extern void I2C1_EV_IRQHandler(void);
 extern void I2C1_ER_IRQHandler(void);
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
 extern void I2C2_EV_IRQHandler(void);
 extern void I2C2_ER_IRQHandler(void);
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */
 extern void I2C3_EV_IRQHandler(void);
 extern void I2C3_ER_IRQHandler(void);
+#if defined(STM32L496xx)
+extern void I2C4_EV_IRQHandler(void);
+extern void I2C4_ER_IRQHandler(void);
+#endif /* defined(STM32L496xx) */
 
 #ifdef __cplusplus
 }

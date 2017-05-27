@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -43,10 +43,10 @@ extern "C" {
 enum {
     SAI_INSTANCE_SAI1A = 0,
     SAI_INSTANCE_SAI1B = 1,
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
     SAI_INSTANCE_SAI2A = 2,
     SAI_INSTANCE_SAI2B = 3,
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
     SAI_INSTANCE_COUNT
 };
 
@@ -128,9 +128,9 @@ extern bool stm32l4_sai_transmit(stm32l4_sai_t *sai, const uint8_t *tx_data, uin
 extern bool stm32l4_sai_done(stm32l4_sai_t *sai);
 
 extern void SAI1_IRQHandler(void);
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 extern void SAI2_IRQHandler(void);
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 
 #ifdef __cplusplus
 }
@@ -151,7 +151,7 @@ L476, MCK, voltage range 1, (44100 / 192000)
 22050 22058 [48 17 1]
 44100 44117 [48 17 0]
 
-L433/L432, no MCK, voltage range 2, (44100 / 96000 / 32000)
+L433/L432/L496, no MCK, voltage range 2, (44100 / 96000 / 32000)
 
 8000 8072 [31 15 2]
 12000 12109 [31 5 4]
@@ -164,7 +164,7 @@ L433/L432, no MCK, voltage range 2, (44100 / 96000 / 32000)
 22050 22017 [31 11 1]
 44100 44034 [31 11 0]
 
-L433/L432, MCK, voltage range 1, (44100 / 96000 / 32000)
+L433/L432/L496, MCK, voltage range 1, (44100 / 96000 / 32000)
 
 8000 7998 [43 21 2]
 12000 11997 [43 7 4]

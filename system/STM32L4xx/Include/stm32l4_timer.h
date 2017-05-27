@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -41,21 +41,21 @@ extern "C" {
 enum {
     TIMER_INSTANCE_TIM1 = 0,   /* ADVANCED 16 */
     TIMER_INSTANCE_TIM2,       /* GENERAL  32 */
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
     TIMER_INSTANCE_TIM3,       /* GENERAL  16 */
     TIMER_INSTANCE_TIM4,       /* GENERAL  16 */
     TIMER_INSTANCE_TIM5,       /* GENERAL  32 */
-#endif
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
     TIMER_INSTANCE_TIM6,       /* BASIC    16 */
     TIMER_INSTANCE_TIM7,       /* BASIC    16 */
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
     TIMER_INSTANCE_TIM8,       /* ADVANCED 16 */
-#endif
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
     TIMER_INSTANCE_TIM15,      /* GENERAL  16 */
     TIMER_INSTANCE_TIM16,      /* GENERAL  16 */
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
     TIMER_INSTANCE_TIM17,      /* GENERAL  16 */
-#endif
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
     TIMER_INSTANCE_COUNT
 };
 
@@ -153,24 +153,26 @@ extern uint32_t stm32l4_timer_capture(stm32l4_timer_t *timer, unsigned int chann
 
 extern void TIM1_BRK_TIM15_IRQHandler(void);
 extern void TIM1_UP_TIM16_IRQHandler(void);
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 extern void TIM1_TRG_COM_TIM17_IRQHandler(void);
-#else
+#else /* defined(STM32L476xx) || defined(STM32L496xx) */
 extern void TIM1_TRG_COM_IRQHandler(void);
-#endif
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 extern void TIM1_CC_IRQHandler(void);
 extern void TIM2_IRQHandler(void);
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 extern void TIM3_IRQHandler(void);
 extern void TIM4_IRQHandler(void);
-extern void TIM8_BRK_IRQHandler(void);
-extern void TIM8_UP_IRQHandler(void);
-extern void TIM8_TRG_COM_IRQHandler(void);
-extern void TIM8_CC_IRQHandler(void);
 extern void TIM5_IRQHandler(void);
 #endif
 extern void TIM6_DAC_IRQHandler(void);
 extern void TIM7_IRQHandler(void);
+#if defined(STM32L476xx) || defined(STM32L496xx)
+extern void TIM8_BRK_IRQHandler(void);
+extern void TIM8_UP_IRQHandler(void);
+extern void TIM8_TRG_COM_IRQHandler(void);
+extern void TIM8_CC_IRQHandler(void);
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 
 #ifdef __cplusplus
 }

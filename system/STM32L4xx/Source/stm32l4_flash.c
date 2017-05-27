@@ -116,10 +116,10 @@ bool stm32l4_flash_erase(uint32_t address, uint32_t count)
 {
     bool success = true;
     const uint32_t flash_base = FLASH_BASE;
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
     const uint32_t flash_size = (*((volatile uint16_t*)0x1fff75e0) * 1024);
     const uint32_t flash_split = (flash_base + (flash_size >> 1));
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
     uint32_t primask, flash_acr;
 
     if (FLASH->CR & FLASH_CR_LOCK)
@@ -137,13 +137,13 @@ bool stm32l4_flash_erase(uint32_t address, uint32_t count)
 
 	FLASH->ACR = flash_acr & ~(FLASH_ACR_ICEN | FLASH_ACR_DCEN);
 
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	if (address >= flash_split)
 	{
 	    FLASH->CR = FLASH_CR_PER | FLASH_CR_BKER | ((((address - flash_split) / 2048) << 3) & FLASH_CR_PNB);
 	}
 	else
-#endif /* defined(STM32L476xx) */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 	{
 	    FLASH->CR = FLASH_CR_PER | ((((address - flash_base) / 2048) << 3) & FLASH_CR_PNB);
 	}

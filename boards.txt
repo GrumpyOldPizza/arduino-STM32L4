@@ -94,6 +94,95 @@ Dragonfly-L476RE.menu.opt.o3=Fastest
 Dragonfly-L476RE.menu.opt.o3.build.flags.optimize=-O3
 Dragonfly-L476RE.menu.opt.o3.build.flags.ldspecs=
 
+# Tlera Dragonfly (V2)
+# ---------------------------------------
+Dragonfly-L496RG.name=Dragonfly-L496RG
+Dragonfly-L496RG.vid.0=0x1209
+Dragonfly-L496RG.pid.0=0x6667
+
+Dragonfly-L496RG.upload.tool=stm32l4_dfu
+Dragonfly-L496RG.upload.protocol=dfu
+Dragonfly-L496RG.upload.maximum_size=1032192
+Dragonfly-L496RG.upload.use_1200bps_touch=true
+Dragonfly-L496RG.upload.wait_for_upload_port=false
+Dragonfly-L496RG.upload.native_usb=false
+
+Dragonfly-L496RG.build.mcu=cortex-m4
+Dragonfly-L496RG.build.f_cpu=80000000L
+Dragonfly-L496RG.build.board=STM32L4_DRAGONFLY
+Dragonfly-L496RG.build.arch=STM32L4
+Dragonfly-L496RG.build.core=stm32l4
+Dragonfly-L496RG.build.vid=0x1209
+Dragonfly-L496RG.build.pid=0x6667
+Dragonfly-L496RG.build.did=0xffff
+Dragonfly-L496RG.build.usb_manufacturer=u"\u0324Tlera Corporation"
+Dragonfly-L496RG.build.usb_product=u"\u0314Dragonfly"
+Dragonfly-L496RG.build.extra_flags=-DSTM32L496xx -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mslow-flash-data -fsingle-precision-constant {build.usb_flags} {build.dosfs_flags}
+Dragonfly-L496RG.build.ldscript=linker_scripts/STM32L496RG_FLASH.ld
+Dragonfly-L496RG.build.openocdscript=openocd_scripts/stm32l496rg_dragonfly.cfg
+Dragonfly-L496RG.build.variant=STM32L496RG-Dragonfly
+Dragonfly-L496RG.build.variant_system_libs="-L{runtime.platform.path}/system/STM32L4xx/Lib" "-L{runtime.platform.path}/system/CMSIS/Lib" -lstm32l476 -larm_cortexM4lf_math
+Dragonfly-L496RG.build.variant_system_include="-I{runtime.platform.path}/system/CMSIS/Include" "-I{runtime.platform.path}/system/CMSIS/Device/ST/STM32L4xx/Include" "-I{runtime.platform.path}/system/STM32L4xx/Include" 
+
+Dragonfly-L496RG.menu.usb.cdc=Serial
+Dragonfly-L496RG.menu.usb.cdc.build.usb_type=USB_TYPE_CDC
+Dragonfly-L496RG.menu.usb.cdc_msc=Serial + Mass Storage
+Dragonfly-L496RG.menu.usb.cdc_msc.build.usb_type=USB_TYPE_CDC_MSC
+Dragonfly-L496RG.menu.usb.none=No USB
+Dragonfly-L496RG.menu.usb.none.build.usb_type=USB_TYPE_NONE
+
+Dragonfly-L496RG.menu.dosfs.sflash=SFLASH (QSPI)
+Dragonfly-L496RG.menu.dosfs.sflash.build.dosfs_sdcard=0
+Dragonfly-L496RG.menu.dosfs.sflash.build.dosfs_sflash=2
+Dragonfly-L496RG.menu.dosfs.sdspi=SDCARD (SPI)
+Dragonfly-L496RG.menu.dosfs.sdspi.build.dosfs_sdcard=1
+Dragonfly-L496RG.menu.dosfs.sdspi.build.dosfs_sflash=0
+Dragonfly-L496RG.menu.dosfs.sdmmc=SDCARD (SDIO Default Speed)
+Dragonfly-L496RG.menu.dosfs.sdmmc.build.dosfs_sdcard=2
+Dragonfly-L496RG.menu.dosfs.sdmmc.build.dosfs_sflash=0
+Dragonfly-L496RG.menu.dosfs.sdmmc1=SDCARD (SDIO High Speed)
+Dragonfly-L496RG.menu.dosfs.sdmmc1.build.dosfs_sdcard=3
+Dragonfly-L496RG.menu.dosfs.sdmmc1.build.dosfs_sflash=0
+Dragonfly-L496RG.menu.dosfs.none=None
+Dragonfly-L496RG.menu.dosfs.none.build.dosfs_sdcard=0
+Dragonfly-L496RG.menu.dosfs.none.build.dosfs_sflash=0
+
+Dragonfly-L496RG.menu.speed.80=80 MHz
+Dragonfly-L496RG.menu.speed.80.build.f_cpu=80000000L
+Dragonfly-L496RG.menu.speed.72=72 MHz
+Dragonfly-L496RG.menu.speed.72.build.f_cpu=72000000L
+Dragonfly-L496RG.menu.speed.64=64 MHz
+Dragonfly-L496RG.menu.speed.64.build.f_cpu=64000000L
+Dragonfly-L496RG.menu.speed.48=48 MHz
+Dragonfly-L496RG.menu.speed.48.build.f_cpu=48000000L
+Dragonfly-L496RG.menu.speed.32=32 MHz
+Dragonfly-L496RG.menu.speed.32.build.f_cpu=32000000L
+Dragonfly-L496RG.menu.speed.24=24 MHz
+Dragonfly-L496RG.menu.speed.24.build.f_cpu=24000000L
+Dragonfly-L496RG.menu.speed.16=16 MHz
+Dragonfly-L496RG.menu.speed.16.build.f_cpu=16000000L
+Dragonfly-L496RG.menu.speed.8=8 MHz (No USB)
+Dragonfly-L496RG.menu.speed.8.build.f_cpu=8000000L
+Dragonfly-L496RG.menu.speed.4=4 MHz (No USB)
+Dragonfly-L496RG.menu.speed.4.build.f_cpu=4000000L
+Dragonfly-L496RG.menu.speed.2=2 MHz (No USB)
+Dragonfly-L496RG.menu.speed.2.build.f_cpu=2000000L
+Dragonfly-L496RG.menu.speed.1=1 MHz (No USB)
+Dragonfly-L496RG.menu.speed.1.build.f_cpu=1000000L
+
+Dragonfly-L496RG.menu.opt.os=Smallest Code
+Dragonfly-L496RG.menu.opt.os.build.flags.optimize=-Os
+Dragonfly-L496RG.menu.opt.os.build.flags.ldspecs=--specs=nano.specs
+Dragonfly-L496RG.menu.opt.o1=Fast
+Dragonfly-L496RG.menu.opt.o1.build.flags.optimize=-O1
+Dragonfly-L496RG.menu.opt.o1.build.flags.ldspecs=
+Dragonfly-L496RG.menu.opt.o2=Faster
+Dragonfly-L496RG.menu.opt.o2.build.flags.optimize=-O2
+Dragonfly-L496RG.menu.opt.o2.build.flags.ldspecs=
+Dragonfly-L496RG.menu.opt.o3=Fastest
+Dragonfly-L496RG.menu.opt.o3.build.flags.optimize=-O3
+Dragonfly-L496RG.menu.opt.o3.build.flags.ldspecs=
+
 # Tlera Butterfly
 # ---------------------------------------
 Butterfly-L433CC.name=Butterfly-L433CC

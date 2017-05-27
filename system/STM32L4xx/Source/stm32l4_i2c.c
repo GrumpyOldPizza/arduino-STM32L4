@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Thomas Roell.  All rights reserved.
+ * Copyright (c) 2016-2017 Thomas Roell.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -681,17 +681,24 @@ bool stm32l4_i2c_create(stm32l4_i2c_t *i2c, unsigned int instance, const stm32l4
 	i2c->interrupt = I2C1_EV_IRQn;
 	break;
 
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
     case I2C_INSTANCE_I2C2:
 	i2c->I2C = I2C2;
 	i2c->interrupt = I2C2_EV_IRQn;
 	break;
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */
 
     case I2C_INSTANCE_I2C3:
 	i2c->I2C = I2C3;
 	i2c->interrupt = I2C3_EV_IRQn;
 	break;
+
+#if defined(STM32L496xx)
+    case I2C_INSTANCE_I2C4:
+	i2c->I2C = I2C4;
+	i2c->interrupt = I2C4_EV_IRQn;
+	break;
+#endif /* defined(STM32L496xx) */
 
     default:
 	i2c->state = I2C_STATE_NONE;
@@ -713,14 +720,19 @@ bool stm32l4_i2c_create(stm32l4_i2c_t *i2c, unsigned int instance, const stm32l4
 		i2c->mode |= I2C_MODE_RX_DMA;
 	    }
 	    break;
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
 	case I2C_INSTANCE_I2C2:
 	    if (stm32l4_dma_create(&i2c->rx_dma, DMA_CHANNEL_DMA1_CH5_I2C2_RX, i2c->priority)) { i2c->mode |= I2C_MODE_RX_DMA; }
 	    break;
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */
 	case I2C_INSTANCE_I2C3:
 	    if (stm32l4_dma_create(&i2c->rx_dma, DMA_CHANNEL_DMA1_CH3_I2C3_RX, i2c->priority)) { i2c->mode |= I2C_MODE_RX_DMA; }
 	    break;
+#if defined(STM32L496xx)
+	case I2C_INSTANCE_I2C4:
+	    if (stm32l4_dma_create(&i2c->rx_dma, DMA_CHANNEL_DMA2_CH1_I2C4_RX, i2c->priority)) { i2c->mode |= I2C_MODE_RX_DMA; }
+	    break;
+#endif /* defined(STM32L496xx) */
 	}
     }
 
@@ -734,14 +746,19 @@ bool stm32l4_i2c_create(stm32l4_i2c_t *i2c, unsigned int instance, const stm32l4
 		i2c->mode |= I2C_MODE_TX_DMA;
 	    }
 	    break;
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
 	case I2C_INSTANCE_I2C2:
 	    if (stm32l4_dma_create(&i2c->tx_dma, DMA_CHANNEL_DMA1_CH4_I2C2_TX, i2c->priority)) { i2c->mode |= I2C_MODE_TX_DMA; }
 	    break;
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */
 	case I2C_INSTANCE_I2C3:
 	    if (stm32l4_dma_create(&i2c->tx_dma, DMA_CHANNEL_DMA1_CH2_I2C3_TX, i2c->priority)) { i2c->mode |= I2C_MODE_TX_DMA; }
 	    break;
+#if defined(STM32L496xx)
+	case I2C_INSTANCE_I2C4:
+	    if (stm32l4_dma_create(&i2c->tx_dma, DMA_CHANNEL_DMA2_CH2_I2C4_TX, i2c->priority)) { i2c->mode |= I2C_MODE_TX_DMA; }
+	    break;
+#endif /* defined(STM32L496xx) */
 	}
     }
 
@@ -815,14 +832,19 @@ bool stm32l4_i2c_enable(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option, stm
     case I2C_INSTANCE_I2C1:
 	armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_I2C1SEL, RCC_CCIPR_I2C1SEL_1); /* HSI */
 	break;
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
     case I2C_INSTANCE_I2C2:
 	armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_I2C2SEL, RCC_CCIPR_I2C2SEL_1); /* HSI */
 	break;
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */
     case I2C_INSTANCE_I2C3:
 	armv7m_atomic_modify(&RCC->CCIPR, RCC_CCIPR_I2C3SEL, RCC_CCIPR_I2C3SEL_1); /* HSI */
 	break;
+#if defined(STM32L496xx)
+    case I2C_INSTANCE_I2C4:
+	armv7m_atomic_modify(&RCC->CCIPR2, RCC_CCIPR2_I2C4SEL, RCC_CCIPR2_I2C4SEL_1); /* HSI */
+	break;
+#endif /* defined(STM32L496xx) */
     }
 
     NVIC_SetPriority(i2c->interrupt+0, i2c->priority); /* EV  */
@@ -882,12 +904,6 @@ bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
     pin_sda = i2c->pins.sda;
 
 #if defined(STM32L476xx)
-    if ((i2c->option & I2C_OPTION_ALTERNATE) && (pin_scl == GPIO_PIN_PB8_I2C1_SCL) && (pin_sda == GPIO_PIN_PB9_I2C1_SDA))
-    {
-	pin_scl = GPIO_PIN_PB6_I2C1_SCL;
-	pin_sda = GPIO_PIN_PB7_I2C1_SDA;
-    }
-
     /* Silicon ERRATA 2.6.1. FM+ is not working on all pins.
      */
     if ((clock == 1000000) &&
@@ -896,7 +912,15 @@ bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
     {
 	return false;
     }
-#endif
+#endif /* defined(STM32L476xx) */
+
+#if defined(STM32L476xx) ||  defined(STM32L496xx)
+    if ((i2c->option & I2C_OPTION_ALTERNATE) && (pin_scl == GPIO_PIN_PB8_I2C1_SCL) && (pin_sda == GPIO_PIN_PB9_I2C1_SDA))
+    {
+	pin_scl = GPIO_PIN_PB6_I2C1_SCL;
+	pin_sda = GPIO_PIN_PB7_I2C1_SDA;
+    }
+#endif /* defined(STM32L476xx) ||  defined(STM32L496xx) */
 
     i2c->clock = clock;
     i2c->option = option;
@@ -957,7 +981,7 @@ bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
 	    syscfg_cfgr1 |= SYSCFG_CFGR1_I2C_PB7_FMP;
 	}
 	
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
 	if (pin_scl == GPIO_PIN_PB8_I2C1_SCL)
 	{
 	    syscfg_cfgr1 |= SYSCFG_CFGR1_I2C_PB8_FMP;
@@ -967,16 +991,21 @@ bool stm32l4_i2c_configure(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option)
 	{
 	    syscfg_cfgr1 |= SYSCFG_CFGR1_I2C_PB9_FMP;
 	}
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */
 	break;
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
     case I2C_INSTANCE_I2C2:
 	syscfg_cfgr1 = SYSCFG_CFGR1_I2C2_FMP;
 	break;
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */
     case I2C_INSTANCE_I2C3:
 	syscfg_cfgr1 = SYSCFG_CFGR1_I2C3_FMP;
 	break;
+#if defined(STM32L496xx)
+    case I2C_INSTANCE_I2C4:
+	syscfg_cfgr1 = SYSCFG_CFGR1_I2C4_FMP;
+	break;
+#endif /* defined(STM32L496xx) */
     }
 
     if (i2c->clock == 1000000)
@@ -1044,13 +1073,13 @@ bool stm32l4_i2c_reset(stm32l4_i2c_t *i2c)
     pin_scl = i2c->pins.scl;
     pin_sda = i2c->pins.sda;
 
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) ||  defined(STM32L496xx)
     if ((i2c->option & I2C_OPTION_ALTERNATE) && (pin_scl == GPIO_PIN_PB8_I2C1_SCL) && (pin_sda == GPIO_PIN_PB9_I2C1_SDA))
     {
 	pin_scl = GPIO_PIN_PB6_I2C1_SCL;
 	pin_sda = GPIO_PIN_PB7_I2C1_SDA;
     }
-#endif
+#endif /* defined(STM32L476xx) ||  defined(STM32L496xx) */
 
     stm32l4_gpio_pin_configure(pin_scl, (GPIO_PUPD_PULLUP | GPIO_OSPEED_HIGH | GPIO_OTYPE_OPENDRAIN | GPIO_MODE_OUTPUT));
     stm32l4_gpio_pin_configure(pin_sda, (GPIO_PUPD_PULLUP | GPIO_MODE_INPUT));
@@ -1255,7 +1284,7 @@ void I2C1_ER_IRQHandler(void)
     stm32l4_i2c_error_interrupt(stm32l4_i2c_driver.instances[I2C_INSTANCE_I2C1]);
 }
 
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
 
 void I2C2_EV_IRQHandler(void)
 {
@@ -1267,7 +1296,7 @@ void I2C2_ER_IRQHandler(void)
     stm32l4_i2c_error_interrupt(stm32l4_i2c_driver.instances[I2C_INSTANCE_I2C2]);
 }
 
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */
 
 void I2C3_EV_IRQHandler(void)
 {
@@ -1278,3 +1307,17 @@ void I2C3_ER_IRQHandler(void)
 {
     stm32l4_i2c_error_interrupt(stm32l4_i2c_driver.instances[I2C_INSTANCE_I2C3]);
 }
+
+#if defined(STM32L496xx)
+
+void I2C4_EV_IRQHandler(void)
+{
+    stm32l4_i2c_event_interrupt(stm32l4_i2c_driver.instances[I2C_INSTANCE_I2C4]);
+}
+
+void I2C4_ER_IRQHandler(void)
+{
+    stm32l4_i2c_error_interrupt(stm32l4_i2c_driver.instances[I2C_INSTANCE_I2C4]);
+}
+
+#endif /* defined(STM32L496xx) */

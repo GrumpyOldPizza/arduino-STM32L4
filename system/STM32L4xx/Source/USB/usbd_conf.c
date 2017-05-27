@@ -134,7 +134,7 @@ static void USBD_VBUSCallback(void)
     {
 	if (!state)
 	{
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	    NVIC_DisableIRQ(OTG_FS_IRQn);
 #else
 	    NVIC_DisableIRQ(USB_IRQn);
@@ -170,16 +170,16 @@ void USBD_Initialize(const uint8_t *device, const uint8_t *manufacturer, const u
 	stm32l4_gpio_pin_configure(usbd_pin_vbus, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_LOW | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
     }
 
-#if defined(STM32L476xx)
-    stm32l4_gpio_pin_configure(GPIO_PIN_PA11_USB_OTG_FS_DM, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
-    stm32l4_gpio_pin_configure(GPIO_PIN_PA12_USB_OTG_FS_DP, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+#if defined(STM32L476xx) || defined(STM32L496xx)
+    stm32l4_gpio_pin_configure(GPIO_PIN_PA11_OTG_FS_DM, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+    stm32l4_gpio_pin_configure(GPIO_PIN_PA12_OTG_FS_DP, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
 #else
     stm32l4_gpio_pin_configure(GPIO_PIN_PA11_USB_DM, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
     stm32l4_gpio_pin_configure(GPIO_PIN_PA12_USB_DP, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
 #endif
 
     /* Set USB Interrupt priority */
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
     NVIC_SetPriority(OTG_FS_IRQn, priority);
 #else
     NVIC_SetPriority(USB_IRQn, priority);
@@ -191,7 +191,7 @@ void USBD_Initialize(const uint8_t *device, const uint8_t *manufacturer, const u
 void USBD_Attach(void)
 {
     if (!usbd_connected &&
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	(stm32l4_system_hclk() >= 16000000)
 #else
 	(stm32l4_system_pclk1() >= 10000000)
@@ -235,7 +235,7 @@ void USBD_Detach(void)
 
     if (usbd_connected)
     {
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	NVIC_DisableIRQ(OTG_FS_IRQn);
 #else
 	NVIC_DisableIRQ(USB_IRQn);
@@ -286,7 +286,7 @@ void USBD_RegisterCallbacks(void(*sof_callback)(void), void(*suspend_callback)(v
                        PCD BSP Routines
 *******************************************************************************/
 
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 void OTG_FS_IRQHandler(void)
 #else
 void USB_IRQHandler(void)
@@ -307,7 +307,7 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
   stm32l4_system_clk48_acquire(SYSTEM_CLK48_REFERENCE_USB);
   
   /* Peripheral clock enable */
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
   __HAL_RCC_USB_OTG_FS_CLK_ENABLE();
 #else
   __HAL_RCC_USB_CLK_ENABLE();
@@ -326,7 +326,7 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
     armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_PWREN);
   }
 
-#if defined(STM32L432xx) || defined(STM32L433xx)
+#if defined(STM32L432xx) || defined(STM32L433xx) || defined(STM32L496xx)
   if (stm32l4_system_lseclk() == 0) {
       /* Enable/Reset CRS on HSI48 */
       armv7m_atomic_or(&RCC->APB1ENR1, RCC_APB1ENR1_CRSEN);
@@ -334,10 +334,10 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
       CRS->CFGR = ((48000 -1) << CRS_CFGR_RELOAD_Pos) | (34 << CRS_CFGR_FELIM_Pos) | CRS_CFGR_SYNCSRC_1;
       CRS->CR |= (CRS_CR_AUTOTRIMEN | CRS_CR_CEN);
   }
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) || defined(STM32L496xx) */
   
   /* Enable USB FS Interrupt */
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
   NVIC_EnableIRQ(OTG_FS_IRQn);
 #else
   NVIC_EnableIRQ(USB_IRQn);
@@ -353,14 +353,14 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef *hpcd)
 {  
   uint32_t apb1enr1;
 
-#if defined(STM32L432xx) || defined(STM32L433xx)
+#if defined(STM32L432xx) || defined(STM32L433xx) || defined(STM32L496xx)
   if (stm32l4_system_lseclk() == 0) {
       /* Disable CRS on HSI48 */
       CRS->CR &= ~(CRS_CR_AUTOTRIMEN | CRS_CR_CEN);
       
       armv7m_atomic_and(&RCC->APB1ENR1, ~RCC_APB1ENR1_CRSEN);
   }
-#endif /* defined(STM32L432xx) || defined(STM32L433xx) */
+#endif /* defined(STM32L432xx) || defined(STM32L433xx) || defined(STM32L496xx) */
 
   /* Disable VUSB */
   apb1enr1 = RCC->APB1ENR1;
@@ -376,14 +376,14 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef *hpcd)
   }
 
   /* Peripheral clock disable */
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
   __HAL_RCC_USB_OTG_FS_CLK_DISABLE();
 #else
   __HAL_RCC_USB_CLK_DISABLE();
 #endif
 
   /* Peripheral interrupt Deinit*/
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
   NVIC_DisableIRQ(OTG_FS_IRQn);
 #else
   NVIC_DisableIRQ(USB_IRQn);
@@ -556,7 +556,7 @@ void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
   */
 USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
 {
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
   /* Set LL Driver parameters */
   hpcd.Instance = USB_OTG_FS;
   hpcd.Init.dev_endpoints = 5;
@@ -584,7 +584,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   HAL_PCDEx_SetTxFiFo(&hpcd, 2, 0x20); /* 128 bytes EP2/CDC/DATA transmit */
   HAL_PCDEx_SetTxFiFo(&hpcd, 3, 0x80); /* 512 bytes EP3/MSC transmit      */ 
 
-#else /* STM32L476xx */
+#else /* defined(STM32L476xx) || defined(STM32L496xx) */
 
   /* Set LL Driver parameters */
   hpcd.Instance = USB;
@@ -611,7 +611,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   HAL_PCDEx_PMAConfig(&hpcd, 0x02, PCD_SNG_BUF, 0x0f0); /*  64 bytes EP2/CDC/DATA out */
   HAL_PCDEx_PMAConfig(&hpcd, 0x83, PCD_SNG_BUF, 0x130); /*  64 bytes EP3/MSC in       */ 
   HAL_PCDEx_PMAConfig(&hpcd ,0x03, PCD_SNG_BUF, 0x170); /*  64 bytes EP3/MSC out      */ 
-#endif /* STM32L476xx */
+#endif /* defined(STM32L476xx) || defined(STM32L496xx) */
   
   return USBD_OK;
 }

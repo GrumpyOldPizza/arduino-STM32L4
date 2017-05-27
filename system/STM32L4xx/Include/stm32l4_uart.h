@@ -43,10 +43,10 @@ extern "C" {
 enum {
     UART_INSTANCE_USART1 = 0,
     UART_INSTANCE_USART2,
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
     UART_INSTANCE_USART3,
 #endif
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
     UART_INSTANCE_UART4,
     UART_INSTANCE_UART5,
 #endif
@@ -155,10 +155,10 @@ extern void stm32l4_uart_poll(stm32l4_uart_t *uart);
 
 extern void USART1_IRQHandler(void);
 extern void USART2_IRQHandler(void);
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
 extern void USART3_IRQHandler(void);
 #endif
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 extern void UART4_IRQHandler(void);
 extern void UART5_IRQHandler(void);
 #endif

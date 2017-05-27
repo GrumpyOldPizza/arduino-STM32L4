@@ -26,7 +26,7 @@
  * WITH THE SOFTWARE.
  */
 
-#if defined(STM32L433xx) || defined(STM32L476xx)
+#if defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx)
 
 #include "stm32l4_sdmmc.h"
 #include "stm32l4_system.h"
@@ -2082,4 +2082,4 @@ int stm32l4_sdmmc_initialize(uint32_t option)
     return status;
 }
 
-#endif /* defined(STM32L433xx) || defined(STM32L476xx) */
+#endif /* defined(STM32L433xx) || defined(STM32L476xx) || defined(STM32L496xx) */

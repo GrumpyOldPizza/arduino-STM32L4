@@ -521,7 +521,7 @@ bool stm32l4_usbd_cdc_transmit(stm32l4_usbd_cdc_t *usbd_cdc, const uint8_t *tx_d
      * the interrupt till the transfer setup is complete.
      */
 
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
     NVIC_DisableIRQ(OTG_FS_IRQn);
 #else
     NVIC_DisableIRQ(USB_IRQn);
@@ -529,7 +529,7 @@ bool stm32l4_usbd_cdc_transmit(stm32l4_usbd_cdc_t *usbd_cdc, const uint8_t *tx_d
 
     if ((usbd_cdc->state != USBD_CDC_STATE_READY) || stm32l4_usbd_cdc_device.tx_busy)
     {
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	NVIC_EnableIRQ(OTG_FS_IRQn);
 #else
 	NVIC_EnableIRQ(USB_IRQn);
@@ -545,7 +545,7 @@ bool stm32l4_usbd_cdc_transmit(stm32l4_usbd_cdc_t *usbd_cdc, const uint8_t *tx_d
 	
 	status = USBD_CDC_TransmitPacket(stm32l4_usbd_cdc_device.USBD);
 	
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	NVIC_EnableIRQ(OTG_FS_IRQn);
 #else
 	NVIC_EnableIRQ(USB_IRQn);
@@ -569,7 +569,7 @@ void stm32l4_usbd_cdc_poll(stm32l4_usbd_cdc_t *usbd_cdc)
 {
     if (usbd_cdc->state >= USBD_CDC_STATE_READY)
     {
-#if defined(STM32L476xx)
+#if defined(STM32L476xx) || defined(STM32L496xx)
 	OTG_FS_IRQHandler();
 #else
 	USB_IRQHandler();
