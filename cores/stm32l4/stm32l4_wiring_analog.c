@@ -48,6 +48,7 @@ static uint8_t _writeCalibrate = 3;
 
 void analogReference(eAnalogReference reference)
 {
+    (void)reference;
 }
 
 void analogReadResolution(int resolution)
