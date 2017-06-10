@@ -63,6 +63,10 @@
 /* Exported functions ------------------------------------------------------- */
 extern const USBD_DescriptorsTypeDef CDC_MSC_Desc;
 
+#if (USBD_SUPPORT_USER_STRING == 1)
+extern const uint8_t  *USBD_CDC_MSC_GetUsrStrDescriptor (USBD_HandleTypeDef *pdev ,uint8_t index,  uint16_t *length);   
+#endif  
+
 #endif /* __USBD_DESC_H */
  
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

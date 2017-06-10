@@ -233,7 +233,7 @@ static void stm32l4_usbd_cdc_control(uint8_t command, uint8_t *data, uint16_t le
     }
 }
 
-static void stm32l4_usbd_cdc_data_receive(uint8_t *data, uint32_t length)
+static void stm32l4_usbd_cdc_rx_ready(uint8_t *data, uint32_t length)
 {
     stm32l4_usbd_cdc_t *usbd_cdc = stm32l4_usbd_cdc_driver.instances[0];
 
@@ -269,7 +269,7 @@ static void stm32l4_usbd_cdc_data_receive(uint8_t *data, uint32_t length)
     }
 }
 
-static void stm32l4_usbd_cdc_data_transmit(void)
+static void stm32l4_usbd_cdc_tx_done(void)
 {
     stm32l4_usbd_cdc_t *usbd_cdc = stm32l4_usbd_cdc_driver.instances[0];
 
@@ -295,8 +295,8 @@ const USBD_CDC_ItfTypeDef stm32l4_usbd_cdc_interface = {
     stm32l4_usbd_cdc_init,
     stm32l4_usbd_cdc_deinit,
     stm32l4_usbd_cdc_control,
-    stm32l4_usbd_cdc_data_receive,
-    stm32l4_usbd_cdc_data_transmit,
+    stm32l4_usbd_cdc_rx_ready,
+    stm32l4_usbd_cdc_tx_done,
 };
 
 bool stm32l4_usbd_cdc_create(stm32l4_usbd_cdc_t *usbd_cdc)

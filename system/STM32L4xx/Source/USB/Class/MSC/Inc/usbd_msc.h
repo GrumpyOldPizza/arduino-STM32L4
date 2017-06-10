@@ -56,8 +56,6 @@
 
 #define BOT_GET_MAX_LUN              0xFE
 #define BOT_RESET                    0xFF
-#define USB_MSC_CONFIG_DESC_SIZ      32
- 
 
 #define MSC_EPIN_ADDR                0x83 
 #define MSC_EPOUT_ADDR               0x03 

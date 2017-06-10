@@ -32,42 +32,41 @@
 
 #if defined(USBCON)
 
-#define USB_TYPE_NONE    0
-#define USB_TYPE_CDC     1
-#define USB_TYPE_CDC_MSC 2
+#define USB_TYPE_NONE        0
+#define USB_TYPE_CDC         1
+#define USB_TYPE_CDC_MSC     2
+#define USB_TYPE_CDC_HID     3
+#define USB_TYPE_CDC_MSC_HID 4
+#define USB_TYPE_CDC_DAP     5
+#define USB_TYPE_CDC_MSC_DAP 6
 
-#if (USB_TYPE == USB_TYPE_CDC_MSC)
-#define USB_CLASS USBD_CDC_MSC_Initialize
-#elif (USB_TYPE == USB_TYPE_CDC)
+#if (USB_TYPE == USB_TYPE_CDC)
 #define USB_CLASS USBD_CDC_Initialize
 #endif
-
-static const uint8_t USBDDeviceDescriptor[] = {
-  0x12,                       /* bLength */
-  0x01,                       /* bDescriptorType */ 
-  0x00, 0x02,                 /* bcdUSB */
-  0xef,                       /* bDeviceClass */
-  0x02,                       /* bDeviceSubClass */
-  0x01,                       /* bDeviceProtocol */
-  64,                         /* bMaxPacketSize */
-  LOBYTE(USB_VID),            /* idVendor */
-  HIBYTE(USB_VID),            /* idVendor */
-  LOBYTE(USB_PID),            /* idVendor */
-  HIBYTE(USB_PID),            /* idVendor */
-  0x00, 0x02,                 /* bcdDevice rel. 2.00 */
-  1,                          /* Index of manufacturer string */
-  2,                          /* Index of product string */
-  3,                          /* Index of serial number string */
-  1,                          /* bNumConfigurations */
-};
-
-static const char16_t * USBManufacturer = USB_MANUFACTURER;
-static const char16_t * USBProduct = USB_PRODUCT;
+#if (USB_TYPE == USB_TYPE_CDC_MSC)
+#define USB_CLASS USBD_CDC_MSC_Initialize
+#endif
+#if (USB_TYPE == USB_TYPE_CDC_HID)
+#define USB_CLASS USBD_CDC_HID_Initialize
+#endif
+#if (USB_TYPE == USB_TYPE_CDC_MSC_HID)
+#define USB_CLASS USBD_CDC_MSC_HID_Initialize
+#endif
+#if (USB_TYPE == USB_TYPE_CDC_DAP)
+#define USB_CLASS USBD_CDC_DAP_Initialize
+#endif
+#if (USB_TYPE == USB_TYPE_CDC_MSC_DAP)
+#define USB_CLASS USBD_CDC_MSC_DAP_Initialize
+#endif
 
 void USBDeviceClass::init()
 {
 #if defined(USB_CLASS)
-    USBD_Initialize(USBDDeviceDescriptor, (const uint8_t*)USBManufacturer, (const uint8_t*)USBProduct, USB_CLASS, STM32L4_CONFIG_USB_VBUS, STM32L4_USB_IRQ_PRIORITY);
+    USBD_Initialize(USB_VID, USB_PID, (const uint8_t*)USB_MANUFACTURER, (const uint8_t*)USB_PRODUCT, USB_CLASS, STM32L4_CONFIG_USB_VBUS, STM32L4_USB_IRQ_PRIORITY);
+
+#if (USB_TYPE == USB_TYPE_CDC_DAP) || (USB_TYPE == USB_TYPE_CDC_MSC_DAP)
+    stm32l4_usbd_dap_initialize(STM32L4_CONFIG_DAP_SWCLK, STM32L4_CONFIG_DAP_SWDIO);
+#endif
 #endif
 
     initialized = true;

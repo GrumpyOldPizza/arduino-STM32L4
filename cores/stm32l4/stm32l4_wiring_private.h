@@ -45,6 +45,7 @@ extern "C" {
 #include "stm32l4_servo.h"
 #include "stm32l4_spi.h"
 #include "stm32l4_usbd_cdc.h"
+#include "stm32l4_usbd_hid.h"
 #include "stm32l4_system.h"
 #include "stm32l4_rtc.h"
 #include "stm32l4_sai.h"
@@ -77,14 +78,20 @@ extern "C" {
 
 extern void USBD_CDC_Initialize(void *);
 extern void USBD_CDC_MSC_Initialize(void *);
+extern void USBD_CDC_HID_Initialize(void *);
+extern void USBD_CDC_MSC_HID_Initialize(void *);
+extern void USBD_CDC_DAP_Initialize(void *);
+extern void USBD_CDC_MSC_DAP_Initialize(void *);
 
-extern void USBD_Initialize(const uint8_t *device, const uint8_t *manufacturer, const uint8_t *product, void(*initialize)(void *), unsigned int pin_vbus, unsigned int priority);
+extern void USBD_Initialize(uint16_t vid, uint16_t pid, const uint8_t *manufacturer, const uint8_t *product, void(*initialize)(void *), unsigned int pin_vbus, unsigned int priority);
 extern void USBD_Attach(void);
 extern void USBD_Detach(void);
 extern void USBD_Poll(void);
 extern bool USBD_Connected(void);
 extern bool USBD_Configured(void);
 extern bool USBD_Suspended(void);
+
+extern void stm32l4_usbd_dap_initialize(uint16_t pin_swclk, uint16_t pin_swdio);
 
 /************************************************************************
  *

@@ -11,18 +11,32 @@ ASFLAGS  = -c -g -x assembler-with-cpp $(EXTRAS) $(DEFINES) $(INCLUDES)
 WARNINGS = -Wall -Wextra -Wno-unused-parameter
 EXTRAS   = -D__FPU_PRESENT=1 -march=armv7e-m -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mabi=aapcs -mslow-flash-data
 DEFINES  = 
-INCLUDES = -I../../../system/CMSIS/Include -I../../../system/CMSIS/Device/ST/STM32L4xx/Include -I../../../system/STM32L4xx/Source/USB/HAL/Inc -I../../../system/STM32L4xx/Source/USB/Core/Inc -I../../../system/STM32L4xx/Source/USB/Class/CDC/Inc -I../../../system/STM32L4xx/Source/USB/Class/MSC/Inc -I../../../system/STM32L4xx/Source/USB -I../../../system/STM32L4xx/Include -I. 
+INCLUDES = \
+	-I../../../system/CMSIS/Include \
+	-I../../../system/CMSIS/Device/ST/STM32L4xx/Include \
+	-I../../../system/STM32L4xx/Source/DAP \
+	-I../../../system/STM32L4xx/Source/USB/HAL/Inc \
+	-I../../../system/STM32L4xx/Source/USB/Core/Inc \
+	-I../../../system/STM32L4xx/Source/USB/Class/CDC/Inc \
+	-I../../../system/STM32L4xx/Source/USB/Class/MSC/Inc \
+	-I../../../system/STM32L4xx/Source/USB/Class/HID/Inc \
+	-I../../../system/STM32L4xx/Source/USB \
+	-I../../../system/STM32L4xx/Include \
+	-I. 
 
 BSRCS = \
 	boot_stm32l4xx.c \
 	stm32l4_iap.c
 
 LSRCS = \
+	./DAP/DAP.c \
+	./DAP/SW_DP.c \
 	./USB/Class/CDC/Src/usbd_cdc.c \
 	./USB/Class/MSC/Src/usbd_msc.c \
 	./USB/Class/MSC/Src/usbd_msc_bot.c \
 	./USB/Class/MSC/Src/usbd_msc_data.c \
 	./USB/Class/MSC/Src/usbd_msc_scsi.c \
+	./USB/Class/HID/Src/usbd_hid.c \
 	./USB/Core/Src/usbd_core.c \
 	./USB/Core/Src/usbd_ctlreq.c \
 	./USB/Core/Src/usbd_ioreq.c \
@@ -64,7 +78,9 @@ LSRCS = \
 	stm32l4_system.c \
 	stm32l4_timer.c \
 	stm32l4_uart.c \
-	stm32l4_usbd_cdc.c
+	stm32l4_usbd_cdc.c \
+	stm32l4_usbd_dap.c \
+	stm32l4_usbd_hid.c
 
 BOBJS_L432 = $(patsubst %.c,_out/stm32l432/%.o,$(BSRCS))
 LSRCS_L432 = $(LSRCS) startup_stm32l432xx.S

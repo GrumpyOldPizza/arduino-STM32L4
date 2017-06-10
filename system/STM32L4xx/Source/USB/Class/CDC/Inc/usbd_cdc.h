@@ -61,7 +61,6 @@
 #define CDC_DATA_FS_MAX_PACKET_SIZE                 64  /* Endpoint IN & OUT Packet size */
 #define CDC_CMD_PACKET_SIZE                         8  /* Control Endpoint Packet size */ 
 
-#define USB_CDC_CONFIG_DESC_SIZ                     67
 #define CDC_DATA_HS_IN_PACKET_SIZE                  CDC_DATA_HS_MAX_PACKET_SIZE
 #define CDC_DATA_HS_OUT_PACKET_SIZE                 CDC_DATA_HS_MAX_PACKET_SIZE
 
@@ -106,8 +105,8 @@ typedef struct _USBD_CDC_Itf
   void (* Init)          (USBD_HandleTypeDef *pdev);
   void (* DeInit)        (void);
   void (* Control)       (uint8_t, uint8_t * , uint16_t);   
-  void (* Receive)       (uint8_t *, uint32_t);  
-  void (* Transmit)      (void);  
+  void (* RxReady)       (uint8_t *, uint32_t);  
+  void (* TxDone)        (void);  
 
 }USBD_CDC_ItfTypeDef;
 
@@ -119,7 +118,6 @@ typedef struct
   uint8_t  CmdLength;    
   uint8_t  *RxBuffer;  
   const uint8_t *TxBuffer;   
-  uint32_t RxLength;
   uint32_t TxLength;    
   
   __IO uint32_t TxState;     

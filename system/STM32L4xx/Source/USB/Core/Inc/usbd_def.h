@@ -229,8 +229,8 @@ typedef struct _USBD_HandleTypeDef
   uint32_t                dev_default_config;
   uint32_t                dev_config_status; 
   USBD_SpeedTypeDef       dev_speed; 
-  USBD_EndpointTypeDef    ep_in[15];
-  USBD_EndpointTypeDef    ep_out[15];  
+  USBD_EndpointTypeDef    ep_in[8];
+  USBD_EndpointTypeDef    ep_out[8];  
   uint32_t                ep0_state;  
   uint32_t                ep0_data_len;     
   uint8_t                 dev_state;
@@ -243,8 +243,8 @@ typedef struct _USBD_HandleTypeDef
   USBD_SetupReqTypedef    request;
   const USBD_DescriptorsTypeDef *pDesc;
   const USBD_ClassTypeDef *pClass;
-  void                    *pClassData[2];  
-  const void              *pUserData[2];    
+  void                    *pClassData[3];  
+  const void              *pUserData[3];    
   void                    *pData;    
 } USBD_HandleTypeDef;
 
