@@ -525,3 +525,15 @@ static stm32l4_sai_t _SAI;
 I2SClass I2S(&_SAI, g_SAIInstance, &g_SAIPins, STM32L4_SAI_IRQ_PRIORITY, g_SAIMode);
 
 #endif
+
+#if I2S_INTERFACES_COUNT > 1
+
+extern const stm32l4_sai_pins_t g_SAI1Pins;
+extern const unsigned int g_SAI1Instance;
+extern const unsigned int g_SAI1Mode;
+
+static stm32l4_sai_t _SAI1;
+
+I2SClass I2S1(&_SAI1, g_SAI1Instance, &g_SAI1Pins, STM32L4_SAI_IRQ_PRIORITY, g_SAI1Mode);
+
+#endif

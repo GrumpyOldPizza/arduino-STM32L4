@@ -91,4 +91,8 @@ private:
 extern I2SClass I2S;
 #endif
 
+#if I2S_INTERFACES_COUNT > 1
+extern I2SClass I2S1;
+#endif
+
 #endif
