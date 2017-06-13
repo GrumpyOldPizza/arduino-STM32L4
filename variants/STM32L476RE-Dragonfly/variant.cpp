@@ -79,10 +79,10 @@ extern const PinDescription g_APinDescription[NUM_TOTAL_PINS] =
     { GPIOB, GPIO_PIN_MASK(GPIO_PIN_PB9),  GPIO_PIN_PB9_TIM4_CH4,   (PIN_ATTR_PWM),                                   PWM_INSTANCE_TIM4,  PWM_CHANNEL_4,    ADC_INPUT_NONE },
     { GPIOB, GPIO_PIN_MASK(GPIO_PIN_PB8),  GPIO_PIN_PB8_TIM4_CH3,   (PIN_ATTR_PWM | PIN_ATTR_EXTI),                   PWM_INSTANCE_TIM4,  PWM_CHANNEL_3,    ADC_INPUT_NONE },
 
-    // 22..24 - SPI/ICSP pins (MISO,SCK,MOSI)
+    // 22..24 - SPI/ICSP pins (MISO,MOSI,SCK)
     { GPIOB, GPIO_PIN_MASK(GPIO_PIN_PB4),  GPIO_PIN_PB4,            (PIN_ATTR_EXTI),                                  PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
-    { GPIOB, GPIO_PIN_MASK(GPIO_PIN_PB3),  GPIO_PIN_PB3,            (PIN_ATTR_EXTI),                                  PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
     { GPIOB, GPIO_PIN_MASK(GPIO_PIN_PB5),  GPIO_PIN_PB5,            (PIN_ATTR_EXTI),                                  PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
+    { GPIOB, GPIO_PIN_MASK(GPIO_PIN_PB3),  GPIO_PIN_PB3,            (PIN_ATTR_EXTI),                                  PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
 
     // 25..26 - RX/TX LEDS (output only)
     { GPIOB, GPIO_PIN_MASK(GPIO_PIN_PB2),  GPIO_PIN_PB2,            0,                                                PWM_INSTANCE_NONE,  PWM_CHANNEL_NONE, ADC_INPUT_NONE },
