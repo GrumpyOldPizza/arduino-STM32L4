@@ -444,7 +444,7 @@ void TwoWireEx::begin(TwoWireExPins pins)
 {
     _option = I2C_OPTION_RESET;
 
-    if (pins == TWI_PINS_42_43) {
+    if (pins != TWI_PINS_20_21) {
 	_option |= I2C_OPTION_ALTERNATE;
     }
 
@@ -455,7 +455,7 @@ void TwoWireEx::begin(uint8_t address, TwoWireExPins pins)
 {
     _option = I2C_OPTION_RESET | (address << I2C_OPTION_ADDRESS_SHIFT);
 
-    if (pins == TWI_PINS_42_43) {
+    if (pins != TWI_PINS_20_21) {
 	_option |= I2C_OPTION_ALTERNATE;
     }
 

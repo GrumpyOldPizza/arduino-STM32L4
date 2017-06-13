@@ -107,7 +107,13 @@ private:
     friend class TwoWireEx;
 };
 
+#if defined(STM32L433xx)
+enum TwoWireExPins { TWI_PINS_20_21 = 0, TWI_PINS_6_7 = 1 };
+#elif defined(STM32L476xx) || defined(STM32L496xx)
 enum TwoWireExPins { TWI_PINS_20_21 = 0, TWI_PINS_42_43 = 1 };
+#else
+enum TwoWireExPins { TWI_PINS_20_21 = 0 };
+#endif
 
 class TwoWireEx : public TwoWire
 {
