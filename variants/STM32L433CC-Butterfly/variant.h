@@ -177,7 +177,7 @@ static const uint8_t SCL = PIN_WIRE_SCL;
 #define PIN_I2S_MCK          (5u)
 
 #define PIN_I2S1_SCK         (24u)
-#define PIN_I2S1_FS          (14u)
+#define PIN_I2S1_FS          (21u)
 #define PIN_I2S1_SD          (23u)
 #define PIN_I2S1_MCK         (22u)
 
