@@ -169,12 +169,17 @@ static const uint8_t SCL = PIN_WIRE_SCL;
 /*
  * I2S Interfaces
  */
-#define I2S_INTERFACES_COUNT 1
+#define I2S_INTERFACES_COUNT 2
 
 #define PIN_I2S_SCK          (2u)
 #define PIN_I2S_FS           (3u)
 #define PIN_I2S_SD           (4u)
 #define PIN_I2S_MCK          (5u)
+
+#define PIN_I2S1_SCK         (24u)
+#define PIN_I2S1_FS          (14u)
+#define PIN_I2S1_SD          (23u)
+#define PIN_I2S1_MCK         (22u)
 
 /*
  * USB
