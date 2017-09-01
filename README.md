@@ -58,7 +58,7 @@
 
  1. Follow steps from Board Manager section above
  2. ```cd <PACKAGES>```, where ```<PACKAGES>``` is your Arduino packages folder.  On my computers these are:
-  * Linux: ```~/.arduino15\packages```
+  * Linux: ```~/.arduino15/packages```
   * Windows: ```C:\Users\<username>\AppData\Local\Arduino15\packages```
  3. Create a folder named ```hardware```, if it does not exist, and change directories to it
  4. Clone this repo: ```git clone https://github.com/simondlevy/arduino-STM32L4.git grumpyoldpizza/stm32l4```
