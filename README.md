@@ -62,7 +62,7 @@
   * Linux: ```~/Arduino```
   * Windows: ```~/Documents/Arduino```
  3. Create a folder named ```hardware```, if it does not exist, and change directories to it
- 4. Clone this repo: ```git clone https://github.com/grumpyoldpizza/arduino-STM32L4.git grumpyoldpizza/stm32l4```
+ 4. Clone this repo: ```git clone https://github.com/simondlevy/arduino-STM32L4.git grumpyoldpizza/stm32l4```
  5. Restart the Arduino IDE
 
 ## Recovering from a faulty sketch for Tlera Corp Boards
