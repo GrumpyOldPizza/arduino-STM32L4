@@ -17,7 +17,7 @@
 
  1. [Download and install the Arduino IDE](https://www.arduino.cc/en/Main/Software) (at least version v1.6.8)
  2. Start the Arduino IDE
- 3. Go into Preferences
+ 3. Go into File/Preferences
  4. Add ```https://grumpyoldpizza.github.io/arduino-STM32L4/package_STM32L4_boards_index.json``` as an "Additional Board Manager URL"
  5. Open the Boards Manager from the Tools -> Board menu and install "STM32L4 Boards by Tlera Corp"
  6. Select your STM32L4 board from the Tools -> Board menu
