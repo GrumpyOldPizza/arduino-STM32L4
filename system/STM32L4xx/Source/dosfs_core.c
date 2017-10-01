@@ -6098,7 +6098,7 @@ static int dosfs_path_find_entry(dosfs_volume_t *volume, uint32_t clsno, uint32_
 			}
 			else
 			{ 
-			    if ((dir->dir_attr & DOSFS_DIR_ATTR_LONG_NAME_MASK) & DOSFS_DIR_ATTR_LONG_NAME)
+			    if ((dir->dir_attr & DOSFS_DIR_ATTR_LONG_NAME_MASK) == DOSFS_DIR_ATTR_LONG_NAME)
 			    {
 #if (DOSFS_CONFIG_VFAT_SUPPORTED == 1)
 				ordinal = (dir->dir_name[0] & 0x1f); /* LDIR_Ord    */
