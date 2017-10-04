@@ -150,16 +150,6 @@ static void stm32l4_qspi_stop(stm32l4_qspi_t *qspi)
     stm32l4_system_periph_disable(SYSTEM_PERIPH_QSPI);
 }
 
-static void stm32l4_qspi_pins(stm32l4_qspi_t *qspi)
-{
-    stm32l4_gpio_pin_configure(qspi->pins.clk, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
-    stm32l4_gpio_pin_configure(qspi->pins.ncs, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
-    stm32l4_gpio_pin_configure(qspi->pins.io0, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
-    stm32l4_gpio_pin_configure(qspi->pins.io1, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
-    stm32l4_gpio_pin_configure(qspi->pins.io2, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
-    stm32l4_gpio_pin_configure(qspi->pins.io3, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
-}
-
 static void stm32l4_qspi_dma_callback(stm32l4_qspi_t *qspi, uint32_t events)
 {
     QUADSPI->FCR = QUADSPI_FCR_CTCF;
@@ -323,6 +313,13 @@ bool stm32l4_qspi_disable(stm32l4_qspi_t *qspi)
 	return false;
     }
 
+    stm32l4_gpio_pin_configure(qspi->pins.clk, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    stm32l4_gpio_pin_configure(qspi->pins.ncs, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    stm32l4_gpio_pin_configure(qspi->pins.io0, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    stm32l4_gpio_pin_configure(qspi->pins.io1, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    stm32l4_gpio_pin_configure(qspi->pins.io2, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    stm32l4_gpio_pin_configure(qspi->pins.io3, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+
     qspi->state = QSPI_STATE_NONE;
 
     return true;
@@ -361,7 +358,12 @@ bool stm32l4_qspi_configure(stm32l4_qspi_t *qspi, uint32_t clock, uint32_t optio
 
     QUADSPI->DCR = QUADSPI_DCR_FSIZE | ((qspi->option & QSPI_OPTION_MODE_MASK) >> QSPI_OPTION_MODE_SHIFT);
     
-    stm32l4_qspi_pins(qspi);
+    stm32l4_gpio_pin_configure(qspi->pins.clk, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+    stm32l4_gpio_pin_configure(qspi->pins.ncs, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+    stm32l4_gpio_pin_configure(qspi->pins.io0, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+    stm32l4_gpio_pin_configure(qspi->pins.io1, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+    stm32l4_gpio_pin_configure(qspi->pins.io2, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+    stm32l4_gpio_pin_configure(qspi->pins.io3, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
 	
     stm32l4_qspi_stop(qspi);
 

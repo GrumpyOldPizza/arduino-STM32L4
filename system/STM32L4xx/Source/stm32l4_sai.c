@@ -693,6 +693,15 @@ bool stm32l4_sai_disable(stm32l4_sai_t *sai)
 
     stm32l4_system_saiclk_configure(SYSTEM_SAICLK_NONE);
 
+    stm32l4_gpio_pin_configure(sai->pins.sck, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    stm32l4_gpio_pin_configure(sai->pins.fs, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    stm32l4_gpio_pin_configure(sai->pins.sd, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+
+    if (sai->option & SAI_OPTION_MCK)
+    {
+	stm32l4_gpio_pin_configure(sai->pins.mck, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    }
+
     sai->state = SAI_STATE_NONE;
 
     return true;

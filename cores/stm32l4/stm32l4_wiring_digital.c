@@ -59,6 +59,11 @@ void pinMode( uint32_t ulPin, uint32_t ulMode )
 	stm32l4_gpio_pin_configure(g_APinDescription[ulPin].pin, (GPIO_PUPD_PULLDOWN | GPIO_OSPEED_MEDIUM | GPIO_OTYPE_PUSHPULL | GPIO_MODE_INPUT));
 	break ;
 
+    case INPUT_ANALOG:
+	// Set pin to analog mode
+	stm32l4_gpio_pin_configure(g_APinDescription[ulPin].pin, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+	break ;
+
     case OUTPUT:
 	// Set pin to output mode
 	stm32l4_gpio_pin_configure(g_APinDescription[ulPin].pin, (GPIO_PUPD_NONE | GPIO_OSPEED_MEDIUM | GPIO_OTYPE_PUSHPULL | GPIO_MODE_OUTPUT));

@@ -608,6 +608,26 @@ bool stm32l4_uart_disable(stm32l4_uart_t *uart)
 	stm32l4_system_hsi16_disable();
     }
 
+    if (uart->pins.rx != GPIO_PIN_NONE)
+    {
+	stm32l4_gpio_pin_configure(uart->pins.rx, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    }
+
+    if (uart->pins.tx != GPIO_PIN_NONE)
+    {
+	stm32l4_gpio_pin_configure(uart->pins.tx, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    }
+
+    if (uart->pins.cts != GPIO_PIN_NONE)
+    {
+	stm32l4_gpio_pin_configure(uart->pins.cts, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    }
+
+    if (uart->pins.rts_de != GPIO_PIN_NONE)
+    {
+	stm32l4_gpio_pin_configure(uart->pins.rts_de, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    }
+
     uart->state = UART_STATE_INIT;
 
     return true;

@@ -868,6 +868,8 @@ bool stm32l4_i2c_enable(stm32l4_i2c_t *i2c, uint32_t clock, uint32_t option, stm
 
 bool stm32l4_i2c_disable(stm32l4_i2c_t *i2c)
 {
+    uint32_t pin_scl, pin_sda;
+
     if (i2c->state != I2C_STATE_READY)
     {
 	return false;
@@ -879,6 +881,28 @@ bool stm32l4_i2c_disable(stm32l4_i2c_t *i2c)
     }
 
     stm32l4_system_hsi16_disable();
+
+    pin_scl = i2c->pins.scl;
+    pin_sda = i2c->pins.sda;
+
+#if defined(STM32L433xx)
+    if ((i2c->option & I2C_OPTION_ALTERNATE) && (pin_scl == GPIO_PIN_PB6_I2C1_SCL) && (pin_sda == GPIO_PIN_PB7_I2C1_SDA))
+    {
+	pin_scl = GPIO_PIN_PB8_I2C1_SCL;
+	pin_sda = GPIO_PIN_PB9_I2C1_SDA;
+    }
+#endif /* defined(STM32L433xx) */
+
+#if defined(STM32L476xx) ||  defined(STM32L496xx)
+    if ((i2c->option & I2C_OPTION_ALTERNATE) && (pin_scl == GPIO_PIN_PB8_I2C1_SCL) && (pin_sda == GPIO_PIN_PB9_I2C1_SDA))
+    {
+	pin_scl = GPIO_PIN_PB6_I2C1_SCL;
+	pin_sda = GPIO_PIN_PB7_I2C1_SDA;
+    }
+#endif /* defined(STM32L476xx) ||  defined(STM32L496xx) */
+
+    stm32l4_gpio_pin_configure(pin_scl, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
+    stm32l4_gpio_pin_configure(pin_sda, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
 
     i2c->state = I2C_STATE_INIT;
 
