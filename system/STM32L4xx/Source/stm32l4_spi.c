@@ -944,8 +944,6 @@ bool stm32l4_spi_disable(stm32l4_spi_t *spi)
 	return false;
     }
 
-    spi->state = SPI_STATE_NONE;
-
     stm32l4_gpio_pin_configure(spi->pins.mosi, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
 
     if (spi->pins.miso != GPIO_PIN_NONE)
@@ -959,6 +957,8 @@ bool stm32l4_spi_disable(stm32l4_spi_t *spi)
     {
 	stm32l4_gpio_pin_configure(spi->pins.ss, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
     }
+
+    spi->state = SPI_STATE_INIT;
 
     return true;
 }

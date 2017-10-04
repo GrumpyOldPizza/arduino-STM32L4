@@ -702,7 +702,7 @@ bool stm32l4_sai_disable(stm32l4_sai_t *sai)
 	stm32l4_gpio_pin_configure(sai->pins.mck, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG));
     }
 
-    sai->state = SAI_STATE_NONE;
+    sai->state = SAI_STATE_INIT;
 
     return true;
 }
