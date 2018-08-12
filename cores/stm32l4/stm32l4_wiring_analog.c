@@ -38,6 +38,7 @@ static stm32l4_dac_t stm32l4_dac;
 #endif /* defined(PIN_DAC0) || defined(PIN_DAC1) */
 static stm32l4_timer_t stm32l4_pwm[PWM_INSTANCE_COUNT];
 
+static uint8_t _channels[PWM_INSTANCE_COUNT];
 static int _readResolution = 10;
 static int _writeResolution = 8;
 
@@ -48,6 +49,7 @@ static uint8_t _writeCalibrate = 3;
 
 void analogReference(eAnalogReference reference)
 {
+    (void)reference;
 }
 
 void analogReadResolution(int resolution)
@@ -264,32 +266,6 @@ void analogWrite(uint32_t pin, uint32_t value)
     {
 	instance = g_APinDescription[pin].pwm_instance;
 
-	if (stm32l4_pwm[instance].state == TIMER_STATE_NONE)
-	{
-	    stm32l4_timer_create(&stm32l4_pwm[instance], g_PWMInstances[instance], STM32L4_PWM_IRQ_PRIORITY, 0);
-
-	    if (_writeFrequency[instance] && _writeRange[instance])
-	    {
-		carrier = _writeFrequency[instance] * _writeRange[instance];
-		modulus = _writeRange[instance];
-	    }
-	    else
-	    {
-		carrier = 2000000;
-		modulus = 4095;
-	    }
-
-	    divider = stm32l4_timer_clock(&stm32l4_pwm[instance]) / carrier;
-
-	    if (divider == 0)
-	    {
-		divider = 1;
-	    }
-
-	    stm32l4_timer_enable(&stm32l4_pwm[instance], divider -1, modulus -1, 0, NULL, NULL, 0);
-	    stm32l4_timer_start(&stm32l4_pwm[instance], false);
-	}
-
 	if (_writeFrequency[instance] && _writeRange[instance])
 	{
 	    if (value > _writeRange[instance])
@@ -302,9 +278,44 @@ void analogWrite(uint32_t pin, uint32_t value)
 	    value = mapResolution(value, _writeResolution, 12);
 	}
 
-	stm32l4_gpio_pin_configure(g_APinDescription[pin].pin, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+	if (_channels[instance] & (1u << g_APinDescription[pin].pwm_channel))
+	{
+	    stm32l4_timer_compare(&stm32l4_pwm[instance], g_APinDescription[pin].pwm_channel, value);
+	}
+	else
+	{
+	    _channels[instance] |= (1u << g_APinDescription[pin].pwm_channel);
 
-	stm32l4_timer_channel(&stm32l4_pwm[instance], g_APinDescription[pin].pwm_channel, value, TIMER_CONTROL_PWM);
+	    if (stm32l4_pwm[instance].state == TIMER_STATE_NONE)
+	    {
+		stm32l4_timer_create(&stm32l4_pwm[instance], g_PWMInstances[instance], STM32L4_PWM_IRQ_PRIORITY, 0);
+		
+		if (_writeFrequency[instance] && _writeRange[instance])
+		{
+		    carrier = _writeFrequency[instance] * _writeRange[instance];
+		    modulus = _writeRange[instance];
+		}
+		else
+		{
+		    carrier = 2000000;
+		    modulus = 4095;
+		}
+		
+		divider = stm32l4_timer_clock(&stm32l4_pwm[instance]) / carrier;
+		
+		if (divider == 0)
+		{
+		    divider = 1;
+		}
+		
+		stm32l4_timer_enable(&stm32l4_pwm[instance], divider -1, modulus -1, 0, NULL, NULL, 0);
+		stm32l4_timer_start(&stm32l4_pwm[instance], false);
+	    }
+	    
+	    stm32l4_gpio_pin_configure(g_APinDescription[pin].pin, (GPIO_PUPD_NONE | GPIO_OSPEED_HIGH | GPIO_OTYPE_PUSHPULL | GPIO_MODE_ALTERNATE));
+	    
+	    stm32l4_timer_channel(&stm32l4_pwm[instance], g_APinDescription[pin].pwm_channel, value, TIMER_CONTROL_PWM);
+	}
 
 	return;
     }
