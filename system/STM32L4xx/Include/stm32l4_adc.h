@@ -71,6 +71,10 @@ enum {
 
 typedef void (*stm32l4_adc_callback_t)(void *context, uint32_t events);
 
+#define ADC_VREFINT_PERIOD                       4
+#define ADC_VBAT_PERIOD                          12
+#define ADC_TSENSE_PERIOD                        5
+
 #define ADC_STATE_NONE                         0
 #define ADC_STATE_INIT                         1
 #define ADC_STATE_BUSY                         2
@@ -93,7 +97,7 @@ extern bool     stm32l4_adc_disable(stm32l4_adc_t *adc);
 extern bool     stm32l4_adc_configure(stm32l4_adc_t *adc, uint32_t option);
 extern bool     stm32l4_adc_calibrate(stm32l4_adc_t *adc);
 extern bool     stm32l4_adc_notify(stm32l4_adc_t *adc, stm32l4_adc_callback_t callback, void *context, uint32_t events);
-extern uint32_t stm32l4_adc_convert(stm32l4_adc_t *adc, unsigned int channel);
+extern uint32_t stm32l4_adc_convert(stm32l4_adc_t *adc, unsigned int channel, unsigned int period);
 
 #ifdef __cplusplus
 }
