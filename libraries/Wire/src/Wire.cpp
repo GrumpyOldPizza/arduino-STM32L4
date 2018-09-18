@@ -404,10 +404,13 @@ void TwoWire::EventCallback(uint32_t events)
     
 	if (events & I2C_EVENT_TRANSMIT_REQUEST) {
 	    _tx_write = 0;
+	    _tx_active = true;
 
 	    if(_requestCallback) {
 		(*_requestCallback)();
 	    }
+
+	    _tx_active = false;
       
 	    stm32l4_i2c_service(_i2c, &_tx_data[0], _tx_write);
 	}
