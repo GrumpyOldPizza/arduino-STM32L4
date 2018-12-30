@@ -41,9 +41,6 @@
 #define STM32L4_CONFIG_SYSOPT             0
 #define STM32L4_CONFIG_USB_VBUS           GPIO_PIN_PB2
 
-#define STM32L4_CONFIG_DAP_SWCLK          GPIO_PIN_PB15
-#define STM32L4_CONFIG_DAP_SWDIO          GPIO_PIN_PB8
-
 #define USBCON
 
 /** Master clock frequency */

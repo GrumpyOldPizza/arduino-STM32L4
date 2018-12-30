@@ -49,6 +49,8 @@ static uint32_t _writeRange[PWM_INSTANCE_COUNT];
 
 static uint8_t _writeCalibrate = 3;
 
+bool _analogReadFast = false;
+
 void analogReference(eAnalogReference reference)
 {
     (void)reference;
@@ -115,7 +117,7 @@ uint32_t analogRead(uint32_t pin)
 	stm32l4_adc_enable(&stm32l4_adc, 0, NULL, NULL, 0);
 	stm32l4_adc_calibrate(&stm32l4_adc);
     }
-    else
+    else if (stm32l4_adc.state != ADC_STATE_READY)
     {
 	stm32l4_adc_enable(&stm32l4_adc, 0, NULL, NULL, 0);
     }
@@ -124,7 +126,10 @@ uint32_t analogRead(uint32_t pin)
 
     input = stm32l4_adc_convert(&stm32l4_adc, g_APinDescription[pin].adc_input, _readPeriod);
 
-    stm32l4_adc_disable(&stm32l4_adc);
+    if (!_analogReadFast)
+    {
+	stm32l4_adc_disable(&stm32l4_adc);
+    }
 
     return mapResolution(input, 12, _readResolution);
 }
