@@ -160,6 +160,7 @@ void SPIClass::setBitOrder(BitOrder bitOrder)
     
 	_selected = false;
     }
+	_bitOrder = bitOrder;
 }
 
 void SPIClass::setDataMode(uint8_t dataMode)
