@@ -282,10 +282,10 @@ bool stm32l4_adc_calibrate(stm32l4_adc_t *adc)
     return true;
 }
 
-uint32_t stm32l4_adc_convert(stm32l4_adc_t *adc, unsigned int channel)
+uint32_t stm32l4_adc_convert(stm32l4_adc_t *adc, unsigned int channel, unsigned int period)
 {
     ADC_TypeDef *ADCx = adc->ADCx;
-    uint32_t convert, adc_smp;
+    uint32_t convert, threshold, adcclk, adc_smp;
 
     if (adc->state != ADC_STATE_READY)
     {
@@ -296,50 +296,63 @@ uint32_t stm32l4_adc_convert(stm32l4_adc_t *adc, unsigned int channel)
      * calibration and first conversion or between 2 consecutive conversions is too long. 
      */
 
-    if ((adc->instance == ADC_INSTANCE_ADC1) &&
-	((channel == ADC_CHANNEL_ADC1_TS) || (channel == ADC_CHANNEL_ADC1_VBAT) || (channel == ADC_CHANNEL_ADC1_VREFINT)))
+    if ((adc->instance == ADC_INSTANCE_ADC1) && (channel == ADC_CHANNEL_ADC1_TS))
     {
-	if (channel == ADC_CHANNEL_ADC1_TS)
-	{
-	    ADCx->CR |= ADC_CR_ADDIS;
+	ADCx->CR |= ADC_CR_ADDIS;
 
-	    while (ADCx->CR & ADC_CR_ADEN)
-	    {
-	    }
+	while (ADCx->CR & ADC_CR_ADEN)
+	{
+	}
 	    
 #if defined(STM32L476xx) || defined(STM32L496xx)
-  	    armv7m_atomic_or(&ADC123_COMMON->CCR, ADC_CCR_TSEN);
+	armv7m_atomic_or(&ADC123_COMMON->CCR, ADC_CCR_TSEN);
 #else /* defined(STM32L476xx) || defined(STM32L496xx) */
-  	    armv7m_atomic_or(&ADC1_COMMON->CCR, ADC_CCR_TSEN);
+	armv7m_atomic_or(&ADC1_COMMON->CCR, ADC_CCR_TSEN);
 #endif /* defined(STM32L476xx) || defined(STM32L496xx) */
 
-	    ADCx->ISR = ADC_ISR_ADRDY;
+	ADCx->ISR = ADC_ISR_ADRDY;
 
-	    do
-	    {
-		ADCx->CR |= ADC_CR_ADEN;
-	    }
-	    while (!(ADCx->ISR & ADC_ISR_ADRDY));
-
-	    armv7m_core_udelay(120);
-
-	    /* min time is 5us */
-	    adc_smp = ADC_SAMPLE_TIME_247_5;
-	}
-	else if (channel == ADC_CHANNEL_ADC1_VBAT)
+	do
 	{
-	    /* min time is 12us */
-	    adc_smp = ADC_SAMPLE_TIME_640_5;
+	    ADCx->CR |= ADC_CR_ADEN;
 	}
-	else
-	{
-	  adc_smp = ADC_SAMPLE_TIME_47_5;
-	}
+	while (!(ADCx->ISR & ADC_ISR_ADRDY));
+
+	armv7m_core_udelay(120);
+    }
+
+    if ((stm32l4_system_hclk() <= 48000000) && (stm32l4_system_hclk() == stm32l4_system_sysclk()))
+    {
+	adcclk = stm32l4_system_hclk();
     }
     else
     {
-	adc_smp = ADC_SAMPLE_TIME_47_5;
+	adcclk = stm32l4_system_hclk() / 2;
     }
+
+    /* period is in uS. 1e6 / adcclk is one tick in terms of uS.
+     *
+     * (period * adcclk) / 1e6 is the threshold for the sampling time.
+     *
+     * The upper limit for period is 50uS, and adcclk limited to 48MHz,
+     * which means no overflow handling is needed.
+     */
+
+    if (period > 50)
+    {
+        period = 50;
+    }
+    
+    threshold = ((uint32_t)period * adcclk);
+
+    if      (threshold < (uint32_t)(  2.5 * 1e6)) { adc_smp = ADC_SAMPLE_TIME_2_5;   } 
+    else if (threshold < (uint32_t)(  6.5 * 1e6)) { adc_smp = ADC_SAMPLE_TIME_6_5;   } 
+    else if (threshold < (uint32_t)( 12.5 * 1e6)) { adc_smp = ADC_SAMPLE_TIME_12_5;  } 
+    else if (threshold < (uint32_t)( 24.5 * 1e6)) { adc_smp = ADC_SAMPLE_TIME_24_5;  } 
+    else if (threshold < (uint32_t)( 47.5 * 1e6)) { adc_smp = ADC_SAMPLE_TIME_47_5;  } 
+    else if (threshold < (uint32_t)( 92.5 * 1e6)) { adc_smp = ADC_SAMPLE_TIME_92_5;  } 
+    else if (threshold < (uint32_t)(247.5 * 1e6)) { adc_smp = ADC_SAMPLE_TIME_247_5; } 
+    else                                          { adc_smp = ADC_SAMPLE_TIME_640_5; } 
 
     ADCx->SQR1 = (channel << 6);
     ADCx->SMPR1 = (channel < 10) ? (adc_smp << (channel * 3)) : 0;

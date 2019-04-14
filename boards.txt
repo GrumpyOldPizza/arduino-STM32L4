@@ -229,10 +229,6 @@ Butterfly-L433CC.menu.usb.cdc_hid=Serial + Keyboard + Mouse
 Butterfly-L433CC.menu.usb.cdc_hid.build.usb_type=USB_TYPE_CDC_HID
 Butterfly-L433CC.menu.usb.cdc_msc_hid=Serial + Mass Storage + Keyboard + Mouse
 Butterfly-L433CC.menu.usb.cdc_msc_hid.build.usb_type=USB_TYPE_CDC_MSC_HID
-Butterfly-L433CC.menu.usb.cdc_dap=Serial + CMSIS-DAP
-Butterfly-L433CC.menu.usb.cdc_dap.build.usb_type=USB_TYPE_CDC_DAP
-Butterfly-L433CC.menu.usb.cdc_msc_dap=Serial + Mass Storage + CMSIS-DAP
-Butterfly-L433CC.menu.usb.cdc_msc_dap.build.usb_type=USB_TYPE_CDC_MSC_DAP
 Butterfly-L433CC.menu.usb.none=No USB
 Butterfly-L433CC.menu.usb.none.build.usb_type=USB_TYPE_NONE
 

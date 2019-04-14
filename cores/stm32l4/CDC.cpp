@@ -72,10 +72,10 @@ CDC::CDC(struct _stm32l4_usbd_cdc_t *usbd_cdc, bool serialEvent)
 
 void CDC::begin(unsigned long baudrate)
 {
-    begin(baudrate, (uint8_t)SERIAL_8N1);
+    begin(baudrate, SERIAL_8N1);
 }
 
-void CDC::begin(unsigned long baudrate, uint16_t config)
+void CDC::begin(unsigned long baudrate, uint32_t config)
 {
     /* If USBD_CDC has already been enabled/initialized by STDIO, just add the notify.
      */

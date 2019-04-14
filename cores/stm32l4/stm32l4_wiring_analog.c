@@ -39,13 +39,17 @@ static stm32l4_dac_t stm32l4_dac;
 static stm32l4_timer_t stm32l4_pwm[PWM_INSTANCE_COUNT];
 
 static uint8_t _channels[PWM_INSTANCE_COUNT];
+
 static int _readResolution = 10;
+static int _readPeriod = 2;
 static int _writeResolution = 8;
 
 static uint32_t _writeFrequency[PWM_INSTANCE_COUNT];
 static uint32_t _writeRange[PWM_INSTANCE_COUNT];
 
 static uint8_t _writeCalibrate = 3;
+
+bool _analogReadFast = false;
 
 void analogReference(eAnalogReference reference)
 {
@@ -55,6 +59,11 @@ void analogReference(eAnalogReference reference)
 void analogReadResolution(int resolution)
 {
     _readResolution = resolution;
+}
+
+void analogReadPeriod(int period)
+{
+    _readPeriod = period;
 }
 
 static inline uint32_t mapResolution(uint32_t value, uint32_t from, uint32_t to)
@@ -108,16 +117,19 @@ uint32_t analogRead(uint32_t pin)
 	stm32l4_adc_enable(&stm32l4_adc, 0, NULL, NULL, 0);
 	stm32l4_adc_calibrate(&stm32l4_adc);
     }
-    else
+    else if (stm32l4_adc.state != ADC_STATE_READY)
     {
 	stm32l4_adc_enable(&stm32l4_adc, 0, NULL, NULL, 0);
     }
 
     stm32l4_gpio_pin_configure(g_APinDescription[pin].pin, (GPIO_PUPD_NONE | GPIO_MODE_ANALOG | GPIO_ANALOG_SWITCH));
 
-    input = stm32l4_adc_convert(&stm32l4_adc, g_APinDescription[pin].adc_input);
+    input = stm32l4_adc_convert(&stm32l4_adc, g_APinDescription[pin].adc_input, _readPeriod);
 
-    stm32l4_adc_disable(&stm32l4_adc);
+    if (!_analogReadFast)
+    {
+	stm32l4_adc_disable(&stm32l4_adc);
+    }
 
     return mapResolution(input, 12, _readResolution);
 }

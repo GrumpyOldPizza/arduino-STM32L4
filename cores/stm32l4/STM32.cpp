@@ -67,8 +67,8 @@ float STM32Class::getVBAT()
 	stm32l4_adc_enable(&stm32l4_adc, 0, NULL, NULL, 0);
     }
 
-    vref_data = stm32l4_adc_convert(&stm32l4_adc, ADC_CHANNEL_ADC1_VREFINT);
-    vbat_data = stm32l4_adc_convert(&stm32l4_adc, ADC_CHANNEL_ADC1_VBAT);
+    vref_data = stm32l4_adc_convert(&stm32l4_adc, ADC_CHANNEL_ADC1_VREFINT, ADC_VREFINT_PERIOD);
+    vbat_data = stm32l4_adc_convert(&stm32l4_adc, ADC_CHANNEL_ADC1_VBAT, ADC_VBAT_PERIOD);
 
     stm32l4_adc_disable(&stm32l4_adc);
 
@@ -93,7 +93,7 @@ float STM32Class::getVREF()
 	stm32l4_adc_enable(&stm32l4_adc, 0, NULL, NULL, 0);
     }
 
-    vref_data = stm32l4_adc_convert(&stm32l4_adc, ADC_CHANNEL_ADC1_VREFINT);
+    vref_data = stm32l4_adc_convert(&stm32l4_adc, ADC_CHANNEL_ADC1_VREFINT, ADC_VREFINT_PERIOD);
 
     stm32l4_adc_disable(&stm32l4_adc);
 
@@ -118,8 +118,8 @@ float STM32Class::getTemperature()
 	stm32l4_adc_enable(&stm32l4_adc, 0, NULL, NULL, 0);
     }
 
-    vref_data = stm32l4_adc_convert(&stm32l4_adc, ADC_CHANNEL_ADC1_VREFINT);
-    ts_data = stm32l4_adc_convert(&stm32l4_adc, ADC_CHANNEL_ADC1_TS);
+    vref_data = stm32l4_adc_convert(&stm32l4_adc, ADC_CHANNEL_ADC1_VREFINT, ADC_VREFINT_PERIOD);
+    ts_data = stm32l4_adc_convert(&stm32l4_adc, ADC_CHANNEL_ADC1_TS, ADC_TSENSE_PERIOD);
 
     stm32l4_adc_disable(&stm32l4_adc);
 

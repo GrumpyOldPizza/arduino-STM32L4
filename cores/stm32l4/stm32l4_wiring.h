@@ -84,6 +84,7 @@ typedef enum _eAnalogReference {
 
 extern void analogReference(eAnalogReference reference);
 extern void analogReadResolution(int resolution);
+extern void analogReadPeriod(int period);
 extern uint32_t analogRead(uint32_t pin);
 extern void analogWriteResolution(int resolution);
 extern void analogWriteFrequency(uint32_t pin, uint32_t frequency);
